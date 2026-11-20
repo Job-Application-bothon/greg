@@ -1,0 +1,175 @@
+@font-face {
+  font-family: Inter;
+  src: url('/assets/InterVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+:root {
+  color-scheme: light;
+  --ink: #0d0d0d;
+  --body: #3d3d3d;
+  --muted: #6e6e6e;
+  --line: #e7e7e7;
+  --soft: #fafafa;
+  --pink: #ffc9ff;
+  --gutter: clamp(20px, 5.28vw, 76px);
+  --chapter: clamp(64px, 8.34vw, 120px);
+  font: 400 16px/1.5 Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: white;
+}
+*, *::before, *::after {box-sizing: border-box}
+body, figure, p, h1, h2, h3 {margin: 0}
+[hidden] {display: none !important}
+a {color: inherit; text-decoration: none}
+button {font: inherit; cursor: pointer}
+:focus-visible {outline: 2px solid #4786ff; outline-offset: 4px}
+[id] {scroll-margin-top: 84px}
+.wrap {width: min(calc(100% - 2 * var(--gutter)), 1288px); margin-inline: auto}
+.split {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px}
+.skip {position: fixed; z-index: 7; inset: 12px auto auto 12px; transform: translateY(-160%); padding: 10px 16px; background: white; border: 1px solid var(--ink)}
+.skip:focus {transform: none}
+
+.site-head {position: sticky; z-index: 6; top: 0; background: white; border-bottom: 1px solid #ededed}
+.shell {width: min(calc(100% - 2 * clamp(20px, 4.44vw, 64px)), 1312px); margin: auto; min-height: 68px; display: flex; gap: clamp(16px, 4vw, 58px); align-items: center}
+.wordmark {display: inline-flex; align-items: center; gap: 5px; width: fit-content; font-size: 28px; font-weight: 600; letter-spacing: -.09em; line-height: 1}
+.wordmark svg {width: 33px; height: 33px; fill: currentColor}
+.nav-links {display: flex; gap: 28px; font-size: 14px; font-weight: 500}
+.nav-links a:hover, .footer-directory a:hover {text-decoration: underline; text-underline-offset: 3px}
+.shell > .pill {margin-left: auto}
+.pill {display: inline-flex; justify-content: center; align-items: center; width: fit-content; min-height: 50px; padding: 10px 24px; border: 1px solid var(--ink); border-radius: 100px; background: var(--ink); color: white; font-weight: 500; text-align: center; transition: background-color .15s, color .15s, border-color .15s}
+.pill:hover {background: #3d3d3d; border-color: #3d3d3d}
+.pill.small {min-height: 44px; padding: 7px 17px; font-size: 14px; white-space: nowrap}
+.pill.outline {background: white; color: var(--ink); border-color: #bcbcbc}
+.pill.outline:hover {background: #f3f3f3; border-color: var(--ink)}
+.pill.inverse {min-height: 64px; background: white; border-color: white; color: var(--ink); padding: 16px 32px; font-size: 18px; flex: none}
+.pill.inverse:hover {background: var(--pink); border-color: var(--pink)}
+
+h1, h2 {font-weight: 300; letter-spacing: -.02em; line-height: 1}
+h1 {font-size: clamp(46px, 5.3vw, 64px)}
+h2 {font-size: clamp(37px, 4.3vw, 54px)}
+h3 {font-size: 24px; line-height: 1.2; font-weight: 500; letter-spacing: -.01em}
+.promise {padding-top: clamp(80px, 10vw, 144px); max-width: 628px; margin: 0 auto clamp(38px, 5.56vw, 80px); text-align: center}
+.promise p {max-width: 450px; margin: 30px auto 0; color: var(--body); font-weight: 300; letter-spacing: .02em; text-wrap: pretty}
+.scene {align-items: center}
+.scene-copy {padding-block: 24px 36px}
+.sample {display: flex; flex-wrap: wrap; gap: 10px; align-items: center; width: fit-content; padding: 8px 13px; border-radius: 100px; background: var(--pink); margin-bottom: 22px; font-size: 12px; font-weight: 600}
+.sample span {border-left: 1px solid #af79af; padding-left: 10px; font-weight: 500}
+.lede {color: var(--body); max-width: 510px; margin: 20px 0 0; font-size: clamp(17px, 1.5vw, 20px); font-weight: 300; line-height: 1.5; letter-spacing: .02em}
+.actions {display: flex; flex-wrap: wrap; gap: 12px; margin-top: 25px}
+.fine {color: var(--muted); font-size: 13px; margin-top: 12px}
+.collage {position: relative; height: clamp(360px, 35.8vw, 503px); min-width: 0; isolation: isolate}
+.photo {position: absolute; inset: 0 9% 16% 9%; overflow: hidden; border-radius: 16px; background: #ceb59d}
+.photo img {display: block; width: 100%; height: 100%; object-fit: cover; object-position: 49% 51%}
+.scene-lines {position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1}
+.floating {position: absolute; z-index: 2; background: #fff; border: 1px solid var(--line); box-shadow: 0 15px 34px #0d0d0d17, 0 2px 4px #0d0d0d0b; border-radius: 16px}
+.forecast-preview {width: min(340px, 62%); right: 1%; bottom: 6%; padding: clamp(13px, 1.65vw, 24px)}
+.preview-head, .notice, .node {display: flex; align-items: center; gap: 10px}
+.preview-head {padding-bottom: 11px; border-bottom: 1px solid var(--line); margin-bottom: 13px}
+.preview-head strong, .notice strong {display: block; line-height: 1.25; font-size: 14px; font-weight: 600}
+.preview-head small, .notice small, .cash-label {display: block; font-size: 11px; color: var(--muted)}
+.tile {width: 32px; height: 32px; display: inline-grid; place-items: center; flex: none; border-radius: 6px; color: var(--ink); font-size: 16px; font-weight: 600}
+.lavender {background: #efe3ff}.rose {background: #ffdbf2}.mint {background: #c4efda}.blue {background: #dbe6ff}
+.primary-value {display: block; font-size: clamp(23px, 2.2vw, 31px); line-height: 1.1; font-weight: 500; letter-spacing: -.035em; font-variant-numeric: tabular-nums}
+.mini-chart, .scenario-chart {display: block; width: 100%; height: auto}
+.mini-chart {margin-top: 5px}
+.week-labels {display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px}
+.notice {left: 0; bottom: 16%; padding: 11px 13px; border-radius: 12px}
+.port {width: 46px; height: 46px; top: 18%; right: 2%; transform: rotate(8deg); border-radius: 50%; background: #d9f5e8; display: grid; place-items: center}
+.port svg {width: 24px}
+.route-art {height: 103px; position: relative; margin-top: 4px; margin-bottom: 18px}
+.route-art svg {width: 100%; height: 100%}
+.route-dot {position: absolute; width: 39px; height: 39px; display: grid; place-items: center; transform: translate(-50%, -50%); border-radius: 50%; background: white; border: 1px solid var(--line); font-weight: 600}
+.route-dot.one {left: 14%; top: 30%; color: #4c2c58}.route-dot.two {left: 51%; top: 73%; background: #fff1ff}.route-dot.three {left: 91%; top: 29%; background: #e7f7ef}
+
+.dark-stage {width: min(calc(100% - 2 * clamp(12px, 1.95vw, 28px)), 1384px); margin: auto; padding: var(--chapter) clamp(17px, 3.34vw, 48px); background: var(--ink); color: white; border-radius: 20px}
+.stage-inner {max-width: 1288px; margin: auto}
+.stage-intro {text-align: center}
+.eyebrow {font-size: 13px; font-weight: 500; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 12px}
+.dark-stage .eyebrow {color: var(--pink)}
+.stage-intro .lede {margin: 19px auto 0; color: #e7e7e7}
+.selector {display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 33px 0 26px}
+.selector button {appearance: none; min-height: 50px; padding: 10px 23px; border: 1px solid #565656; border-radius: 100px; color: white; background: #282828; font-size: 15px; font-weight: 500; transition: background-color .15s, color .15s}
+.selector button:hover {background: #434343}
+.selector button[aria-pressed='true'] {background: var(--pink); color: var(--ink); border-color: var(--pink)}
+.demo-grid {align-items: stretch}
+.selector[hidden] + .demo-grid {margin-top: 32px}
+.comparison {display: grid; align-content: center; padding: clamp(16px, 2.3vw, 32px); border-radius: 16px; background: #fff; color: var(--ink)}
+.comparison-top {display: flex; justify-content: space-between; align-items: flex-start; gap: 8px}
+.comparison-top p, #compare-copy {font-size: 13px; color: var(--body)}
+.comparison h3 {margin-top: 5px}
+.demo-tag {padding: 4px 8px; flex: none; border-radius: 4px; background: #f3f3f3; color: var(--body); font-size: 10px; font-weight: 500; white-space: nowrap}
+.chart-metric {display: grid; gap: 2px; margin: 23px 0 4px; font-size: 13px; color: var(--muted)}
+.chart-metric strong {font-size: clamp(31px, 4vw, 49px); line-height: 1; font-weight: 400; color: var(--ink); letter-spacing: -.035em; font-variant-numeric: tabular-nums}
+.scenario-chart {margin-top: 8px}
+#compare-copy {margin-top: 17px; padding-top: 13px; border-top: 1px solid var(--line); min-height: 64px}
+.network {position: relative; isolation: isolate; min-height: 345px; overflow: hidden; border: 1px solid #565656; border-radius: 16px; background: #131313}
+.network::before {content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(circle, #ffffff40 .7px, transparent .85px) 0 0 / 16px 16px; mask-image: radial-gradient(ellipse, black, transparent 85%)}
+.network > svg {position: absolute; inset: 0; width: 100%; height: 100%}
+.node {position: absolute; transform: translate(-50%,-50%); border-radius: 8px; color: var(--ink); background: white; padding: 7px 10px; gap: clamp(5px, 1vw, 10px); white-space: nowrap; font-size: clamp(10px, 1vw, 14px); font-weight: 500}
+.node .tile {width: clamp(22px, 2.3vw, 32px); height: clamp(22px, 2.3vw, 32px); font-size: 13px; border-radius: 4px}
+.node.left-top {left: 24%; top: 23%}.node.right-top {left: 75%; top: 33%}.node.center {left: 50%; top: 51%; background: var(--pink)}.node.left-bottom {left: 24%; top: 75%}.node.right-bottom {left: 75%; top: 65%}
+.network figcaption {position: absolute; inset: auto 12px 15px; color: #cfcfcf; text-align: center; font-size: 12px}
+
+.workflow {padding-block: var(--chapter)}
+.capabilities {display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 32px; margin-top: 40px}
+.capabilities article {border-radius: 8px; border: 1px solid var(--line); padding: 24px}
+.capabilities p {max-width: 340px; margin-top: 11px; color: var(--body); font-weight: 300; letter-spacing: .02em}
+.sculpture {position: relative; display: grid; place-items: center; width: 86px; height: 75px; margin-bottom: 22px; isolation: isolate; --hi: #ffedfc; --mid: #fcbbf0; --lo: #d378c9}
+.sculpture.green {--hi: #f1fff7; --mid: #9ee4ba; --lo: #4f9f8c}
+.sculpture.lilac {--hi: #f9f4ff; --mid: #c8b5fe; --lo: #8f74dc}
+.sculpture::before {content: ''; position: absolute; z-index: -1; inset: 65% 12% 1%; border-radius: 50%; background: #0d0d0d25; filter: blur(6px)}
+.sculpture span {position: relative; width: 72px; height: 57px; background: radial-gradient(ellipse at 28% 13%, var(--hi), transparent 45%), linear-gradient(150deg, var(--mid) 35%, var(--lo)); border-radius: 53% 47% 58% 42% / 47% 58% 42% 53%; transform: rotate(-10deg)}
+.sculpture.green span {border-radius: 48% 52% 41% 59% / 64% 36% 64% 36%; transform: rotate(11deg) scaleX(.91)}
+.sculpture.lilac span {border-radius: 55% 45% 38% 62% / 58% 65% 35% 42%; transform: rotate(-20deg)}
+.sculpture span::after {content: ''; position: absolute; width: 4px; height: 8px; background: var(--ink); border-radius: 50%; top: 46%; left: 38%; box-shadow: 12px 0 var(--ink)}
+.ending {background: var(--ink); color: white}
+.closing {padding-block: var(--chapter); display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 28px; border-bottom: 1px solid #565656}
+.footer-directory {display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 20px 32px; padding-block: 48px 40px; font-size: 14px}
+.footer-directory > div {display: grid; align-content: start; gap: 8px}
+.footer-directory strong {font-weight: 500}
+.footer-directory p, .footer-directory div a:not(.wordmark) {color: #cfcfcf}
+.footer-directory .credits {grid-column: 1 / -1; font-size: 12px; margin: 8px 0 0}
+.credits a {text-decoration: underline; text-underline-offset: 2px}
+
+@media (max-width: 930px) {
+  .forecast-preview {right: 0; width: 66%}
+  .notice {bottom: 3%; left: 2%; z-index: 3}
+  .demo-grid {gap: 18px}
+  .capabilities {gap: 16px}
+}
+@media (max-width: 740px) {
+  .split {grid-template-columns: minmax(0, 1fr)}
+  .scene {gap: 16px}
+  .scene-copy {padding: 0}
+  .collage {height: clamp(320px, 75vw, 470px)}
+  .notice {bottom: 8%}
+  .forecast-preview {bottom: 12%; width: min(335px, 66%)}
+  .route-art {height: 75px; margin-bottom: 14px}
+  .route-dot {width: 32px; height: 32px}
+  .capabilities {grid-template-columns: minmax(0,1fr); margin-top: 28px}
+  .capabilities article {padding: 19px}
+  .sculpture {margin-bottom: 10px}
+}
+@media (max-width: 500px) {
+  .nav-links {display: none}
+  .shell {min-height: 64px}
+  .promise {padding-top: 56px; margin-bottom: 46px}
+  .promise p {margin-top: 20px}
+  .sample {margin-bottom: 16px}
+  .actions .pill {padding-inline: 15px; font-size: 14px}
+  .lede {margin-top: 15px}
+  .photo {inset: 0 7% 14% 5%}
+  .notice {bottom: 2%; left: 1%; padding: 7px 9px}
+  .notice .tile {width: 25px; height: 25px}
+  .notice strong, .preview-head strong {font-size: 12px}
+  .port {width: 33px; height: 33px}
+  .port svg {width: 18px}
+  .forecast-preview {bottom: 15%; right: 0; width: 67%}
+  .selector button {padding-inline: 15px; min-height: 44px; font-size: 13px}
+  .network {min-height: 255px}
+  .node {padding: 5px 6px}
+  .footer-directory {grid-template-columns: repeat(2,minmax(0,1fr)); padding-block: 32px}
+  .footer-directory > div:first-child {grid-column: 1 / -1}
+}
+@media (prefers-reduced-motion: reduce) {*, *::before, *::after {transition: none !important}}

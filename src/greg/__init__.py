@@ -376,16 +376,44 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, get_full_state())
             return
 
-        if path in ("/", "/index.html"):
-            html = (STATIC_DIR / "index.html").read_bytes()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(html)))
-            self.end_headers()
-            self.wfile.write(html)
+        if path == "/api/demo/pizzeria":
+            simulation = engine.build_scenario_bundle("pizzeria_amalfi")["simulation"]
+            self._send_json(200, {
+                "summary": simulation["summary"],
+                "series": [
+                    {key: point[key] for key in ("week", "baseline", "stabilized")}
+                    for point in simulation["series"]
+                ],
+            })
             return
 
-        self.send_error(404, "Not Found")
+        asset = {
+            "/": ("landing.html", "text/html; charset=utf-8"),
+            "/workspace": ("index.html", "text/html; charset=utf-8"),
+            "/index.html": ("index.html", "text/html; charset=utf-8"),
+            "/assets/landing.css": ("landing.css", "text/css; charset=utf-8"),
+            "/assets/landing.js": ("landing.js", "text/javascript; charset=utf-8"),
+            "/assets/workspace-controls.css": ("workspace-controls.css", "text/css; charset=utf-8"),
+            "/assets/workspace-controls.js": ("workspace-controls.js", "text/javascript; charset=utf-8"),
+            "/assets/pizzeria-kitchen.webp": ("pizzeria-kitchen.webp", "image/webp"),
+            "/assets/InterVariable.woff2": ("InterVariable.woff2", "font/woff2"),
+        }.get(path)
+        if asset is None:
+            self.send_error(404, "Not Found")
+            return
+
+        filename, content_type = asset
+        try:
+            body = (STATIC_DIR / filename).read_bytes()
+        except FileNotFoundError:
+            self.send_error(404, "Not Found")
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def do_POST(self) -> None:
         path = self.path.split("?", 1)[0]

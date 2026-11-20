@@ -174,13 +174,43 @@ class HttpApiIntegrationTest(unittest.TestCase):
         with urllib.request.urlopen(req, timeout=10) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8"))
 
+    def test_landing_links_to_unchanged_workspace(self) -> None:
+        base = f"http://127.0.0.1:{self.port}"
+        with urllib.request.urlopen(base + "/", timeout=10) as resp:
+            landing = resp.read()
+            self.assertIn(b'href="/workspace"', landing)
+        for path in ("/workspace", "/index.html"):
+            with urllib.request.urlopen(base + path, timeout=10) as resp:
+                self.assertEqual(resp.read(), (greg.STATIC_DIR / "index.html").read_bytes())
+
+    def test_landing_demo_does_not_change_active_scenario(self) -> None:
+        self._req("/api/scenario", "POST", {"scenario_id": "mittelstand_b2b"})
+        _, demo = self._req("/api/demo/pizzeria")
+        self.assertEqual(demo["summary"]["min_baseline_eur"], -8420.0)
+        self.assertEqual(demo["summary"]["min_stabilized_eur"], 14500.0)
+        self.assertEqual(len(demo["series"]), 13)
+        _, state = self._req("/api/state")
+        self.assertEqual(state["scenario_id"], "mittelstand_b2b")
+
+    def test_workspace_serves_sl_ui_controls(self) -> None:
+        base = f"http://127.0.0.1:{self.port}"
+        for filename, mime, marker in (
+            ("workspace-controls.css", "text/css", b".distance-bubble"),
+            ("workspace-controls.js", "text/javascript", b"window.MatteSlider"),
+        ):
+            with self.subTest(filename=filename):
+                with urllib.request.urlopen(base + "/assets/" + filename, timeout=10) as resp:
+                    self.assertEqual(resp.headers.get_content_type(), mime)
+                    self.assertEqual(resp.headers["X-Content-Type-Options"], "nosniff")
+                    self.assertTrue(marker in resp.read(), filename)
+
     def test_http_api_endpoints_end_to_end(self) -> None:
         # 1. Health & Index HTML
         st, health = self._req("/health")
         self.assertEqual(st, 200)
         self.assertEqual(health["status"], "ok")
 
-        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/", timeout=10) as resp:
+        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/workspace", timeout=10) as resp:
             html = resp.read().decode("utf-8")
             self.assertIn("Greg — Calm Glass-Box Autonomous CFO", html)
 

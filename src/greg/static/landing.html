@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en" id="top">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Greg helps small businesses see cash shortfalls coming, compare scenarios, and review the next step.">
+  <title>Greg — See the gap before it hits</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%230d0d0d' d='M4 18a7 7 0 0 1 7-7h6v6a7 7 0 0 1-7 7H4Zm14-10h4a6 6 0 0 1 0 12h-4Z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/assets/landing.css">
+  <script src="/assets/landing.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <nav class="shell" aria-label="Main navigation">
+      <a href="/" class="wordmark" aria-label="Greg home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 18a7 7 0 0 1 7-7h6v6a7 7 0 0 1-7 7H4Zm14-10h4a6 6 0 0 1 0 12h-4Z"/></svg>greg</a>
+      <div class="nav-links"><a href="#demo">The demo</a><a href="#workflow">How it works</a></div>
+      <a class="pill small" href="/workspace">Open workspace</a>
+    </nav>
+  </header>
+  <main id="main">
+    <section class="wrap opening" aria-labelledby="promise">
+      <div class="promise">
+        <h1 id="promise">See the gap<br>before it hits.</h1>
+        <p>Greg is your AI CFO for small business. See 13 weeks of cash flow, test a response, and stay in control of the decision.</p>
+      </div>
+      <div class="split scene">
+        <div class="scene-copy">
+          <p class="sample">Pizzeria Amalfi <span>Demo scenario</span></p>
+          <h2>Busy kitchen.<br>Quiet cash week.</h2>
+          <p class="lede">Stock and payroll are due before card payments pick back up. Greg shows when cash runs low and what could bridge the gap.</p>
+          <div class="actions"><a class="pill" href="#demo">Explore the demo</a><a class="pill outline" href="/workspace">Open workspace</a></div>
+          <p class="fine">Sample data. No bank transactions.</p>
+        </div>
+        <figure class="collage" aria-label="Illustrative pizzeria kitchen with the sample cash forecast overlaid">
+          <div class="photo"><img src="/assets/pizzeria-kitchen.webp" width="1100" height="733" fetchpriority="high" alt="Chef working at a wood-fired pizza oven"></div>
+          <svg class="scene-lines" viewBox="0 0 628 466" preserveAspectRatio="none" fill="none" aria-hidden="true">
+            <path d="M37 298H118Q140 298 140 276V203Q140 181 162 181H346M287 386H453Q475 386 475 364V312Q475 290 497 290H607" stroke="#969696" vector-effect="non-scaling-stroke"/>
+            <circle cx="37" cy="298" r="4" fill="#0d0d0d"/><circle cx="607" cy="290" r="4" fill="#0d0d0d"/>
+          </svg>
+          <div class="floating forecast-preview">
+            <div class="preview-head"><span class="tile lavender" aria-hidden="true">↗</span><div><strong>13-week forecast</strong><small>Pizzeria Amalfi</small></div></div>
+            <div class="cash-label">Projected cash low</div><strong class="primary-value" data-cash="baseline">—</strong>
+            <svg viewBox="0 0 320 110" class="mini-chart" aria-hidden="true">
+              <path d="M10 28H310 M10 56H310 M10 84H310" stroke="#e7e7e7"/>
+              <polyline id="mini-line" fill="none" stroke="#29212c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle id="mini-low" r="4.5" fill="#bb61b7" stroke="white" stroke-width="1.5" visibility="hidden"/>
+            </svg>
+            <div class="week-labels"><span>Week 1</span><span>Week 13</span></div>
+          </div>
+          <div class="floating notice"><span class="tile rose" aria-hidden="true">!</span><div><strong>Cash gap ahead</strong><small id="gap-week">Forecast alert</small></div></div>
+          <div class="floating port" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 11.5h14M7 16.5h4m-6-9h14v11H5z" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </figure>
+      </div>
+    </section>
+
+    <div class="wrap route-art" aria-hidden="true">
+      <svg viewBox="0 0 1288 112" preserveAspectRatio="none" fill="none">
+        <path d="M0 34H342Q367 34 367 58T392 82H856Q882 82 882 57T908 32H1288" stroke="#d88bd5" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <span class="route-dot one">↗</span><span class="route-dot two">≈</span><span class="route-dot three">✓</span>
+    </div>
+
+    <section class="dark-stage" id="demo" aria-labelledby="demo-title">
+      <div class="stage-inner">
+        <div class="stage-intro"><p class="eyebrow">The Pizzeria Amalfi demo</p><h2 id="demo-title">Test a response<br>before you act.</h2><p class="lede">Compare the baseline with a simulated liquidity plan. This preview never changes your workspace.</p></div>
+        <div id="comparison-controls" class="selector" role="group" aria-label="Compare forecast views" hidden>
+          <button type="button" data-view="baseline" aria-pressed="true" aria-controls="comparison">Baseline forecast</button><button type="button" data-view="stabilized" aria-pressed="false" aria-controls="comparison">With simulated actions</button>
+        </div>
+        <div class="split demo-grid">
+          <article class="comparison" id="comparison" aria-labelledby="chart-heading">
+            <div class="comparison-top"><div><p>Pizzeria Amalfi</p><h3 id="chart-heading">Baseline forecast</h3></div><span class="demo-tag">Sample data</span></div>
+            <div class="chart-metric" aria-live="polite"><span>Lowest projected balance</span><strong id="compare-value">—</strong><span id="compare-week">Loading sample forecast…</span></div>
+            <svg class="scenario-chart" viewBox="0 0 440 150" role="img" aria-labelledby="chart-alt">
+              <title id="chart-alt">Sample forecast from week 1 to week 13</title>
+              <path d="M12 28H428 M12 62H428 M12 96H428 M12 130H428" stroke="#e7e7e7" />
+              <line id="zero-line" x1="12" x2="428" stroke="#666" stroke-dasharray="4 4" visibility="hidden"/>
+              <text id="zero-label" x="426" fill="#555" text-anchor="end" font-size="12" visibility="hidden">€0</text>
+              <polyline id="comparison-line" fill="none" stroke="#805181" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle id="comparison-low" r="5" fill="#805181" stroke="white" stroke-width="2" visibility="hidden"/>
+            </svg>
+            <div class="week-labels"><span>Week 1</span><span>Week 7</span><span>Week 13</span></div>
+            <p id="compare-copy">The sample is read-only. Open the workspace to change inputs or review actions.</p>
+            <noscript><p>Enable JavaScript to compare the two forecasts, or open the workspace.</p></noscript>
+          </article>
+          <figure class="network" aria-label="Bank statement feeds the cash forecast and scenario plan, which goes to the owner for review">
+            <svg viewBox="0 0 560 360" preserveAspectRatio="none" fill="none" aria-hidden="true">
+              <path d="M125 83H240Q280 83 280 123V161M435 119H330Q280 119 280 169V183" stroke="#ffc9ff"/>
+              <path d="M280 183V241Q280 270 250 270H125" stroke="#a8dfcb"/>
+              <path d="M280 183V214Q280 235 314 235H429" stroke="#b7caff"/>
+              <circle cx="280" cy="183" r="5" fill="#ffc9ff"/><circle cx="280" cy="143" r="2.5" fill="white"/><circle cx="325" cy="235" r="2.5" fill="white"/>
+            </svg>
+            <div class="node left-top"><span class="tile mint" aria-hidden="true">≡</span>Bank statement</div>
+            <div class="node right-top"><span class="tile lavender" aria-hidden="true">↗</span>Cash outlook</div>
+            <div class="node center"><span class="tile rose" aria-hidden="true">✦</span>Greg</div>
+            <div class="node left-bottom"><span class="tile blue" aria-hidden="true">≈</span>What-if plan</div>
+            <div class="node right-bottom"><span class="tile mint" aria-hidden="true">✓</span>Owner review</div>
+            <figcaption>From bank data to a decision you own.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap workflow" id="workflow" aria-labelledby="workflow-title">
+      <p class="eyebrow">How Greg works</p><h2 id="workflow-title">From a forecast<br>to a decision.</h2>
+      <div class="capabilities">
+        <article><div class="sculpture pink" aria-hidden="true"><span></span></div><h3>See the shortfall</h3><p>Find the week when supplier bills or payroll overtake cash coming in.</p></article>
+        <article><div class="sculpture green" aria-hidden="true"><span></span></div><h3>Try a different plan</h3><p>Compare the baseline with a simulated response before you commit.</p></article>
+        <article><div class="sculpture lilac" aria-hidden="true"><span></span></div><h3>Make the call</h3><p>Review the reasoning and approve or reject an action yourself. The demo moves no money.</p></article>
+      </div>
+    </section>
+  </main>
+  <footer class="ending">
+    <div class="wrap closing"><h2>See what’s ahead.<br>Decide what’s next.</h2><a class="pill inverse" href="/workspace">Open workspace</a></div>
+    <div class="wrap footer-directory">
+      <div><a class="wordmark" href="/">greg</a><p>AI CFO for small business</p></div>
+      <div><strong>Explore</strong><a href="#demo">Pizzeria Amalfi demo</a><a href="#workflow">How it works</a></div>
+      <div><strong>Product</strong><a href="/workspace">Open workspace</a><a href="#top">Back to top ↑</a></div>
+      <p class="credits">Illustrative kitchen photo: <a href="https://unsplash.com/photos/7TAG9wlv1uw" rel="noopener">Brad / Unsplash</a>. The photo does not depict the demo business.</p>
+    </div>
+  </footer>
+</body>
+</html>
