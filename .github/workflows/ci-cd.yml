@@ -37,9 +37,9 @@ jobs:
       - name: Run tests (when present)
         run: |
           if [ -d tests ]; then
-            uv run pytest
+            uv run python -m unittest discover -s tests -v
           else
-            echo "No tests/ directory yet; skipping pytest."
+            echo "No tests/ directory yet; skipping tests."
           fi
 
   build-and-deploy:
