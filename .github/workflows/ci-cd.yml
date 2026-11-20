@@ -72,6 +72,14 @@ jobs:
             ${{ steps.meta.outputs.image }}:${{ github.sha }}
             ${{ steps.meta.outputs.image }}:latest
 
+      - name: Install OpenShift CLI (oc)
+        env:
+          OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+        if: env.OPENSHIFT_SERVER != ''
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: "latest"
+
       - name: Log in to OpenShift
         env:
           OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
