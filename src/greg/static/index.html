@@ -3,37 +3,41 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Greg — Autonomous CFO Chat</title>
+    <title>Greg — Simple Cash &amp; Liquidity Assistant</title>
     <style>
       :root {
         color-scheme: light dark;
-        --bg: #f4f6f8;
+        --bg: #f6f7f9;
         --card: #ffffff;
-        --text: #111827;
-        --muted: #6b7280;
-        --border: #e5e7eb;
+        --subtle: #f1f5f9;
+        --text: #0f172a;
+        --muted: #475569;
+        --border: #e2e8f0;
         --accent: #0f766e;
-        --accent-hover: #0d625b;
-        --user-bg: #0f766e;
-        --user-text: #ffffff;
-        --bot-bg: #f3f4f6;
-        --err-bg: #fee2e2;
-        --err-text: #991b1b;
+        --accent-hover: #115e59;
+        --green: #15803d;
+        --green-bg: #dcfce7;
+        --red: #b91c1c;
+        --red-bg: #fee2e2;
+        --amber-bg: #fef3c7;
+        --amber-text: #92400e;
       }
       @media (prefers-color-scheme: dark) {
         :root {
           --bg: #0b0f17;
           --card: #111827;
-          --text: #f3f4f6;
-          --muted: #9ca3af;
+          --subtle: #1e293b;
+          --text: #f1f5f9;
+          --muted: #94a3b8;
           --border: #1f2937;
           --accent: #14b8a6;
           --accent-hover: #0d9488;
-          --user-bg: #0f766e;
-          --user-text: #ffffff;
-          --bot-bg: #1f2937;
-          --err-bg: #450a0a;
-          --err-text: #fecaca;
+          --green: #4ade80;
+          --green-bg: #052e16;
+          --red: #f87171;
+          --red-bg: #450a0a;
+          --amber-bg: #451a03;
+          --amber-text: #fde68a;
         }
       }
       * {
@@ -41,107 +45,144 @@
       }
       body {
         margin: 0;
-        font-family: system-ui, -apple-system, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         background: var(--bg);
         color: var(--text);
-        display: flex;
-        justify-content: center;
-        min-height: 100vh;
-        padding: 1rem;
+        line-height: 1.5;
       }
-      .shell {
-        width: 100%;
-        max-width: 48rem;
-        height: calc(100vh - 2rem);
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      header {
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-        flex-wrap: wrap;
-      }
-      header h1 {
-        margin: 0;
-        font-size: 1.125rem;
-      }
-      .status {
-        font-size: 0.8125rem;
-        color: var(--muted);
-      }
-      .messages {
-        flex: 1;
-        overflow-y: auto;
+      .container {
+        max-width: 1120px;
+        margin: 0 auto;
         padding: 1.25rem;
         display: flex;
         flex-direction: column;
-        gap: 0.875rem;
+        gap: 1.25rem;
       }
-      .msg {
-        max-width: 82%;
-        padding: 0.75rem 1rem;
+      header {
+        background: var(--card);
+        border: 1px solid var(--border);
         border-radius: 10px;
-        line-height: 1.5;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-      .msg.user {
-        align-self: flex-end;
-        background: var(--user-bg);
-        color: var(--user-text);
-      }
-      .msg.assistant {
-        align-self: flex-start;
-        background: var(--bot-bg);
-      }
-      .msg.error {
-        align-self: flex-start;
-        background: var(--err-bg);
-        color: var(--err-text);
-      }
-      .empty {
-        color: var(--muted);
-        margin: auto;
-        text-align: center;
-        max-width: 26rem;
-        line-height: 1.5;
-      }
-      form {
-        border-top: 1px solid var(--border);
-        padding: 0.875rem 1.25rem;
+        padding: 1rem 1.25rem;
         display: flex;
-        gap: 0.625rem;
-        align-items: flex-end;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
       }
-      textarea {
-        flex: 1;
-        resize: none;
-        min-height: 2.75rem;
-        max-height: 9rem;
-        padding: 0.625rem 0.75rem;
+      header h1 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+      .subtitle {
+        font-size: 0.875rem;
+        color: var(--muted);
+        margin-top: 0.15rem;
+      }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .status-pill {
+        font-size: 0.8125rem;
+        color: var(--muted);
+        background: var(--subtle);
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.25rem;
+      }
+      .card h2 {
+        margin: 0 0 0.75rem 0;
+        font-size: 1.05rem;
+      }
+      .card h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.95rem;
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.25rem;
+      }
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 0.875rem;
+        margin-top: 0.875rem;
+      }
+      .kpi {
+        background: var(--subtle);
         border: 1px solid var(--border);
         border-radius: 8px;
-        background: transparent;
-        color: inherit;
+        padding: 0.875rem 1rem;
+      }
+      .kpi-label {
+        font-size: 0.8125rem;
+        color: var(--muted);
+      }
+      .kpi-value {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-top: 0.25rem;
+      }
+      .kpi-note {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 0.25rem;
+      }
+      .pos {
+        color: var(--green);
+      }
+      .neg {
+        color: var(--red);
+      }
+      .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        align-items: flex-end;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        flex: 1;
+        min-width: 130px;
+      }
+      .field label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      input,
+      select,
+      textarea {
+        padding: 0.55rem 0.65rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--card);
+        color: var(--text);
         font: inherit;
+        font-size: 0.9rem;
       }
       button {
         background: var(--accent);
         color: #ffffff;
         border: none;
-        border-radius: 8px;
-        padding: 0.625rem 1rem;
+        border-radius: 6px;
+        padding: 0.58rem 1rem;
         font: inherit;
+        font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
+        white-space: nowrap;
       }
       button:hover:not(:disabled) {
         background: var(--accent-hover);
@@ -152,58 +193,506 @@
       }
       button.secondary {
         background: transparent;
-        color: var(--muted);
+        color: var(--text);
         border: 1px solid var(--border);
+      }
+      button.danger {
+        background: transparent;
+        color: var(--red);
+        border: 1px solid var(--border);
+        padding: 0.25rem 0.55rem;
+        font-size: 0.78rem;
+      }
+      .empty-banner {
+        text-align: center;
+        padding: 1.5rem;
+        color: var(--muted);
+        background: var(--subtle);
+        border-radius: 8px;
+        border: 1px dashed var(--border);
+      }
+      .cat-block {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        overflow: hidden;
+      }
+      .cat-header {
+        background: var(--subtle);
+        padding: 0.6rem 0.85rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .person-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .person-item {
+        padding: 0.5rem 0.85rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        gap: 0.5rem;
+      }
+      .person-meta {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 0.5rem 0.65rem;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+        background: var(--subtle);
+      }
+      .right {
+        text-align: right;
+      }
+      .alert-box {
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0.75rem 0;
+        border: 1px solid var(--border);
+      }
+      .alert-box.warn {
+        background: var(--red-bg);
+        color: var(--red);
+        border-color: var(--red);
+      }
+      .alert-box.safe {
+        background: var(--green-bg);
+        color: var(--green);
+        border-color: var(--green);
+      }
+      .stage-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      .stage-box {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        background: var(--subtle);
+      }
+      .stage-tag {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        margin-bottom: 0.35rem;
+      }
+      .chart-wrap {
+        width: 100%;
+        overflow-x: auto;
+        margin: 0.75rem 0;
+        background: var(--subtle);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.75rem;
+      }
+      .chat-log {
+        max-height: 260px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        padding: 0.75rem;
+        background: var(--subtle);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+      }
+      .msg {
+        padding: 0.6rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        white-space: pre-wrap;
+        max-width: 88%;
+      }
+      .msg.user {
+        align-self: flex-end;
+        background: var(--accent);
+        color: #fff;
+      }
+      .msg.assistant {
+        align-self: flex-start;
+        background: var(--card);
+        border: 1px solid var(--border);
+      }
+      .msg.error {
+        align-self: flex-start;
+        background: var(--red-bg);
+        color: var(--red);
+      }
+      .hidden {
+        display: none !important;
+      }
+      .badge {
+        font-size: 0.72rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        background: var(--subtle);
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0.4rem 0;
       }
     </style>
   </head>
   <body>
-    <div class="shell">
+    <div class="container">
       <header>
         <div>
-          <h1>Greg — Autonomous CFO</h1>
-          <div class="status" id="status">Checking pod &amp; LLM status…</div>
+          <h1>Greg — Business Money &amp; Cash Assistant</h1>
         </div>
-        <button type="button" class="secondary" id="clear-btn">Clear</button>
+        <div class="header-right">
+          <div class="status-pill" id="status">Checking pod &amp; AI status…</div>
+          <button type="button" class="secondary hidden" id="reset-btn">Clear All Data</button>
+        </div>
       </header>
 
-      <main class="messages" id="messages" role="log" aria-live="polite">
-        <div class="empty" id="empty-state">
-          Ask Greg about cash flow, liquidity, or FX risks to test the OpenShift AI LLM connection.
-        </div>
-      </main>
+      <!-- DATA INPUT SECTION: CSV IMPORT + MANUAL OPERATION -->
+      <div class="grid-2">
+        <section class="card">
+          <h2>Import Bank Statement (CSV)</h2>
+          <form id="import-form" class="form-row">
+            <div class="field" style="flex: 2">
+              <label for="csv-file">CSV File</label>
+              <input type="file" id="csv-file" accept=".csv,text/csv" required />
+            </div>
+            <div class="field">
+              <label for="opening-balance">Starting Balance (€)</label>
+              <input type="number" id="opening-balance" step="0.01" value="0" />
+            </div>
+            <button type="submit" id="import-btn">Import CSV</button>
+          </form>
+          <div id="import-info" class="subtitle" style="margin-top: 0.5rem"></div>
+        </section>
 
-      <form id="chat-form">
-        <textarea
-          id="prompt"
-          rows="1"
-          placeholder="Message Greg… (Enter to send, Shift+Enter for newline)"
-          aria-label="Message"
-          required
-        ></textarea>
-        <button type="submit" id="send-btn">Send</button>
-      </form>
+        <section class="card">
+          <h2>Add Manually</h2>
+          <form id="manual-form" class="form-row">
+            <div class="field">
+              <label for="op-date">Date</label>
+              <input type="date" id="op-date" required />
+            </div>
+            <div class="field">
+              <label for="op-kind">Type</label>
+              <select id="op-kind">
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="op-amount">Amount (€)</label>
+              <input type="number" id="op-amount" step="0.01" min="0.01" placeholder="0.00" required />
+            </div>
+            <div class="field">
+              <label for="op-cp">Person or Company</label>
+              <input type="text" id="op-cp" placeholder="e.g. Employee, Tax Office, Supplier" required />
+            </div>
+            <div class="field">
+              <label for="op-cat">Category</label>
+              <select id="op-cat">
+                <option value="Other">Other</option>
+                <option value="Salaries">Salaries</option>
+                <option value="Taxes">Taxes</option>
+              </select>
+            </div>
+            <button type="submit" id="add-op-btn">Add</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- EMPTY STATE BANNER -->
+      <div id="empty-view" class="empty-banner">
+        <strong>No transactions loaded yet.</strong><br />
+        Import a bank statement CSV on the left or manually add an income/expense on the right to start exploring your months and cash forecast.
+      </div>
+
+      <!-- MAIN WORKSPACE (SHOWN ONLY WHEN DATA EXISTS) -->
+      <div id="workspace-view" class="hidden" style="display: flex; flex-direction: column; gap: 1.25rem">
+        <!-- MONTH SELECTOR & SUMMARY -->
+        <section class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem">
+            <div>
+              <h2 style="margin-bottom: 0.2rem">Monthly Overview</h2>
+            </div>
+            <div class="form-row">
+              <div class="field" style="min-width: 190px">
+                <label for="month-select">Selected Month</label>
+                <select id="month-select"></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="kpi-label">Income</div>
+              <div class="kpi-value pos" id="kpi-income">€0.00</div>
+              <div class="kpi-note">Total incoming payments in this month</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Expenses</div>
+              <div class="kpi-value neg" id="kpi-expenses">€0.00</div>
+              <div class="kpi-note">Total outgoing payments in this month</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Profit</div>
+              <div class="kpi-value" id="kpi-net">€0.00</div>
+              <div class="kpi-note" id="kpi-tx-count">0 operations</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Balance at End of Month</div>
+              <div class="kpi-value" id="kpi-end-bal">€0.00</div>
+              <div class="kpi-note" id="kpi-low-bal">Lowest in month: €0.00</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- DETAILED INCOMES & EXPENSES BY PERSON / COMPANY -->
+        <div class="grid-2">
+          <section class="card">
+            <h2>Expenses</h2>
+            <div id="expense-breakdown-list"></div>
+          </section>
+
+          <section class="card">
+            <h2>Income</h2>
+            <div id="income-breakdown-list"></div>
+          </section>
+        </div>
+
+        <!-- ALL TRANSACTIONS IN SELECTED MONTH -->
+        <section class="card">
+          <details>
+            <summary id="tx-table-summary">Show all individual operations in this month</summary>
+            <div style="overflow-x: auto; margin-top: 0.75rem">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Person / Company</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th class="right">Amount</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tx-table-body"></tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+
+        <!-- BASIC LIQUIDITY AGENT -->
+        <section class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem">
+            <div>
+              <h2 style="margin-bottom: 0.2rem">Forecast</h2>
+              <div class="subtitle">
+                Forecasts your daily account balance ahead from the end of the selected month based on your regular bills and recent daily activity
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field" style="min-width: 170px">
+                <label for="horizon-select">Forecast Ahead</label>
+                <select id="horizon-select">
+                  <option value="30" selected>Next 30 days</option>
+                  <option value="60">Next 60 days</option>
+                  <option value="90">Next 90 days</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- RECOMMENDATION BANNER -->
+          <div id="agent-banner" class="alert-box"></div>
+
+          <!-- SVG FORECAST CHART -->
+          <div class="chart-wrap">
+            <svg id="forecast-chart" viewBox="0 0 900 260" style="width: 100%; height: 260px; display: block"></svg>
+          </div>
+
+          <!-- 3 CLEAR GOVERNANCE STAGES -->
+          <div class="stage-grid">
+            <div class="stage-box">
+              <div class="stage-tag">Step A · What the Agent Analyzed Automatically</div>
+              <p id="agent-analysis-text" style="margin: 0.25rem 0 0.75rem 0; font-size: 0.875rem"></p>
+              <h3>Upcoming Regular Bills Detected</h3>
+              <div style="max-height: 190px; overflow-y: auto">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Expected Date</th>
+                      <th>Who</th>
+                      <th class="right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody id="upcoming-bills-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="stage-box">
+              <div class="stage-tag">Step B · What the Agent Recommends</div>
+              <p id="agent-rec-text" style="margin: 0.25rem 0 0.75rem 0; font-size: 0.875rem"></p>
+              <div style="background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; font-size: 0.875rem">
+                <div><strong>Lowest Expected Balance:</strong> <span id="rec-lowest">€0.00</span></div>
+                <div><strong>Days Below €0:</strong> <span id="rec-days">0 days</span></div>
+                <div style="margin-top: 0.35rem; font-size: 1rem">
+                  <strong>Credit Amount Needed from Your Bank:</strong>
+                  <span id="rec-credit" style="font-weight: 700">€0.00</span>
+                </div>
+              </div>
+              <div style="margin-top: 0.75rem">
+                <button type="button" id="ai-explain-btn" class="secondary" style="width: 100%">
+                  Ask Greg (OpenShift AI) to Explain in Simple Words
+                </button>
+              </div>
+            </div>
+
+            <div class="stage-box">
+              <div class="stage-tag">Step C · Requires Your Approval (Simulated)</div>
+              <p style="margin: 0.25rem 0 0.75rem 0; font-size: 0.85rem; color: var(--muted)">
+                You choose the bank and credit line yourself. Enter the credit amount you want to simulate below to see how it keeps your account balance above €0.
+              </p>
+              <form id="credit-form" class="form-row">
+                <div class="field">
+                  <label for="credit-input">Credit Amount to Simulate (€)</label>
+                  <input type="number" id="credit-input" step="100" min="0" value="0" />
+                </div>
+                <button type="submit">Approve Credit Plan</button>
+              </form>
+              <div id="credit-status" style="margin-top: 0.65rem; font-size: 0.85rem"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SIMPLE AI CHAT WITH GREG -->
+        <section class="card">
+          <h2>Ask Greg a Question (OpenShift AI)</h2>
+          <div class="subtitle" style="margin-bottom: 0.75rem">
+            Greg knows your selected month's income, expenses, and cash forecast, and answers in plain everyday words.
+          </div>
+          <div class="chat-log" id="messages" role="log" aria-live="polite">
+            <div class="msg assistant" id="empty-state">
+              Ask me anything about your monthly expenses, employee salaries, taxes, or why your balance changes in the next few weeks.
+            </div>
+          </div>
+          <form id="chat-form" class="form-row">
+            <input
+              type="text"
+              id="prompt"
+              placeholder="Ask a question in plain words… (e.g. What are my biggest expenses this month?)"
+              style="flex: 1"
+              required
+            />
+            <button type="submit" id="send-btn">Ask Greg</button>
+          </form>
+        </section>
+      </div>
     </div>
 
     <script>
       const statusEl = document.getElementById("status");
+      const resetBtn = document.getElementById("reset-btn");
+      const emptyView = document.getElementById("empty-view");
+      const workspaceView = document.getElementById("workspace-view");
+
+      const importForm = document.getElementById("import-form");
+      const csvFileInput = document.getElementById("csv-file");
+      const openingBalanceInput = document.getElementById("opening-balance");
+      const importInfo = document.getElementById("import-info");
+
+      const manualForm = document.getElementById("manual-form");
+      const opDateInput = document.getElementById("op-date");
+      const opKindInput = document.getElementById("op-kind");
+      const opAmountInput = document.getElementById("op-amount");
+      const opCpInput = document.getElementById("op-cp");
+      const opCatInput = document.getElementById("op-cat");
+
+      const monthSelect = document.getElementById("month-select");
+      const horizonSelect = document.getElementById("horizon-select");
+
+      const kpiIncome = document.getElementById("kpi-income");
+      const kpiExpenses = document.getElementById("kpi-expenses");
+      const kpiNet = document.getElementById("kpi-net");
+      const kpiTxCount = document.getElementById("kpi-tx-count");
+      const kpiEndBal = document.getElementById("kpi-end-bal");
+      const kpiLowBal = document.getElementById("kpi-low-bal");
+
+      const expenseListEl = document.getElementById("expense-breakdown-list");
+      const incomeListEl = document.getElementById("income-breakdown-list");
+      const txTableSummary = document.getElementById("tx-table-summary");
+      const txTableBody = document.getElementById("tx-table-body");
+
+      const agentBanner = document.getElementById("agent-banner");
+      const forecastChart = document.getElementById("forecast-chart");
+      const agentAnalysisText = document.getElementById("agent-analysis-text");
+      const agentRecText = document.getElementById("agent-rec-text");
+      const upcomingBillsBody = document.getElementById("upcoming-bills-body");
+      const recLowest = document.getElementById("rec-lowest");
+      const recDays = document.getElementById("rec-days");
+      const recCredit = document.getElementById("rec-credit");
+      const aiExplainBtn = document.getElementById("ai-explain-btn");
+
+      const creditForm = document.getElementById("credit-form");
+      const creditInput = document.getElementById("credit-input");
+      const creditStatus = document.getElementById("credit-status");
+
       const messagesEl = document.getElementById("messages");
-      const emptyEl = document.getElementById("empty-state");
-      const formEl = document.getElementById("chat-form");
+      const chatForm = document.getElementById("chat-form");
       const promptEl = document.getElementById("prompt");
       const sendBtn = document.getElementById("send-btn");
-      const clearBtn = document.getElementById("clear-btn");
 
-      const history = [];
+      let currentState = null;
+      const chatHistory = [];
 
-      function appendMessage(role, text) {
-        if (emptyEl.parentNode) emptyEl.remove();
+      // Set default manual operation date to today
+      opDateInput.value = new Date().toISOString().slice(0, 10);
+
+      function fmtMoney(val, currency = "EUR") {
+        const num = Number(val || 0);
+        const sym = currency === "EUR" ? "€" : currency + " ";
+        const sign = num < 0 ? "-" : "";
+        return (
+          sign +
+          sym +
+          Math.abs(num).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        );
+      }
+
+      function escapeHtml(str) {
         const div = document.createElement("div");
-        div.className = `msg ${role}`;
-        div.textContent = text;
-        messagesEl.appendChild(div);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-        return div;
+        div.textContent = str == null ? "" : String(str);
+        return div.innerHTML;
       }
 
       async function loadStatus() {
@@ -219,7 +708,493 @@
         }
       }
 
-      async function sendMessage() {
+      async function fetchView(month = "", horizon = "") {
+        const m = month || monthSelect.value || "";
+        const h = horizon || horizonSelect.value || "30";
+        const params = new URLSearchParams();
+        if (m) params.set("month", m);
+        if (h) params.set("horizon", h);
+        const res = await fetch(`/api/view?${params.toString()}`);
+        const data = await res.json();
+        renderState(data);
+      }
+
+      function renderBreakdown(container, categories, currency, isExpense) {
+        if (!categories || categories.length === 0) {
+          container.innerHTML = `<div class="subtitle">No ${
+            isExpense ? "expenses" : "income"
+          } recorded in this month.</div>`;
+          return;
+        }
+        container.innerHTML = categories
+          .map((cat) => {
+            const peopleRows = cat.people
+              .map(
+                (p) => `
+              <li class="person-item">
+                <div>
+                  <div><strong>${escapeHtml(p.name)}</strong></div>
+                  <div class="person-meta">${p.count} payment${p.count > 1 ? "s" : ""}</div>
+                </div>
+                <div class="${isExpense ? "neg" : "pos"}" style="font-weight: 600">
+                  ${isExpense ? "-" : "+"}${fmtMoney(p.total, currency)}
+                </div>
+              </li>`
+              )
+              .join("");
+
+            return `
+            <div class="cat-block">
+              <div class="cat-header">
+                <span>${escapeHtml(cat.category)} <span class="badge">${cat.count}</span></span>
+                <span class="${isExpense ? "neg" : "pos"}">${
+              isExpense ? "-" : "+"
+            }${fmtMoney(cat.total, currency)}</span>
+              </div>
+              <ul class="person-list">${peopleRows}</ul>
+            </div>`;
+          })
+          .join("");
+      }
+
+      function renderChart(historySeries, forecastSeries, currency) {
+        const hist = historySeries || [];
+        const fore = forecastSeries || [];
+        if (hist.length === 0 && fore.length === 0) {
+          forecastChart.innerHTML = "";
+          return;
+        }
+
+        const hasApprovedCredit =
+          currentState &&
+          currentState.approved_credit &&
+          Number(currentState.approved_credit.amount) > 0;
+
+        const allPoints = [
+          ...hist.map((p) => ({ date: p.date, bal: p.balance, kind: "hist" })),
+          ...fore.map((p) => ({
+            date: p.date,
+            bal: p.balance,
+            balCredit: p.balance_with_credit,
+            kind: "fore",
+          })),
+        ];
+
+        const values = [0];
+        allPoints.forEach((p) => {
+          values.push(p.bal);
+          if (hasApprovedCredit && p.balCredit != null) values.push(p.balCredit);
+        });
+
+        let minVal = Math.min(...values);
+        let maxVal = Math.max(...values);
+        if (minVal === maxVal) {
+          minVal -= 1000;
+          maxVal += 1000;
+        }
+        const pad = (maxVal - minVal) * 0.1;
+        minVal -= pad;
+        maxVal += pad;
+
+        const W = 900;
+        const H = 260;
+        const leftPad = 78;
+        const rightPad = 24;
+        const topPad = 22;
+        const bottomPad = 34;
+        const plotW = W - leftPad - rightPad;
+        const plotH = H - topPad - bottomPad;
+
+        const xFor = (i) =>
+          leftPad + (allPoints.length <= 1 ? 0 : (i / (allPoints.length - 1)) * plotW);
+        const yFor = (v) => topPad + ((maxVal - v) / (maxVal - minVal)) * plotH;
+
+        const zeroY = yFor(0);
+        const splitIdx = Math.max(0, hist.length - 1);
+        const splitX = xFor(splitIdx);
+
+        const histCoords = hist.map((p, i) => `${xFor(i).toFixed(1)},${yFor(p.balance).toFixed(1)}`);
+        const foreCoords = [];
+        const creditCoords = [];
+        if (hist.length > 0) {
+          const lastHist = hist[hist.length - 1];
+          foreCoords.push(`${xFor(splitIdx).toFixed(1)},${yFor(lastHist.balance).toFixed(1)}`);
+          creditCoords.push(`${xFor(splitIdx).toFixed(1)},${yFor(lastHist.balance).toFixed(1)}`);
+        }
+        fore.forEach((p, idx) => {
+          const i = hist.length + idx;
+          foreCoords.push(`${xFor(i).toFixed(1)},${yFor(p.balance).toFixed(1)}`);
+          creditCoords.push(`${xFor(i).toFixed(1)},${yFor(p.balance_with_credit).toFixed(1)}`);
+        });
+
+        const firstDate = allPoints[0].date;
+        const splitDate = allPoints[splitIdx].date;
+        const lastDate = allPoints[allPoints.length - 1].date;
+
+        forecastChart.innerHTML = `
+          <!-- Zero baseline -->
+          <line x1="${leftPad}" y1="${zeroY.toFixed(1)}" x2="${W - rightPad}" y2="${zeroY.toFixed(
+          1
+        )}" stroke="#94a3b8" stroke-dasharray="4 4" stroke-width="1.5" />
+          <text x="${leftPad - 8}" y="${(zeroY + 4).toFixed(
+          1
+        )}" text-anchor="end" font-size="11" fill="currentColor">€0</text>
+
+          <!-- Top & bottom y-axis labels -->
+          <text x="${leftPad - 8}" y="${topPad + 10}" text-anchor="end" font-size="11" fill="currentColor">${fmtMoney(
+          maxVal,
+          currency
+        )}</text>
+          <text x="${leftPad - 8}" y="${H - bottomPad}" text-anchor="end" font-size="11" fill="currentColor">${fmtMoney(
+          minVal,
+          currency
+        )}</text>
+
+          <!-- Divider between History and Forecast -->
+          <line x1="${splitX.toFixed(1)}" y1="${topPad}" x2="${splitX.toFixed(1)}" y2="${
+          H - bottomPad
+        }" stroke="#64748b" stroke-dasharray="3 3" stroke-width="1" />
+          <text x="${splitX.toFixed(1)}" y="${
+          topPad - 6
+        }" text-anchor="middle" font-size="11" fill="currentColor">Month End (${splitDate}) → Forecast</text>
+
+          <!-- Historical balance line -->
+          ${
+            histCoords.length > 1
+              ? `<polyline fill="none" stroke="#0f766e" stroke-width="2.5" points="${histCoords.join(
+                  " "
+                )}" />`
+              : ""
+          }
+
+          <!-- Forecast balance line -->
+          ${
+            foreCoords.length > 1
+              ? `<polyline fill="none" stroke="#e11d48" stroke-width="2.5" stroke-dasharray="6 4" points="${foreCoords.join(
+                  " "
+                )}" />`
+              : ""
+          }
+
+          <!-- Forecast with Approved Credit line -->
+          ${
+            hasApprovedCredit && creditCoords.length > 1
+              ? `<polyline fill="none" stroke="#16a34a" stroke-width="2.5" points="${creditCoords.join(
+                  " "
+                )}" />`
+              : ""
+          }
+
+          <!-- X-axis dates -->
+          <text x="${leftPad}" y="${H - 10}" font-size="11" fill="currentColor">${firstDate}</text>
+          <text x="${W - rightPad}" y="${
+          H - 10
+        }" text-anchor="end" font-size="11" fill="currentColor">${lastDate}</text>
+        `;
+      }
+
+      function renderState(state) {
+        currentState = state;
+        if (!state || !state.has_data) {
+          emptyView.classList.remove("hidden");
+          workspaceView.classList.add("hidden");
+          resetBtn.classList.add("hidden");
+          importInfo.textContent = "";
+          return;
+        }
+
+        emptyView.classList.add("hidden");
+        workspaceView.classList.remove("hidden");
+        resetBtn.classList.remove("hidden");
+
+        const cur = state.currency || "EUR";
+        openingBalanceInput.value = state.opening_balance || 0;
+        importInfo.textContent = state.filename
+          ? `Loaded: ${state.filename} (${state.total_transactions} operations)`
+          : `${state.total_transactions} manual operation(s) loaded`;
+
+        // Populate month dropdown
+        monthSelect.innerHTML = state.months
+          .map(
+            (m) =>
+              `<option value="${m.key}" ${
+                m.key === state.selected_month ? "selected" : ""
+              }>${escapeHtml(m.label)}</option>`
+          )
+          .join("");
+
+        const ms = state.month_summary;
+        const profitVal = ms.profit ?? ms.net_change;
+        kpiIncome.textContent = `+${fmtMoney(ms.total_income, cur)}`;
+        kpiExpenses.textContent = `-${fmtMoney(ms.total_expenses, cur)}`;
+        kpiNet.textContent =
+          (profitVal >= 0 ? "+" : "") + fmtMoney(profitVal, cur);
+        kpiNet.className = `kpi-value ${profitVal >= 0 ? "pos" : "neg"}`;
+        kpiTxCount.textContent = `${ms.transaction_count} operations in ${state.selected_month_label}`;
+
+        kpiEndBal.textContent = fmtMoney(ms.end_balance, cur);
+        kpiEndBal.className = `kpi-value ${ms.end_balance >= 0 ? "pos" : "neg"}`;
+        kpiLowBal.textContent = `Lowest in month: ${fmtMoney(
+          ms.lowest_balance,
+          cur
+        )} (on ${ms.lowest_balance_date})`;
+
+        renderBreakdown(expenseListEl, state.expense_breakdown, cur, true);
+        renderBreakdown(incomeListEl, state.income_breakdown, cur, false);
+
+        // Render month transaction table
+        txTableSummary.textContent = `Show all ${state.month_transactions.length} operations in ${state.selected_month_label}`;
+        txTableBody.innerHTML = state.month_transactions
+          .map(
+            (t) => `
+          <tr>
+            <td>${escapeHtml(t.date)}</td>
+            <td><strong>${escapeHtml(t.counterparty)}</strong></td>
+            <td><span class="badge">${escapeHtml(t.category)}</span></td>
+            <td>${escapeHtml(t.description)}</td>
+            <td class="right ${t.amount >= 0 ? "pos" : "neg"}" style="font-weight: 600">
+              ${t.amount >= 0 ? "+" : ""}${fmtMoney(t.amount, cur)}
+            </td>
+            <td class="right">
+              ${
+                t.source === "manual"
+                  ? `<button type="button" class="danger" data-del-id="${escapeHtml(
+                      t.id
+                    )}">Delete</button>`
+                  : ""
+              }
+            </td>
+          </tr>`
+          )
+          .join("");
+
+        // Render Liquidity Agent
+        const la = state.liquidity_agent;
+        if (la.goes_below_zero) {
+          agentBanner.className = "alert-box warn";
+          agentBanner.innerHTML = `<strong>Cash Shortfall Predicted:</strong> ${escapeHtml(
+            la.recommendation_summary
+          )}`;
+        } else {
+          agentBanner.className = "alert-box safe";
+          agentBanner.innerHTML = `<strong>Account Stays Above €0:</strong> ${escapeHtml(
+            la.recommendation_summary
+          )}`;
+        }
+
+        agentAnalysisText.textContent = la.analysis_summary;
+        agentRecText.textContent = la.recommendation_summary;
+        recLowest.textContent = `${fmtMoney(la.lowest_predicted_balance, cur)} (on ${
+          la.lowest_predicted_date
+        })`;
+        recLowest.className = la.lowest_predicted_balance < 0 ? "neg" : "pos";
+        recDays.textContent = `${la.days_below_zero} day(s)`;
+        recCredit.textContent = fmtMoney(la.recommended_credit_amount, cur);
+
+        if (
+          !state.approved_credit ||
+          Number(state.approved_credit.amount) === 0
+        ) {
+          creditInput.value = la.recommended_credit_amount;
+          creditStatus.innerHTML = `<span class="subtitle">Status: Waiting for your decision (not approved yet).</span>`;
+        } else {
+          creditInput.value = state.approved_credit.amount;
+          creditStatus.innerHTML = `
+            <span class="pos" style="font-weight: 600">
+              Approved (Simulated): ${fmtMoney(
+                state.approved_credit.amount,
+                cur
+              )} credit cushion applied to forecast chart (green line).
+            </span>
+            <button type="button" class="secondary" id="clear-credit-btn" style="margin-left: 0.5rem; padding: 0.2rem 0.5rem; font-size: 0.78rem">
+              Remove Credit
+            </button>`;
+          const clearCreditBtn = document.getElementById("clear-credit-btn");
+          if (clearCreditBtn) {
+            clearCreditBtn.addEventListener("click", () => submitCredit(0));
+          }
+        }
+
+        if (la.upcoming_bills.length === 0) {
+          upcomingBillsBody.innerHTML = `<tr><td colspan="3" class="subtitle">No regular bills detected yet.</td></tr>`;
+        } else {
+          upcomingBillsBody.innerHTML = la.upcoming_bills
+            .map(
+              (b) => `
+            <tr>
+              <td>${escapeHtml(b.date)}</td>
+              <td>${escapeHtml(b.counterparty)}</td>
+              <td class="right neg">${fmtMoney(b.amount, cur)}</td>
+            </tr>`
+            )
+            .join("");
+        }
+
+        renderChart(state.history_series, la.forecast_series, cur);
+      }
+
+      // Event: Import CSV
+      importForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const file = csvFileInput.files[0];
+        if (!file) return;
+        const text = await file.text();
+        const res = await fetch("/api/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            csv_text: text,
+            filename: file.name,
+            opening_balance: Number(openingBalanceInput.value || 0),
+            horizon_days: Number(horizonSelect.value || 30),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Failed to import CSV");
+          return;
+        }
+        renderState(data);
+      });
+
+      // Event: Change Starting Balance on blur/change when data is loaded
+      openingBalanceInput.addEventListener("change", async () => {
+        if (!currentState || !currentState.has_data) return;
+        const res = await fetch("/api/opening-balance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            opening_balance: Number(openingBalanceInput.value || 0),
+            selected_month: monthSelect.value,
+            horizon_days: Number(horizonSelect.value || 30),
+          }),
+        });
+        if (res.ok) renderState(await res.json());
+      });
+
+      // Event: Add Manual Operation
+      manualForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const res = await fetch("/api/operations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date: opDateInput.value,
+            kind: opKindInput.value,
+            amount: Number(opAmountInput.value),
+            counterparty: opCpInput.value,
+            category: opCatInput.value,
+            selected_month: opDateInput.value.slice(0, 7),
+            horizon_days: Number(horizonSelect.value || 30),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Could not add operation");
+          return;
+        }
+        opAmountInput.value = "";
+        opCpInput.value = "";
+        opCatInput.value = "Other";
+        renderState(data);
+      });
+
+      // Event: Delete Manual Operation
+      txTableBody.addEventListener("click", async (e) => {
+        const btn = e.target.closest("[data-del-id]");
+        if (!btn) return;
+        const id = btn.getAttribute("data-del-id");
+        const res = await fetch("/api/operations/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id,
+            selected_month: monthSelect.value,
+            horizon_days: Number(horizonSelect.value || 30),
+          }),
+        });
+        if (res.ok) renderState(await res.json());
+      });
+
+      // Event: Month or Horizon Change
+      monthSelect.addEventListener("change", () =>
+        fetchView(monthSelect.value, horizonSelect.value)
+      );
+      horizonSelect.addEventListener("change", () =>
+        fetchView(monthSelect.value, horizonSelect.value)
+      );
+
+      // Event: Approve Credit Plan
+      async function submitCredit(amountVal) {
+        const res = await fetch("/api/approve-credit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: Number(amountVal),
+            selected_month: monthSelect.value,
+            horizon_days: Number(horizonSelect.value || 30),
+          }),
+        });
+        if (res.ok) renderState(await res.json());
+      }
+
+      creditForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        submitCredit(creditInput.value || 0);
+      });
+
+      // Event: Clear All Data
+      resetBtn.addEventListener("click", async () => {
+        const res = await fetch("/api/reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
+        if (res.ok) {
+          csvFileInput.value = "";
+          renderState(await res.json());
+        }
+      });
+
+      // Chat & OpenShift AI Explanation
+      function appendMessage(role, text) {
+        const div = document.createElement("div");
+        div.className = `msg ${role}`;
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return div;
+      }
+
+      aiExplainBtn.addEventListener("click", async () => {
+        aiExplainBtn.disabled = true;
+        const pending = appendMessage(
+          "assistant",
+          "Asking Greg on OpenShift AI to explain this month and forecast in simple words…"
+        );
+        try {
+          const res = await fetch("/api/explain", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              selected_month: monthSelect.value,
+              horizon_days: Number(horizonSelect.value || 30),
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+          pending.textContent = data.reply;
+          chatHistory.push({ role: "assistant", content: data.reply });
+        } catch (err) {
+          pending.className = "msg error";
+          pending.textContent = `Error: ${err.message}`;
+        } finally {
+          aiExplainBtn.disabled = false;
+        }
+      });
+
+      chatForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
         const text = promptEl.value.trim();
         if (!text) return;
 
@@ -227,7 +1202,7 @@
         promptEl.disabled = true;
         sendBtn.disabled = true;
 
-        history.push({ role: "user", content: text });
+        chatHistory.push({ role: "user", content: text });
         appendMessage("user", text);
         const pendingEl = appendMessage("assistant", "Thinking…");
 
@@ -235,44 +1210,29 @@
           const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: history }),
+            body: JSON.stringify({
+              messages: chatHistory,
+              selected_month: monthSelect.value,
+              horizon_days: Number(horizonSelect.value || 30),
+            }),
           });
           const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data.error || `HTTP ${res.status}`);
-          }
+          if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
           pendingEl.textContent = data.reply;
-          history.push({ role: "assistant", content: data.reply });
+          chatHistory.push({ role: "assistant", content: data.reply });
         } catch (err) {
           pendingEl.className = "msg error";
           pendingEl.textContent = `Error: ${err.message}`;
-          history.pop();
+          chatHistory.pop();
         } finally {
           promptEl.disabled = false;
           sendBtn.disabled = false;
           promptEl.focus();
         }
-      }
-
-      formEl.addEventListener("submit", (e) => {
-        e.preventDefault();
-        sendMessage();
-      });
-
-      promptEl.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          sendMessage();
-        }
-      });
-
-      clearBtn.addEventListener("click", () => {
-        history.length = 0;
-        messagesEl.replaceChildren(emptyEl);
-        promptEl.focus();
       });
 
       loadStatus();
+      fetchView();
     </script>
   </body>
 </html>
