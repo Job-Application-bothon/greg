@@ -88,14 +88,15 @@ jobs:
         with:
           openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          namespace: ${{ secrets.OPENSHIFT_NAMESPACE }}
+          namespace: my-first-model
           insecure_skip_tls_verify: true
 
       - name: Deploy to OpenShift
         env:
           OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+          OPENSHIFT_NAMESPACE: my-first-model
         if: env.OPENSHIFT_SERVER != ''
         run: |
-          oc apply -f deploy/
-          oc set image deployment/greg greg=${{ steps.meta.outputs.image }}:${{ github.sha }}
-          oc rollout status deployment/greg --timeout=180s
+          oc apply -n "$OPENSHIFT_NAMESPACE" -f deploy/
+          oc set image -n "$OPENSHIFT_NAMESPACE" deployment/greg greg=${{ steps.meta.outputs.image }}:${{ github.sha }}
+          oc rollout status -n "$OPENSHIFT_NAMESPACE" deployment/greg --timeout=180s
