@@ -3,16 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Greg — Autonomous CFO (OpenShift Smoke Test)</title>
+    <title>Greg — Autonomous CFO Chat</title>
     <style>
       :root {
         color-scheme: light dark;
-        --bg: #f6f7f9;
+        --bg: #f4f6f8;
         --card: #ffffff;
         --text: #111827;
         --muted: #6b7280;
         --border: #e5e7eb;
         --accent: #0f766e;
+        --accent-hover: #0d625b;
+        --user-bg: #0f766e;
+        --user-text: #ffffff;
+        --bot-bg: #f3f4f6;
+        --err-bg: #fee2e2;
+        --err-text: #991b1b;
       }
       @media (prefers-color-scheme: dark) {
         :root {
@@ -22,35 +28,110 @@
           --muted: #9ca3af;
           --border: #1f2937;
           --accent: #14b8a6;
+          --accent-hover: #0d9488;
+          --user-bg: #0f766e;
+          --user-text: #ffffff;
+          --bot-bg: #1f2937;
+          --err-bg: #450a0a;
+          --err-text: #fecaca;
         }
+      }
+      * {
+        box-sizing: border-box;
       }
       body {
         margin: 0;
         font-family: system-ui, -apple-system, sans-serif;
         background: var(--bg);
         color: var(--text);
-        display: grid;
-        place-items: center;
+        display: flex;
+        justify-content: center;
         min-height: 100vh;
-        padding: 1.5rem;
+        padding: 1rem;
       }
-      main {
+      .shell {
         width: 100%;
-        max-width: 36rem;
+        max-width: 48rem;
+        height: calc(100vh - 2rem);
         background: var(--card);
         border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 1.75rem;
-        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
       }
-      h1 {
-        margin: 0 0 0.25rem;
-        font-size: 1.375rem;
+      header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
       }
-      p {
-        margin: 0 0 1.25rem;
+      header h1 {
+        margin: 0;
+        font-size: 1.125rem;
+      }
+      .status {
+        font-size: 0.8125rem;
         color: var(--muted);
+      }
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.875rem;
+      }
+      .msg {
+        max-width: 82%;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
         line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .msg.user {
+        align-self: flex-end;
+        background: var(--user-bg);
+        color: var(--user-text);
+      }
+      .msg.assistant {
+        align-self: flex-start;
+        background: var(--bot-bg);
+      }
+      .msg.error {
+        align-self: flex-start;
+        background: var(--err-bg);
+        color: var(--err-text);
+      }
+      .empty {
+        color: var(--muted);
+        margin: auto;
+        text-align: center;
+        max-width: 26rem;
+        line-height: 1.5;
+      }
+      form {
+        border-top: 1px solid var(--border);
+        padding: 0.875rem 1.25rem;
+        display: flex;
+        gap: 0.625rem;
+        align-items: flex-end;
+      }
+      textarea {
+        flex: 1;
+        resize: none;
+        min-height: 2.75rem;
+        max-height: 9rem;
+        padding: 0.625rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
       }
       button {
         background: var(--accent);
@@ -62,37 +143,136 @@
         font-weight: 600;
         cursor: pointer;
       }
-      pre {
-        margin: 1rem 0 0;
-        padding: 0.875rem;
-        border-radius: 8px;
+      button:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      button.secondary {
+        background: transparent;
+        color: var(--muted);
         border: 1px solid var(--border);
-        overflow-x: auto;
-        font-size: 0.875rem;
       }
     </style>
   </head>
   <body>
-    <main>
-      <h1>Greg — Autonomous CFO</h1>
-      <p>OpenShift deployment smoke test. Click below to verify the backend <code>/health</code> endpoint through the OpenShift Route.</p>
-      <button type="button" id="check-btn">Check /health</button>
-      <pre id="output" aria-live="polite">Loading status…</pre>
-    </main>
+    <div class="shell">
+      <header>
+        <div>
+          <h1>Greg — Autonomous CFO</h1>
+          <div class="status" id="status">Checking pod &amp; LLM status…</div>
+        </div>
+        <button type="button" class="secondary" id="clear-btn">Clear</button>
+      </header>
+
+      <main class="messages" id="messages" role="log" aria-live="polite">
+        <div class="empty" id="empty-state">
+          Ask Greg about cash flow, liquidity, or FX risks to test the OpenShift AI LLM connection.
+        </div>
+      </main>
+
+      <form id="chat-form">
+        <textarea
+          id="prompt"
+          rows="1"
+          placeholder="Message Greg… (Enter to send, Shift+Enter for newline)"
+          aria-label="Message"
+          required
+        ></textarea>
+        <button type="submit" id="send-btn">Send</button>
+      </form>
+    </div>
+
     <script>
-      const output = document.getElementById("output");
-      async function checkHealth() {
-        output.textContent = "Checking /health…";
+      const statusEl = document.getElementById("status");
+      const messagesEl = document.getElementById("messages");
+      const emptyEl = document.getElementById("empty-state");
+      const formEl = document.getElementById("chat-form");
+      const promptEl = document.getElementById("prompt");
+      const sendBtn = document.getElementById("send-btn");
+      const clearBtn = document.getElementById("clear-btn");
+
+      const history = [];
+
+      function appendMessage(role, text) {
+        if (emptyEl.parentNode) emptyEl.remove();
+        const div = document.createElement("div");
+        div.className = `msg ${role}`;
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return div;
+      }
+
+      async function loadStatus() {
         try {
           const res = await fetch("/health");
           const data = await res.json();
-          output.textContent = JSON.stringify(data, null, 2);
+          const llmText = data.llm_configured
+            ? `Model: ${data.llm_model || "auto"}`
+            : "LLM not configured";
+          statusEl.textContent = `Pod: ${data.pod} · ${llmText}`;
         } catch (err) {
-          output.textContent = `Error: ${err.message}`;
+          statusEl.textContent = `Health check failed: ${err.message}`;
         }
       }
-      document.getElementById("check-btn").addEventListener("click", checkHealth);
-      checkHealth();
+
+      async function sendMessage() {
+        const text = promptEl.value.trim();
+        if (!text) return;
+
+        promptEl.value = "";
+        promptEl.disabled = true;
+        sendBtn.disabled = true;
+
+        history.push({ role: "user", content: text });
+        appendMessage("user", text);
+        const pendingEl = appendMessage("assistant", "Thinking…");
+
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages: history }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || `HTTP ${res.status}`);
+          }
+          pendingEl.textContent = data.reply;
+          history.push({ role: "assistant", content: data.reply });
+        } catch (err) {
+          pendingEl.className = "msg error";
+          pendingEl.textContent = `Error: ${err.message}`;
+          history.pop();
+        } finally {
+          promptEl.disabled = false;
+          sendBtn.disabled = false;
+          promptEl.focus();
+        }
+      }
+
+      formEl.addEventListener("submit", (e) => {
+        e.preventDefault();
+        sendMessage();
+      });
+
+      promptEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      clearBtn.addEventListener("click", () => {
+        history.length = 0;
+        messagesEl.replaceChildren(emptyEl);
+        promptEl.focus();
+      });
+
+      loadStatus();
     </script>
   </body>
 </html>
