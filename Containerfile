@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Copy project metadata and source
-COPY pyproject.toml .python-version ./
+COPY pyproject.toml .python-version README.md ./
 COPY src/ ./src/
 
 # Install runtime dependencies into /app/.venv
