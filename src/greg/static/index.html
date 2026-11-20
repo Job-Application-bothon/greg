@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Greg — Autonomous CFO (OpenShift Smoke Test)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f6f7f9;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --accent: #0f766e;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0f17;
+          --card: #111827;
+          --text: #f3f4f6;
+          --muted: #9ca3af;
+          --border: #1f2937;
+          --accent: #14b8a6;
+        }
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        padding: 1.5rem;
+      }
+      main {
+        width: 100%;
+        max-width: 36rem;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.75rem;
+        box-sizing: border-box;
+      }
+      h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.375rem;
+      }
+      p {
+        margin: 0 0 1.25rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      button {
+        background: var(--accent);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.625rem 1rem;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      pre {
+        margin: 1rem 0 0;
+        padding: 0.875rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        overflow-x: auto;
+        font-size: 0.875rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Greg — Autonomous CFO</h1>
+      <p>OpenShift deployment smoke test. Click below to verify the backend <code>/health</code> endpoint through the OpenShift Route.</p>
+      <button type="button" id="check-btn">Check /health</button>
+      <pre id="output" aria-live="polite">Loading status…</pre>
+    </main>
+    <script>
+      const output = document.getElementById("output");
+      async function checkHealth() {
+        output.textContent = "Checking /health…";
+        try {
+          const res = await fetch("/health");
+          const data = await res.json();
+          output.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          output.textContent = `Error: ${err.message}`;
+        }
+      }
+      document.getElementById("check-btn").addEventListener("click", checkHealth);
+      checkHealth();
+    </script>
+  </body>
+</html>
