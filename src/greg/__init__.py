@@ -24,6 +24,16 @@ SYSTEM_PROMPT = (
 STATE_LOCK = threading.RLock()
 
 
+def _default_sim_params() -> dict[str, Any]:
+    return {
+        "revenue_change_pct": 0.0,
+        "delay_days": 0,
+        "fx_shock_pct": 0.0,
+        "extra_monthly_cost_eur": 0.0,
+        "include_commerzbank_actions": True,
+    }
+
+
 def _default_state() -> dict[str, Any]:
     return {
         "scenario_id": "pizzeria_amalfi",
@@ -33,13 +43,7 @@ def _default_state() -> dict[str, Any]:
         "profile_overrides": {},
         "preferences": {},
         "action_overrides": {},
-        "sim_params": {
-            "revenue_change_pct": 0.0,
-            "delay_days": 0,
-            "fx_shock_pct": 0.0,
-            "extra_monthly_cost_eur": 0.0,
-            "include_commerzbank_actions": True,
-        },
+        "sim_params": _default_sim_params(),
         "receipts": [],
         "audit_ledger": [],
         "ai_briefing": None,
@@ -60,7 +64,7 @@ def _load_initial_state() -> dict[str, Any]:
     try:
         if path.exists():
             loaded = json.loads(path.read_text(encoding="utf-8"))
-            if isinstance(loaded, dict) and loaded.get("scenario_id"):
+            if isinstance(loaded, dict) and loaded.get("scenario_id") in ("pizzeria_amalfi", "custom_csv"):
                 base.update(loaded)
                 return base
     except (OSError, ValueError):
@@ -70,7 +74,7 @@ def _load_initial_state() -> dict[str, Any]:
         actor="SYSTEM",
         action_type="INIT_WORKSPACE",
         target_id="pizzeria_amalfi",
-        summary="Initialized Autonomous CFO workspace with Pizzeria Amalfi 2025 CSV (1,125 bookings).",
+        summary="Initialized Autonomous CFO workspace with Pizzeria Amalfi 2025 CSV (1,125 transactions).",
     )
     return base
 
@@ -84,12 +88,11 @@ def _save_state() -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(STATE), encoding="utf-8")
     except OSError:
-        # In read-only environments, continue cleanly in memory.
         pass
 
 
 def reset_state(scenario_id: str = "pizzeria_amalfi") -> dict[str, Any]:
-    """Reset workspace state (primarily for tests and scenario switches)."""
+    """Reset workspace state back to the Pizzeria Amalfi baseline."""
     with STATE_LOCK:
         fresh = _default_state()
         fresh["scenario_id"] = scenario_id
@@ -118,6 +121,20 @@ def get_current_bundle() -> dict[str, Any]:
             action_overrides=STATE.get("action_overrides"),
             sim_params=STATE.get("sim_params"),
         )
+
+
+def _token_kind(token: str) -> str:
+    if token.startswith("IBAN_TOK_"):
+        return "Bank Account / IBAN"
+    if token.startswith("OWNER_REF"):
+        return "Owner PII"
+    if token.startswith("PARTNER"):
+        return "Partner PII"
+    if token.startswith("STAFF"):
+        return "Employee PII"
+    if token.startswith("VENDOR"):
+        return "Supplier Entity"
+    return "Business Entity"
 
 
 def get_full_state() -> dict[str, Any]:
@@ -149,22 +166,6 @@ def get_full_state() -> dict[str, Any]:
             "receipts": list(reversed(STATE.get("receipts", []))),
             "audit_ledger": list(reversed(STATE.get("audit_ledger", []))),
         }
-
-
-def _token_kind(token: str) -> str:
-    if token.startswith("IBAN_TOK_"):
-        return "Bank Account / IBAN"
-    if token.startswith("OWNER_REF"):
-        return "Owner PII"
-    if token.startswith("PARTNER"):
-        return "Partner PII"
-    if token.startswith("STAFF"):
-        return "Employee PII"
-    if token.startswith("CLIENT"):
-        return "Customer Entity"
-    if token.startswith("VENDOR"):
-        return "Supplier Entity"
-    return "Business Entity"
 
 
 def _health_payload() -> dict[str, object]:
@@ -245,36 +246,39 @@ def _deterministic_cfo_chat_reply(bundle: dict[str, Any], prompt_text: str) -> s
     sim = bundle["simulation"]["summary"]
     actions = bundle["actions"]
 
-    if any(w in q for w in ("fraud", "iban", "quarantine", "invoice")):
-        q_inv = bundle["quarantined_invoice"]
-        return (
-            f"Input Guard quarantined {q_inv['invoice_id']} ({q_inv['vendor']}, €{q_inv['invoice_amount_eur']:,.2f}). "
-            f"Reason: {q_inv['reason']} Payment release is hard-blocked until you explicitly confirm or override."
-        )
-    if any(w in q for w in ("chf", "usd", "fx", "hedge", "zurich", "forward")):
+    if any(w in q for w in ("fraud", "iban", "suspicious", "block", "invoice", "wine")):
+        fraud_act = next((a for a in actions if a["category"] == "fraud"), None)
+        if fraud_act:
+            return (
+                f"**Suspicious Bill Check**: {fraud_act['autonomy']['analyzed_independently']}\n\n"
+                f"**Recommendation**: {fraud_act['autonomy']['recommended_logic']}"
+            )
+    if any(w in q for w in ("chf", "swiss", "fx", "hedge", "zurich", "rate", "franc")):
         fx_act = next((a for a in actions if a["category"] == "fx"), None)
         if fx_act:
             return (
-                f"FX Exposure Analysis ({k['fx_exposure_label']}): {fx_act['autonomy']['analyzed_independently']} "
-                f"Recommended Commerzbank Action: {fx_act['autonomy']['recommended_logic']}"
+                f"**Foreign Currency Protection ({k['fx_exposure_label']})**: "
+                f"{fx_act['autonomy']['analyzed_independently']}\n\n"
+                f"**Recommended Action**: {fx_act['autonomy']['recommended_logic']}"
             )
     if any(w in q for w in ("tax", "vat", "steuer", "grant", "kfw", "law", "regulat")):
         regs = bundle["regulatory_updates"]
         top_reg = regs[0]["title"] if regs else "German SME tax monitoring"
         return (
-            f"Tax & Regulatory Brief for {p['business_name']}: Matched {len(regs)} official German update(s), led by '{top_reg}'. "
-            "Your recurring tax calendar and Commerzbank Tax Vault rule are aligned in the Regulatory & Tax tab."
+            f"**Tax & Grant Summary for {p['business_name']}**: Found **{len(regs)} relevant German update(s)**, "
+            f"starting with **{top_reg}**. Check the Tax & Grant Tips tab below for the full checklist."
         )
-    if any(w in q for w in ("festgeld", "invest", "surplus", "deposit")):
+    if any(w in q for w in ("festgeld", "invest", "surplus", "deposit", "interest")):
         inv_act = next((a for a in actions if a["category"] == "investment"), None)
         if inv_act:
-            return f"Surplus Opportunity: {inv_act['autonomy']['recommended_logic']}"
+            return f"**Interest Opportunity**: {inv_act['autonomy']['recommended_logic']}"
 
     return (
-        f"CFO Brief for {p['business_name']}: Current cash is €{k['current_balance_eur']:,.2f} "
-        f"(13-week baseline low: €{k['projected_min_13w_eur']:,.2f} in Week {k['projected_min_13w_week']}). "
-        f"With the recommended Commerzbank actions, the 13-week minimum stabilizes at €{sim['min_stabilized_eur']:,.2f} "
-        f"(vs. €{k['safety_buffer_eur']:,.0f} safety buffer). All figures are deterministically verified; human approval is required before execution."
+        f"**Overview for {p['business_name']}**:\n"
+        f"- **Current Bank Balance**: €{k['current_balance_eur']:,.2f}\n"
+        f"- **Lowest Expected Balance (Next 13 Weeks)**: €{k['projected_min_13w_eur']:,.2f} (Week {k['projected_min_13w_week']})\n"
+        f"- **With Commerzbank Safety Actions**: €{sim['min_stabilized_eur']:,.2f} (vs. €{k['safety_buffer_eur']:,.0f} safety reserve)\n\n"
+        "Nothing is sent to the bank until you click **Approve Action**."
     )
 
 
@@ -395,18 +399,21 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/scenario":
             scenario_id = str(data.get("scenario_id", "pizzeria_amalfi")).strip()
-            if scenario_id not in ("pizzeria_amalfi", "mittelstand_b2b"):
+            if scenario_id != "pizzeria_amalfi":
                 self._send_json(400, {"error": f"Unsupported scenario_id: {scenario_id}"})
                 return
-            self._send_json(200, reset_state(scenario_id))
+            self._send_json(200, reset_state("pizzeria_amalfi"))
             return
 
         if path == "/api/upload-csv":
             csv_text = str(data.get("csv_text", ""))
             filename = str(data.get("filename", "uploaded_statement.csv"))
-            opening_bal = float(data.get("opening_balance", 2500.0))
+            if "opening_balance" in data and data["opening_balance"] is not None:
+                opening_bal = float(data["opening_balance"])
+            else:
+                opening_bal = 2500.0 if engine.is_pizzeria_csv(csv_text) else 0.0
             try:
-                parsed_preview = engine.parse_bank_csv(csv_text)
+                parsed_preview = engine.parse_bank_csv(csv_text, opening_balance=engine._d(opening_bal))
             except ValueError as exc:
                 self._send_json(400, {"error": str(exc)})
                 return
@@ -416,15 +423,18 @@ class Handler(BaseHTTPRequestHandler):
                 STATE["custom_filename"] = filename
                 STATE["opening_balance"] = opening_bal
                 STATE["profile_overrides"] = {}
+                STATE["preferences"] = {}
                 STATE["action_overrides"] = {}
+                STATE["sim_params"] = _default_sim_params()
                 STATE["receipts"] = []
                 STATE["ai_briefing"] = None
+                STATE["last_ai_trace"] = None
                 engine.create_audit_entry(
                     STATE["audit_ledger"],
                     actor="USER",
                     action_type="CSV_INGESTION",
                     target_id=filename,
-                    summary=f"Ingested custom CSV '{filename}' ({parsed_preview['unique_count']} clean rows, hygiene {parsed_preview['hygiene']['score']}%).",
+                    summary=f"Imported '{filename}' ({parsed_preview['unique_count']} rows, ending €{parsed_preview['closing_balance']:,.2f}).",
                 )
                 _save_state()
             self._send_json(200, get_full_state())
@@ -441,7 +451,7 @@ class Handler(BaseHTTPRequestHandler):
                         actor="USER",
                         action_type="NL_WHATIF_SIM",
                         target_id="simulator",
-                        summary=f"Simulated NL What-If query: '{query[:100]}'",
+                        summary=f"Tested What-If: '{query[:100]}'",
                         payload=parsed_q,
                     )
                 else:
@@ -517,7 +527,7 @@ class Handler(BaseHTTPRequestHandler):
                     actor="USER",
                     action_type="PROFILE_UPDATE",
                     target_id="business_profile",
-                    summary="Updated business profile & unified AI context notes.",
+                    summary="Updated business details & AI context notes.",
                     payload=updates,
                 )
                 _save_state()
@@ -527,7 +537,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/preferences":
             with STATE_LOCK:
                 prefs = STATE["preferences"]
-                for k in ("view_mode", "min_severity", "safety_buffer_eur", "enabled_modules", "muted_categories", "muted_action_ids"):
+                for k in ("min_severity", "safety_buffer_eur", "enabled_modules", "muted_categories", "muted_action_ids"):
                     if k in data:
                         prefs[k] = data[k]
                 if "safety_buffer_eur" in data:
@@ -537,7 +547,7 @@ class Handler(BaseHTTPRequestHandler):
                     actor="USER",
                     action_type="PREFERENCES_UPDATE",
                     target_id="ux_preferences",
-                    summary=f"Updated comfort settings (mode={prefs.get('view_mode', 'calm')}).",
+                    summary="Updated alert & notification preferences.",
                 )
                 _save_state()
             self._send_json(200, get_full_state())
@@ -545,9 +555,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/ai/analyze":
             prompt = (
-                "Provide a concise 4-bullet executive CFO briefing for the business owner based strictly on the verified KPIs: "
-                "(1) Cash & 13-week shortfall risk, (2) FX exposure & Commerzbank hedging option, "
-                "(3) Fraud hold / tax compliance priority, and (4) Recommended next approval step."
+                "Give a clear, friendly 4-bullet summary for the pizzeria owner using plain language and **bold** highlights for key numbers: "
+                "(1) Cash balance & upcoming 13-week low point, (2) Swiss Franc (CHF) transfer protection, "
+                "(3) Blocked suspicious invoice or tax tip, and (4) Next recommended approval step."
             )
             ai_res = invoke_cfo_llm(
                 [{"role": "user", "content": prompt}],
@@ -569,7 +579,7 @@ class Handler(BaseHTTPRequestHandler):
                     actor="OPENSHIFT_AI_LLM",
                     action_type="EXECUTIVE_ANALYSIS",
                     target_id=ai_res["model"],
-                    summary=f"Generated CFO executive analysis ({ai_res['mode']}, {ai_res['masked_token_count']} PII tokens masked).",
+                    summary=f"Generated CFO summary ({ai_res['mode']}, {ai_res['masked_token_count']} PII tokens masked).",
                 )
                 _save_state()
             self._send_json(200, get_full_state())
@@ -606,7 +616,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_error(404, "Not Found")
 
     def log_message(self, format: str, *args: object) -> None:
-        # Flush stdout immediately so `oc logs` shows requests in real time.
         sys.stdout.write(f"{self.address_string()} - {format % args}\n")
         sys.stdout.flush()
 

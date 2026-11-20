@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Greg — Calm Glass-Box Autonomous CFO</title>
+    <title>Greg — Your Smart Financial Assistant</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -11,9 +11,8 @@
         --surface: #ffffff;
         --surface-alt: #f8fafc;
         --text: #0f172a;
-        --muted: #64748b;
+        --muted: #526071;
         --border: #e2e8f0;
-        --brand: #00414b;
         --accent: #0f766e;
         --accent-soft: #ccfbf1;
         --accent-hover: #0d625b;
@@ -33,7 +32,6 @@
           --text: #f1f5f9;
           --muted: #94a3b8;
           --border: #243044;
-          --brand: #14b8a6;
           --accent: #14b8a6;
           --accent-soft: rgba(20, 184, 166, 0.16);
           --accent-hover: #0d9488;
@@ -52,11 +50,12 @@
         font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: var(--bg);
         color: var(--text);
-        line-height: 1.45;
+        line-height: 1.5;
+        font-size: 15px;
       }
       .num { font-variant-numeric: tabular-nums; }
       .page {
-        max-width: 1440px;
+        max-width: 1380px;
         margin: 0 auto;
         padding: 1rem 1.25rem 2.5rem;
         display: flex;
@@ -64,12 +63,12 @@
         gap: 1rem;
       }
 
-      /* Top Command Bar */
+      /* Top Bar */
       .topbar {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 14px;
-        padding: 0.85rem 1.15rem;
+        padding: 0.9rem 1.15rem;
         box-shadow: var(--shadow);
         display: flex;
         flex-wrap: wrap;
@@ -78,8 +77,8 @@
         gap: 0.85rem;
       }
       .brand { display: flex; flex-direction: column; gap: 0.15rem; }
-      .brand h1 { margin: 0; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 0.5rem; }
-      .brand-sub { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+      .brand h1 { margin: 0; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+      .brand-sub { font-size: 0.8rem; color: var(--muted); display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
       .status-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; background: var(--ok); }
       .status-dot.standby { background: var(--warn); }
 
@@ -89,9 +88,9 @@
         background: var(--surface-alt);
         color: var(--text);
         border-radius: 8px;
-        padding: 0.48rem 0.8rem;
+        padding: 0.5rem 0.85rem;
         font: inherit;
-        font-size: 0.82rem;
+        font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
@@ -105,15 +104,15 @@
       .btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
       .btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
       .btn.danger { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
-      .btn.sm { padding: 0.34rem 0.62rem; font-size: 0.77rem; }
+      .btn.sm { padding: 0.36rem 0.68rem; font-size: 0.8rem; }
 
       .pill {
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;
-        font-size: 0.72rem;
+        font-size: 0.74rem;
         font-weight: 600;
-        padding: 0.18rem 0.52rem;
+        padding: 0.2rem 0.55rem;
         border-radius: 999px;
         background: var(--surface-alt);
         border: 1px solid var(--border);
@@ -137,15 +136,15 @@
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 0.8rem 0.95rem;
+        padding: 0.85rem 0.95rem;
         box-shadow: var(--shadow);
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
       }
-      .kpi-label { font-size: 0.73rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+      .kpi-label { font-size: 0.76rem; color: var(--muted); font-weight: 600; }
       .kpi-val { font-size: 1.32rem; font-weight: 700; letter-spacing: -0.02em; }
-      .kpi-sub { font-size: 0.75rem; color: var(--muted); }
+      .kpi-sub { font-size: 0.77rem; color: var(--muted); }
 
       /* Executive AI Banner */
       .ai-banner {
@@ -153,7 +152,7 @@
         border: 1px solid var(--border);
         border-left: 4px solid var(--accent);
         border-radius: 12px;
-        padding: 0.9rem 1.1rem;
+        padding: 0.95rem 1.15rem;
         box-shadow: var(--shadow);
         display: flex;
         justify-content: space-between;
@@ -161,7 +160,14 @@
         gap: 1rem;
         flex-wrap: wrap;
       }
-      .ai-banner-text { flex: 1; min-width: 260px; font-size: 0.88rem; white-space: pre-wrap; }
+      .ai-banner-text { flex: 1; min-width: 260px; font-size: 0.9rem; }
+
+      /* Formatted Markdown inside AI outputs */
+      .md-body p { margin: 0 0 0.45rem; }
+      .md-body p:last-child { margin-bottom: 0; }
+      .md-body ul, .md-body ol { margin: 0.25rem 0 0.45rem; padding-left: 1.25rem; }
+      .md-body li { margin-bottom: 0.2rem; }
+      .md-body code { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 4px; padding: 0.05rem 0.3rem; font-size: 0.84em; }
 
       /* Main 2-column grid */
       .main-grid {
@@ -187,9 +193,9 @@
         flex-wrap: wrap;
         margin-bottom: 0.8rem;
       }
-      .card-head h2 { margin: 0; font-size: 1rem; font-weight: 700; }
+      .card-head h2 { margin: 0; font-size: 1.02rem; font-weight: 700; }
 
-      /* Chart & Flux */
+      /* Chart & Details */
       .chart-wrap {
         width: 100%;
         background: var(--surface-alt);
@@ -201,7 +207,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.85rem;
-        font-size: 0.76rem;
+        font-size: 0.78rem;
         color: var(--muted);
         margin-top: 0.5rem;
       }
@@ -213,12 +219,12 @@
         background: var(--surface-alt);
         border: 1px solid var(--border);
         border-radius: 10px;
-        padding: 0.75rem 0.9rem;
-        font-size: 0.84rem;
+        padding: 0.8rem 0.95rem;
+        font-size: 0.86rem;
       }
       .flux-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.35rem; }
 
-      /* Simulator */
+      /* What-If Calculator */
       .sim-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -226,7 +232,7 @@
         margin-top: 0.75rem;
       }
       @media (max-width: 680px) { .sim-grid { grid-template-columns: 1fr; } }
-      .slider-group { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; }
+      .slider-group { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.82rem; }
       .slider-top { display: flex; justify-content: space-between; font-weight: 600; }
       input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
       .nl-row { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; }
@@ -239,7 +245,7 @@
         border-radius: 8px;
         padding: 0.48rem 0.7rem;
         font: inherit;
-        font-size: 0.84rem;
+        font-size: 0.86rem;
       }
 
       /* Chat Panel */
@@ -254,36 +260,36 @@
         display: flex;
         flex-direction: column;
         gap: 0.65rem;
-        padding: 0.65rem;
+        padding: 0.7rem;
         background: var(--surface-alt);
         border: 1px solid var(--border);
         border-radius: 10px;
+        margin-bottom: 0.65rem;
       }
       .msg {
         max-width: 88%;
-        padding: 0.6rem 0.85rem;
+        padding: 0.65rem 0.9rem;
         border-radius: 10px;
-        font-size: 0.85rem;
-        white-space: pre-wrap;
+        font-size: 0.88rem;
         word-break: break-word;
       }
-      .msg.user { align-self: flex-end; background: var(--accent); color: #fff; }
+      .msg.user { align-self: flex-end; background: var(--accent); color: #fff; white-space: pre-wrap; }
       .msg.assistant { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); }
       .msg.error { align-self: flex-start; background: var(--danger-soft); color: var(--danger); }
-      .chip-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.55rem 0; }
+      .chat-meta { font-size: 0.72rem; color: var(--muted); margin-top: 0.4rem; border-top: 1px solid var(--border); padding-top: 0.25rem; }
       .chat-form { display: flex; gap: 0.5rem; align-items: flex-end; }
       .chat-form textarea {
         flex: 1;
         resize: none;
-        min-height: 2.5rem;
-        max-height: 6rem;
+        min-height: 2.75rem;
+        max-height: 6.5rem;
         border: 1px solid var(--border);
         border-radius: 8px;
         background: var(--surface-alt);
         color: var(--text);
-        padding: 0.5rem 0.7rem;
+        padding: 0.55rem 0.75rem;
         font: inherit;
-        font-size: 0.84rem;
+        font-size: 0.88rem;
       }
 
       /* Action Cards */
@@ -316,10 +322,10 @@
         background: var(--surface-alt);
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 0.55rem 0.65rem;
-        font-size: 0.78rem;
+        padding: 0.6rem 0.7rem;
+        font-size: 0.81rem;
       }
-      .autonomy-box strong { display: block; font-size: 0.71rem; text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem; }
+      .autonomy-box strong.box-title { display: block; font-size: 0.72rem; text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem; }
       .action-controls {
         display: flex;
         flex-wrap: wrap;
@@ -336,7 +342,7 @@
         border: 1px solid var(--ok);
         border-radius: 10px;
         padding: 0.65rem 0.9rem;
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
@@ -350,31 +356,21 @@
 
       .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
       @media (max-width: 680px) { .form-grid { grid-template-columns: 1fr; } }
-      .field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.79rem; }
+      .field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.82rem; }
       .field label { font-weight: 600; color: var(--muted); }
       .field input, .field select, .field textarea {
         border: 1px solid var(--border);
         background: var(--surface-alt);
         color: var(--text);
         border-radius: 8px;
-        padding: 0.45rem 0.65rem;
+        padding: 0.48rem 0.68rem;
         font: inherit;
       }
 
-      table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
       th, td { text-align: left; padding: 0.45rem 0.55rem; border-bottom: 1px solid var(--border); }
-      th { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; }
-      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; }
-      pre.prompt-box {
-        background: var(--surface-alt);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 0.75rem;
-        font-size: 0.75rem;
-        overflow-x: auto;
-        white-space: pre-wrap;
-        max-height: 290px;
-      }
+      th { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.76rem; }
       .hidden { display: none !important; }
     </style>
   </head>
@@ -384,83 +380,80 @@
       <header class="topbar">
         <div class="brand">
           <h1>
-            <span>Greg — Calm Glass-Box Autonomous CFO</span>
+            <span>🍕 Greg — Your Autonomous Financial Assistant</span>
             <span class="pill teal" id="scenario-badge">Pizzeria Amalfi</span>
           </h1>
           <div class="brand-sub">
             <span class="status-dot" id="llm-dot"></span>
-            <span id="pod-status">Connecting to OpenShift Pod &amp; LLM…</span>
+            <span id="pod-status">Connecting to OpenShift Pod &amp; AI Assistant…</span>
           </div>
         </div>
         <div class="toolbar">
-          <button type="button" class="btn sm active" id="btn-sc-pizzeria">🍕 Pizzeria Amalfi (2025 CSV)</button>
-          <button type="button" class="btn sm" id="btn-sc-mittelstand">🏭 Mittelstand B2B (KronoStahl / USD)</button>
-          <button type="button" class="btn sm" id="btn-import-csv">📂 Import Local CSV</button>
+          <button type="button" class="btn sm primary" id="btn-import-csv">📂 Upload Bank Statement (CSV)</button>
+          <button type="button" class="btn sm hidden" id="btn-reset-pizzeria">↺ Back to Pizzeria Amalfi Sample</button>
           <input type="file" id="csv-file-input" accept=".csv,text/csv" class="hidden" />
-          <button type="button" class="btn sm" id="btn-view-mode">🌿 Calm Mode</button>
-          <button type="button" class="btn sm" id="btn-jump-privacy">🛡️ Anonymized AI Prompt</button>
         </div>
       </header>
 
       <!-- KPI Ribbon -->
       <section class="kpi-grid" id="kpi-grid"></section>
 
-      <!-- Executive Briefing from Single OpenShift AI LLM -->
+      <!-- Executive AI Banner -->
       <section class="ai-banner">
         <div class="ai-banner-text">
-          <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.3rem; flex-wrap:wrap;">
-            <strong>OpenShift AI CFO Executive Briefing</strong>
-            <span class="pill teal" id="briefing-mode-pill">Deterministic Baseline</span>
+          <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.35rem; flex-wrap:wrap;">
+            <strong>Greg's Plain-Language Summary</strong>
+            <span class="pill teal" id="briefing-mode-pill">Summary</span>
           </div>
-          <div id="briefing-text">Loading executive briefing…</div>
+          <div id="briefing-text" class="md-body">Loading summary…</div>
         </div>
-        <button type="button" class="btn primary" id="btn-run-ai">✨ Analyze with OpenShift AI</button>
+        <button type="button" class="btn primary" id="btn-run-ai">✨ Refresh AI Summary</button>
       </section>
 
-      <!-- Main Chart + Simulator + Copilot Chat -->
+      <!-- Main Chart + What-If Calculator + AI Chat -->
       <section class="main-grid">
         <div class="card">
           <div class="card-head">
-            <h2 id="chart-title">13-Week Behavioral Cash Flow Horizon</h2>
+            <h2 id="chart-title">Next 13 Weeks Balance Forecast</h2>
             <div style="display:flex; gap:0.4rem;">
-              <button type="button" class="btn sm active" id="tab-chart-13w">13-Week Horizon</button>
-              <button type="button" class="btn sm" id="tab-chart-2025">2025 Historical Trajectory</button>
+              <button type="button" class="btn sm active" id="tab-chart-13w">Next 13 Weeks Forecast</button>
+              <button type="button" class="btn sm" id="tab-chart-2025">2025 Balance History</button>
             </div>
           </div>
 
           <div class="chart-wrap" id="chart-wrap"></div>
           <div class="chart-legend" id="chart-legend"></div>
 
-          <!-- Source-linked Flux Box -->
+          <!-- Weekly Detail Box -->
           <div class="flux-box" id="flux-box"></div>
 
-          <!-- Interactive What-If Simulator -->
+          <!-- What-If Calculator -->
           <div id="simulator-section" style="margin-top: 0.9rem; padding-top: 0.85rem; border-top: 1px solid var(--border);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-              <strong style="font-size:0.9rem;">Interactive "What-If" FP&amp;A Simulator</strong>
-              <label style="font-size:0.79rem; display:flex; align-items:center; gap:0.35rem; cursor:pointer; font-weight:600;">
+              <strong style="font-size:0.92rem;">What-If Calculator — Test Future Changes</strong>
+              <label style="font-size:0.81rem; display:flex; align-items:center; gap:0.35rem; cursor:pointer; font-weight:600;">
                 <input type="checkbox" id="sim-actions-toggle" checked />
-                Simulate with Recommended Commerzbank Actions
+                Include Recommended Commerzbank Support
               </label>
             </div>
 
             <div class="nl-row">
-              <input type="text" class="input" id="sim-nl-input" placeholder='Ask What-If e.g. "What if revenue drops 20% and CHF rises 8%?"' />
-              <button type="button" class="btn primary sm" id="btn-sim-nl">Run What-If</button>
+              <input type="text" class="input" id="sim-nl-input" placeholder='Try: "What if sales drop 20% and CHF rises 8%?"' />
+              <button type="button" class="btn primary sm" id="btn-sim-nl">Test Scenario</button>
               <button type="button" class="btn sm" id="btn-sim-reset">Reset</button>
             </div>
 
             <div class="sim-grid">
               <div class="slider-group">
-                <div class="slider-top"><span>Revenue Shift</span><span class="num" id="lbl-rev">0%</span></div>
+                <div class="slider-top"><span>Sales / Income Change</span><span class="num" id="lbl-rev">0%</span></div>
                 <input type="range" id="rng-rev" min="-50" max="30" step="5" value="0" />
               </div>
               <div class="slider-group">
-                <div class="slider-top"><span>Customer Delay / Closure</span><span class="num" id="lbl-delay">0 days</span></div>
+                <div class="slider-top"><span>Closure or Payment Delay</span><span class="num" id="lbl-delay">0 days</span></div>
                 <input type="range" id="rng-delay" min="0" max="35" step="5" value="0" />
               </div>
               <div class="slider-group">
-                <div class="slider-top"><span>FX Shock (CHF / USD)</span><span class="num" id="lbl-fx">0%</span></div>
+                <div class="slider-top"><span>Swiss Franc (CHF) Rate Change</span><span class="num" id="lbl-fx">0%</span></div>
                 <input type="range" id="rng-fx" min="-10" max="20" step="2" value="0" />
               </div>
               <div class="slider-group">
@@ -471,56 +464,50 @@
           </div>
         </div>
 
-        <!-- Single-LLM CFO Copilot -->
+        <!-- Single OpenShift AI CFO Chat -->
         <div class="card chat-card">
           <div class="card-head">
             <div>
-              <h2>Greg CFO Copilot (Single OpenShift AI LLM)</h2>
-              <div style="font-size:0.75rem; color:var(--muted);" id="chat-context-note">Connected to PII-masked Unified Business Context</div>
+              <h2>Ask Greg About Your Finances</h2>
+              <div style="font-size:0.77rem; color:var(--muted);">Answers are based on your real numbers and OpenShift AI</div>
             </div>
             <button type="button" class="btn sm" id="btn-clear-chat">Clear</button>
           </div>
 
           <div class="chat-log" id="chat-log" role="log" aria-live="polite"></div>
 
-          <div class="chip-row" id="chat-chips"></div>
-
           <form class="chat-form" id="chat-form">
-            <textarea id="chat-input" rows="2" placeholder="Ask Greg about cash shortfalls, FX hedges, taxes, or Commerzbank products…"></textarea>
+            <textarea id="chat-input" rows="2" placeholder="Ask a question in plain language (e.g. why does Week 7 drop, or how does the credit line work?)…"></textarea>
             <button type="submit" class="btn primary" id="btn-send-chat">Send</button>
           </form>
         </div>
       </section>
 
-      <!-- Commerzbank 4-Autonomy-Level Action Center -->
+      <!-- Commerzbank Action Cards -->
       <section class="card">
         <div class="card-head">
           <div>
-            <h2>Commerzbank Action Center &amp; 3-Way Fraud Guard (Prepare, Never Send Without Approval)</h2>
-            <div style="font-size:0.78rem; color:var(--muted);">Every card differentiates what is analyzed independently, recommended logic, human approval, and simulated vs. live execution.</div>
+            <h2>Recommended Commerzbank Actions (Nothing Happens Without Your Approval)</h2>
+            <div style="font-size:0.8rem; color:var(--muted);">Each card shows what Greg found automatically, what he recommends, and your decision button.</div>
           </div>
-          <span class="pill teal" id="actions-count-pill">5 Active Cards</span>
+          <span class="pill teal" id="actions-count-pill">5 Actions</span>
         </div>
 
         <div id="receipts-banner" style="display:flex; flex-direction:column; gap:0.45rem; margin-bottom:0.75rem;"></div>
         <div class="actions-grid" id="actions-grid"></div>
       </section>
 
-      <!-- Secondary Suite Tabs (Gov Regulatory, Business Profile, Comfort Preferences, Privacy/Audit, Analyst Ledger) -->
+      <!-- Bottom Workspace Tabs (Simple 3 tabs) -->
       <section class="card" id="workspace-tabs-card">
         <div class="tabs">
-          <button type="button" class="btn sm active" data-tab="gov">🏛️ German Tax &amp; Relief Monitor</button>
-          <button type="button" class="btn sm" data-tab="profile">🏢 Business Profile &amp; Context</button>
-          <button type="button" class="btn sm" data-tab="prefs">🎛️ Comfort &amp; Alert Preferences</button>
-          <button type="button" class="btn sm" data-tab="privacy">🛡️ PII Masking &amp; EU AI Act Ledger</button>
-          <button type="button" class="btn sm" data-tab="ledger">📊 Analyst Ledger &amp; Hygiene</button>
+          <button type="button" class="btn sm active" data-tab="gov">🏛️ Tax &amp; Grant Tips</button>
+          <button type="button" class="btn sm" data-tab="ledger">📋 Bank Statement Categories &amp; History</button>
+          <button type="button" class="btn sm" data-tab="settings">⚙️ Business Details &amp; Alert Settings</button>
         </div>
 
         <div id="panel-gov"></div>
-        <div id="panel-profile" class="hidden"></div>
-        <div id="panel-prefs" class="hidden"></div>
-        <div id="panel-privacy" class="hidden"></div>
         <div id="panel-ledger" class="hidden"></div>
+        <div id="panel-settings" class="hidden"></div>
       </section>
     </div>
 
@@ -542,6 +529,63 @@
         const sign = n < 0 ? "-" : "";
         return `${sign}€${Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
       };
+
+      function escapeHtml(str) {
+        return String(str || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function formatInlineMarkdown(escaped) {
+        return escaped
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+          .replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, "$1<em>$2</em>");
+      }
+
+      function formatMarkdown(text) {
+        const lines = escapeHtml(text || "").split(/\r?\n/);
+        const out = [];
+        let inUl = false;
+        let inOl = false;
+
+        const closeLists = () => {
+          if (inUl) { out.push("</ul>"); inUl = false; }
+          if (inOl) { out.push("</ol>"); inOl = false; }
+        };
+
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line) {
+            closeLists();
+            continue;
+          }
+          const ulMatch = line.match(/^[-*•]\s+(.*)$/);
+          const olMatch = line.match(/^\d+\.\s+(.*)$/);
+          const headMatch = line.match(/^#{1,3}\s+(.*)$/);
+
+          if (headMatch) {
+            closeLists();
+            out.push(`<p><strong>${formatInlineMarkdown(headMatch[1])}</strong></p>`);
+          } else if (ulMatch) {
+            if (inOl) { out.push("</ol>"); inOl = false; }
+            if (!inUl) { out.push("<ul>"); inUl = true; }
+            out.push(`<li>${formatInlineMarkdown(ulMatch[1])}</li>`);
+          } else if (olMatch) {
+            if (inUl) { out.push("</ul>"); inUl = false; }
+            if (!inOl) { out.push("<ol>"); inOl = true; }
+            out.push(`<li>${formatInlineMarkdown(olMatch[1])}</li>`);
+          } else {
+            closeLists();
+            out.push(`<p>${formatInlineMarkdown(line)}</p>`);
+          }
+        }
+        closeLists();
+        return out.join("");
+      }
 
       async function api(url, method = "GET", body = null) {
         const opts = { method, headers: {} };
@@ -572,7 +616,6 @@
         renderActions();
         renderReceipts();
         renderWorkspacePanels();
-        renderChatChips();
       }
 
       function renderHeader() {
@@ -581,61 +624,60 @@
         dot.className = llm.llm_configured ? "status-dot" : "status-dot standby";
         const modelName = llm.llm_model || "auto";
         document.getElementById("pod-status").textContent = llm.llm_configured
-          ? `OpenShift Pod: ${llm.pod} · Single LLM: ${modelName} (${STATE.ai_briefing?.mode === "openshift_ai_live" ? "Live Connected" : "Configured"})`
-          : `Pod: ${llm.pod} · OpenShift LLM unconfigured (Deterministic Fallback Active)`;
+          ? `Connected to OpenShift AI (${modelName})`
+          : `Running on Pod ${llm.pod} (Offline Summary Mode)`;
 
         document.getElementById("scenario-badge").textContent = STATE.profile.business_name;
-        document.getElementById("btn-sc-pizzeria").classList.toggle("active", STATE.scenario_id === "pizzeria_amalfi");
-        document.getElementById("btn-sc-mittelstand").classList.toggle("active", STATE.scenario_id === "mittelstand_b2b");
-        const isCalm = STATE.preferences.view_mode === "calm";
-        document.getElementById("btn-view-mode").textContent = isCalm ? "🌿 Calm Mode" : "🔬 Analyst Mode";
-        document.getElementById("btn-view-mode").classList.toggle("active", !isCalm);
+        document.getElementById("btn-reset-pizzeria").classList.toggle("hidden", STATE.scenario_id !== "custom_csv");
+      }
+
+      function formatFriendlyDate(isoDate) {
+        if (!isoDate) return "";
+        const d = new Date(`${isoDate}T00:00:00`);
+        if (Number.isNaN(d.getTime())) return isoDate;
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
       }
 
       function renderKpis() {
         const k = STATE.kpis;
         const h = STATE.health;
         const sim = STATE.simulation.summary;
-        const troughLabel = STATE.scenario_id === "mittelstand_b2b"
-          ? `Week ${k.projected_min_13w_week} Shortfall`
-          : `2025 June Trough (${k.historical_trough_date})`;
-        const troughVal = STATE.scenario_id === "mittelstand_b2b" ? k.projected_min_13w_eur : k.historical_trough_eur;
 
         const cards = [
           {
-            label: "Current Balance",
+            label: "Current Bank Balance",
             val: eur(k.current_balance_eur),
-            sub: `Safety buffer: ${eur0(k.safety_buffer_eur)}`,
+            sub: `Safety reserve goal: ${eur0(k.safety_buffer_eur)}`,
             tone: k.current_balance_eur >= k.safety_buffer_eur ? "ok" : "warn",
           },
           {
-            label: "13-Wk Projected Low",
+            label: "Lowest Expected (Next 13 Weeks)",
             val: eur(k.projected_min_13w_eur),
-            sub: `Wk ${k.projected_min_13w_week} · Stabilized: ${eur0(sim.min_stabilized_eur)}`,
+            sub: `Week ${k.projected_min_13w_week} · With bank help: ${eur0(sim.min_stabilized_eur)}`,
             tone: k.projected_min_13w_eur < 0 ? "danger" : (k.projected_min_13w_eur < k.safety_buffer_eur ? "warn" : "ok"),
           },
           {
-            label: troughLabel,
-            val: eur(troughVal),
-            sub: STATE.scenario_id === "mittelstand_b2b" ? "KronoStahl +16d delay" : "3-wk vacation closure",
-            tone: troughVal < 0 ? "warn" : "ok",
+            label: "Lowest Balance (History)",
+            val: eur(k.historical_trough_eur),
+            sub: `${formatFriendlyDate(k.historical_trough_date)} · Lowest point on chart`,
+            tone: k.historical_trough_eur < 0 ? "warn" : "ok",
           },
           {
-            label: "Open FX Exposure",
+            label: "Foreign Transfers",
             val: eur0(k.fx_exposure_eur),
             sub: k.fx_exposure_label,
             tone: k.fx_exposure_eur > 0 ? "warn" : "ok",
           },
           {
-            label: "Financial Health",
-            val: `${h.score}/100`,
+            label: "Business Health Score",
+            val: `${h.score} / 100`,
             sub: `Status: ${h.status}`,
             tone: h.score >= 80 ? "ok" : (h.score >= 60 ? "warn" : "danger"),
           },
           {
-            label: "Data Hygiene & Guard",
-            val: `${k.hygiene_score}%`,
-            sub: `${k.quarantined_count} Quarantined Invoice`,
+            label: "Suspicious Bills Blocked",
+            val: k.quarantined_count > 0 ? `${k.quarantined_count} Blocked` : "0 Blocked",
+            sub: `${k.hygiene_score}% clean statement rows`,
             tone: k.quarantined_count > 0 ? "danger" : "ok",
           },
         ];
@@ -651,16 +693,16 @@
 
       function renderBriefing() {
         const b = STATE.ai_briefing || {};
-        document.getElementById("briefing-text").textContent = b.text || "";
+        document.getElementById("briefing-text").innerHTML = formatMarkdown(b.text || "");
         const pill = document.getElementById("briefing-mode-pill");
         if (b.mode === "openshift_ai_live") {
           pill.textContent = `OpenShift AI Live (${b.model} · ${b.latency_ms}ms)`;
           pill.className = "pill ok";
         } else if (b.mode === "deterministic_fallback") {
-          pill.textContent = "Deterministic Fallback (Cluster LLM unreachable locally)";
+          pill.textContent = "Offline Smart Summary";
           pill.className = "pill warn";
         } else {
-          pill.textContent = "Deterministic Baseline (Click Analyze for Live LLM)";
+          pill.textContent = "Instant Summary";
           pill.className = "pill teal";
         }
       }
@@ -671,26 +713,38 @@
         document.getElementById("tab-chart-13w").classList.toggle("active", chartTab === "13w");
         document.getElementById("tab-chart-2025").classList.toggle("active", chartTab === "2025");
 
-        const W = 720, H = 265, PL = 64, PR = 20, PT = 18, PB = 34;
+        const W = 720, H = 270, PL = 68, PR = 22, PT = 22, PB = 34;
         const innerW = W - PL - PR;
         const innerH = H - PT - PB;
 
         if (chartTab === "13w") {
-          document.getElementById("chart-title").textContent = "13-Week Behavioral Cash Flow Horizon & Stabilization";
-          const series = STATE.simulation.series;
+          document.getElementById("chart-title").textContent = "Next 13 Weeks Balance Forecast";
+          const series = STATE.simulation.series || [];
           const buffer = Number(STATE.kpis.safety_buffer_eur || 0);
+          const isStressed = Boolean(STATE.simulation.is_stressed);
+          const activeKey = isStressed ? "simulated" : "baseline";
           const allVals = [0, buffer];
           series.forEach((p) => allVals.push(p.baseline, p.simulated, p.stabilized));
-          const minV = Math.min(...allVals) * 1.1;
-          const maxV = Math.max(...allVals) * 1.08;
+
+          const rawMin = Math.min(...allVals);
+          const rawMax = Math.max(...allVals);
+          const pad = Math.max(500, (rawMax - rawMin) * 0.14);
+          const minV = rawMin - pad;
+          const maxV = rawMax + pad;
           const span = Math.max(1000, maxV - minV);
+
           const xAt = (i) => PL + (i / Math.max(1, series.length - 1)) * innerW;
           const yAt = (v) => PT + ((maxV - v) / span) * innerH;
           const pathFor = (key) => series.map((p, i) => `${i === 0 ? "M" : "L"}${xAt(i).toFixed(1)},${yAt(p[key]).toFixed(1)}`).join(" ");
 
           const yZero = yAt(0);
           const yBuf = yAt(buffer);
-          const ticks = [maxV, (maxV + minV) / 2, buffer, 0, minV].filter((v, idx, arr) => arr.findIndex((x) => Math.abs(x - v) < span * 0.08) === idx);
+          const ticks = [rawMax, (rawMax + rawMin) / 2, buffer, 0, rawMin].filter(
+            (v, idx, arr) => arr.findIndex((x) => Math.abs(x - v) < span * 0.1) === idx
+          );
+
+          const minIdx = series.reduce((best, p, i) => (p[activeKey] < series[best][activeKey] ? i : best), 0);
+          const minPt = series[minIdx];
 
           wrap.innerHTML = `
             <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; display:block;">
@@ -701,37 +755,46 @@
               `).join("")}
               <line x1="${PL}" y1="${yZero}" x2="${W - PR}" y2="${yZero}" stroke="var(--danger)" stroke-width="1" stroke-dasharray="3,3" />
               <line x1="${PL}" y1="${yBuf}" x2="${W - PR}" y2="${yBuf}" stroke="var(--warn)" stroke-width="1.4" stroke-dasharray="6,4" />
-              <text x="${W - PR - 4}" y="${yBuf - 4}" text-anchor="end" font-size="10" fill="var(--warn)" font-weight="600">Safety Buffer ${eur0(buffer)}</text>
+              <text x="${W - PR - 4}" y="${yBuf - 4}" text-anchor="end" font-size="10" fill="var(--warn)" font-weight="600">Safety Reserve ${eur0(buffer)}</text>
 
-              <path d="${pathFor("simulated")}" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5,4" />
+              ${isStressed ? `<path d="${pathFor("simulated")}" fill="none" stroke="var(--warn)" stroke-width="2.3" stroke-dasharray="5,4" />` : ""}
               <path d="${pathFor("baseline")}" fill="none" stroke="var(--accent)" stroke-width="2.5" />
               <path d="${pathFor("stabilized")}" fill="none" stroke="var(--ok)" stroke-width="2.5" />
 
               ${series.map((p, i) => {
-                const cx = xAt(i), cy = yAt(p.baseline);
+                const cx = xAt(i), cy = yAt(p[activeKey]);
                 const isSel = p.week === selectedWeek;
                 return `
                   <g style="cursor:pointer" onclick="selectWeek(${p.week})">
-                    <circle cx="${cx}" cy="${cy}" r="${isSel ? 6 : 3.8}" fill="${p.baseline < 0 ? "var(--danger)" : "var(--accent)"}" stroke="var(--surface)" stroke-width="1.5" />
+                    <circle cx="${cx}" cy="${cy}" r="${isSel ? 6 : 3.8}" fill="${p[activeKey] < 0 ? "var(--danger)" : (isStressed ? "var(--warn)" : "var(--accent)")}" stroke="var(--surface)" stroke-width="1.5" />
                     <circle cx="${cx}" cy="${yAt(p.stabilized)}" r="3.2" fill="var(--ok)" />
                     <text x="${cx}" y="${H - 12}" text-anchor="middle" font-size="10" font-weight="${isSel ? "700" : "500"}" fill="${isSel ? "var(--accent)" : "var(--muted)"}">${p.label}</text>
                   </g>
                 `;
               }).join("")}
+
+              ${minPt ? `
+                <text x="${Math.min(W - PR - 60, Math.max(PL + 60, xAt(minIdx)))}" y="${Math.min(H - PB - 4, yAt(minPt[activeKey]) + 15)}" text-anchor="middle" font-size="10.5" fill="var(--danger)" font-weight="700">
+                  Lowest Balance (${minPt.label}): ${eur(minPt[activeKey])}
+                </text>
+              ` : ""}
             </svg>
           `;
           legend.innerHTML = `
-            <span class="legend-item"><span class="swatch" style="background:var(--accent)"></span>Baseline Behavioral Forecast</span>
-            <span class="legend-item"><span class="swatch" style="background:var(--warn)"></span>What-If Stress Curve (Min: ${eur0(STATE.simulation.summary.min_simulated_eur)})</span>
-            <span class="legend-item"><span class="swatch" style="background:var(--ok)"></span>Stabilized w/ Commerzbank Actions (Min: ${eur0(STATE.simulation.summary.min_stabilized_eur)})</span>
-            <span class="legend-item" style="margin-left:auto;">Click any week node to inspect source-linked Flux</span>
+            <span class="legend-item"><span class="swatch" style="background:var(--accent)"></span>Expected Balance</span>
+            ${isStressed ? `<span class="legend-item"><span class="swatch" style="background:var(--warn)"></span>What-If Test (Lowest: ${eur0(STATE.simulation.summary.min_simulated_eur)})</span>` : ""}
+            <span class="legend-item"><span class="swatch" style="background:var(--ok)"></span>With Commerzbank Actions (Lowest: ${eur0(STATE.simulation.summary.min_stabilized_eur)})</span>
+            <span class="legend-item" style="margin-left:auto;">Click any week to see why the balance changes</span>
           `;
         } else {
-          document.getElementById("chart-title").textContent = "Full-Year Historical Bank Liquidity Trajectory";
+          document.getElementById("chart-title").textContent = "Historical Bank Balance";
           const pts = STATE.parsed_summary.historical_curve || [];
           const vals = [0, ...pts.map((p) => p.balance)];
-          const minV = Math.min(...vals) * 1.1;
-          const maxV = Math.max(...vals) * 1.08;
+          const rawMin = Math.min(...vals);
+          const rawMax = Math.max(...vals);
+          const pad = Math.max(500, (rawMax - rawMin) * 0.14);
+          const minV = rawMin - pad;
+          const maxV = rawMax + pad;
           const span = Math.max(1000, maxV - minV);
           const xAt = (i) => PL + (i / Math.max(1, pts.length - 1)) * innerW;
           const yAt = (v) => PT + ((maxV - v) / span) * innerH;
@@ -744,27 +807,27 @@
               ${yZero < H - PB ? `<rect x="${PL}" y="${Math.max(PT, yZero)}" width="${innerW}" height="${Math.max(0, H - PB - Math.max(PT, yZero))}" fill="rgba(220,38,38,0.1)" />` : ""}
               <line x1="${PL}" y1="${yZero}" x2="${W - PR}" y2="${yZero}" stroke="var(--danger)" stroke-width="1" stroke-dasharray="4,3" />
               <text x="${PL - 6}" y="${yZero + 4}" text-anchor="end" font-size="10" fill="var(--danger)">€0</text>
-              <text x="${PL - 6}" y="${yAt(maxV) + 10}" text-anchor="end" font-size="10" fill="var(--muted)">${eur0(maxV)}</text>
-              <text x="${PL - 6}" y="${yAt(minV) - 2}" text-anchor="end" font-size="10" fill="var(--muted)">${eur0(minV)}</text>
+              <text x="${PL - 6}" y="${yAt(rawMax) + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${eur0(rawMax)}</text>
+              <text x="${PL - 6}" y="${yAt(rawMin) + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${eur0(rawMin)}</text>
               <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.4" />
               ${pts[minIdx] ? `
                 <circle cx="${xAt(minIdx)}" cy="${yAt(pts[minIdx].balance)}" r="5" fill="var(--danger)" />
-                <text x="${xAt(minIdx)}" y="${Math.min(H - 18, yAt(pts[minIdx].balance) + 14)}" text-anchor="middle" font-size="10" fill="var(--danger)" font-weight="700">
-                  Lowest (${pts[minIdx].date}): ${eur(pts[minIdx].balance)}
+                <text x="${Math.min(W - PR - 80, Math.max(PL + 80, xAt(minIdx)))}" y="${Math.min(H - 14, yAt(pts[minIdx].balance) + 15)}" text-anchor="middle" font-size="10.5" fill="var(--danger)" font-weight="700">
+                  Lowest Balance (${formatFriendlyDate(pts[minIdx].date)}): ${eur(pts[minIdx].balance)}
                 </text>
               ` : ""}
               ${pts.length ? `
                 <circle cx="${xAt(pts.length - 1)}" cy="${yAt(pts[pts.length - 1].balance)}" r="5" fill="var(--ok)" />
-                <text x="${xAt(pts.length - 1) - 4}" y="${yAt(pts[pts.length - 1].balance) - 8}" text-anchor="end" font-size="10" fill="var(--ok)" font-weight="700">
-                  Closing: ${eur(pts[pts.length - 1].balance)}
+                <text x="${xAt(pts.length - 1) - 4}" y="${Math.max(PT + 10, yAt(pts[pts.length - 1].balance) - 8)}" text-anchor="end" font-size="10.5" fill="var(--ok)" font-weight="700">
+                  Ending Balance: ${eur(pts[pts.length - 1].balance)}
                 </text>
               ` : ""}
             </svg>
           `;
           legend.innerHTML = `
-            <span class="legend-item"><span class="swatch" style="background:var(--accent)"></span>Daily Closing Bank Balance (${STATE.parsed_summary.row_count} bookings)</span>
-            <span class="legend-item">Total Inflows: <strong class="num">${eur(STATE.kpis.total_inflows_eur)}</strong></span>
-            <span class="legend-item">Total Outflows: <strong class="num">${eur(STATE.kpis.total_outflows_eur)}</strong></span>
+            <span class="legend-item"><span class="swatch" style="background:var(--accent)"></span>Daily Bank Balance (${STATE.parsed_summary.unique_count} transactions)</span>
+            <span class="legend-item">Money In: <strong class="num">${eur(STATE.kpis.total_inflows_eur)}</strong></span>
+            <span class="legend-item">Money Out: <strong class="num">${eur(STATE.kpis.total_outflows_eur)}</strong></span>
           `;
         }
       }
@@ -781,18 +844,18 @@
         const box = document.getElementById("flux-box");
         box.innerHTML = `
           <div class="flux-header">
-            <strong>Source-Linked Flux — ${pt.label} (${pt.date_label})</strong>
+            <strong>Why the Balance Changes in ${pt.label} (${pt.date_label})</strong>
             <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
               ${pt.source_refs.map((r) => `<span class="pill mono">${r}</span>`).join("")}
             </div>
           </div>
-          <div style="margin-bottom:0.35rem;">${pt.flux_explanation}</div>
-          <div class="num" style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.78rem; color:var(--muted);">
-            <span>Inflows: <strong style="color:var(--ok)">+${eur(pt.inflow)}</strong></span>
-            <span>Outflows: <strong style="color:var(--danger)">-${eur(pt.outflow)}</strong></span>
-            <span>Baseline End: <strong>${eur(pt.baseline)}</strong></span>
-            <span>What-If End: <strong style="color:var(--warn)">${eur(pt.simulated)}</strong></span>
-            <span>With Commerzbank: <strong style="color:var(--ok)">${eur(pt.stabilized)}</strong></span>
+          <div style="margin-bottom:0.4rem;">${pt.flux_explanation}</div>
+          <div class="num" style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.8rem; color:var(--muted);">
+            <span>Money In: <strong style="color:var(--ok)">+${eur(pt.inflow)}</strong></span>
+            <span>Money Out: <strong style="color:var(--danger)">-${eur(pt.outflow)}</strong></span>
+            <span>Expected Balance: <strong>${eur(pt.baseline)}</strong></span>
+            ${STATE.simulation.is_stressed ? `<span>What-If Balance: <strong style="color:var(--warn)">${eur(pt.simulated)}</strong></span>` : ""}
+            <span>With Commerzbank Support: <strong style="color:var(--ok)">${eur(pt.stabilized)}</strong></span>
           </div>
         `;
       }
@@ -821,6 +884,7 @@
               include_commerzbank_actions: document.getElementById("sim-actions-toggle").checked,
             };
         STATE = await api("/api/simulate", "POST", payload);
+        selectedWeek = STATE.kpis.projected_min_13w_week || 1;
         renderKpis();
         renderChart();
         renderFlux();
@@ -829,15 +893,16 @@
 
       function renderActions() {
         const actions = STATE.actions || [];
-        document.getElementById("actions-count-pill").textContent = `${actions.length} of ${STATE.all_actions_count} Visible`;
+        document.getElementById("actions-count-pill").textContent = `${actions.length} of ${STATE.all_actions_count} Shown`;
         const grid = document.getElementById("actions-grid");
         if (!actions.length) {
-          grid.innerHTML = `<div style="color:var(--muted); font-size:0.86rem;">All action cards are filtered out by your Comfort Preferences.</div>`;
+          grid.innerHTML = `<div style="color:var(--muted); font-size:0.88rem;">All action cards are currently hidden by your Alert Settings.</div>`;
           return;
         }
         grid.innerHTML = actions.map((a) => {
           const statusCls = a.status === "approved" ? "approved" : (a.status === "quarantined" ? "quarantined" : "");
           const pillCls = a.status === "approved" ? "ok" : (a.status === "quarantined" ? "danger" : (a.status === "rejected" ? "warn" : "teal"));
+          const statusLabel = a.status === "approved" ? "Approved" : (a.status === "quarantined" ? "Blocked for Safety" : (a.status === "snoozed" ? "Snoozed 7 Days" : (a.status === "rejected" ? "Declined" : "Waiting for You")));
           const canSlide = a.max_amount_eur > a.min_amount_eur && a.step_eur > 0;
           return `
             <article class="action-card ${statusCls}">
@@ -845,32 +910,31 @@
                 <div>
                   <div style="display:flex; gap:0.35rem; flex-wrap:wrap; margin-bottom:0.3rem;">
                     <span class="pill teal">${a.domain}</span>
-                    <span class="pill ${a.severity === "critical" ? "danger" : (a.severity === "high" ? "warn" : "")}">${a.severity.toUpperCase()}</span>
-                    <span class="pill ${pillCls}">${a.status.toUpperCase()}</span>
+                    <span class="pill ${pillCls}">${statusLabel}</span>
                   </div>
-                  <h3 style="margin:0; font-size:0.96rem;">${a.title}</h3>
-                  <div style="font-size:0.78rem; color:var(--muted);">${a.product_name}</div>
+                  <h3 style="margin:0; font-size:0.98rem;">${a.title}</h3>
+                  <div style="font-size:0.8rem; color:var(--muted);">${a.product_name}</div>
                 </div>
                 <div style="text-align:right;" class="num">
-                  <div style="font-weight:700; color:var(--ok); font-size:0.95rem;">+${eur(a.net_benefit_eur)}</div>
-                  <div style="font-size:0.71rem; color:var(--muted);">Net Benefit / Saved</div>
+                  <div style="font-weight:700; color:var(--ok); font-size:0.98rem;">+${eur(a.net_benefit_eur)}</div>
+                  <div style="font-size:0.72rem; color:var(--muted);">Estimated Benefit</div>
                 </div>
               </div>
 
               <div class="autonomy-grid">
-                <div class="autonomy-box"><strong>1. Analyzed Independently</strong>${a.autonomy.analyzed_independently}</div>
-                <div class="autonomy-box"><strong>2. Explainable Recommendation</strong>${a.autonomy.recommended_logic}</div>
-                <div class="autonomy-box"><strong>3. Requires User Approval</strong>${a.autonomy.requires_approval}</div>
-                <div class="autonomy-box"><strong>4. Execution Mode</strong>${a.autonomy.execution_mode}</div>
+                <div class="autonomy-box"><strong class="box-title">1. What Greg Found</strong>${a.autonomy.analyzed_independently}</div>
+                <div class="autonomy-box"><strong class="box-title">2. What Greg Recommends</strong>${a.autonomy.recommended_logic}</div>
+                <div class="autonomy-box"><strong class="box-title">3. Your Decision Needed</strong>${a.autonomy.requires_approval}</div>
+                <div class="autonomy-box"><strong class="box-title">4. How It Runs</strong>${a.autonomy.execution_mode}</div>
               </div>
 
               <div style="display:flex; flex-direction:column; gap:0.45rem;">
                 <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-                  <select class="input" id="opt-${a.id}" style="min-width:180px; padding:0.35rem 0.5rem; font-size:0.79rem;">
+                  <select class="input" id="opt-${a.id}" style="min-width:180px; padding:0.38rem 0.5rem; font-size:0.81rem;">
                     ${a.options.map((o) => `<option value="${o}" ${o === a.selected_option ? "selected" : ""}>${o}</option>`).join("")}
                   </select>
                   ${canSlide ? `
-                    <div style="flex:1; min-width:170px; font-size:0.78rem;">
+                    <div style="flex:1; min-width:170px; font-size:0.8rem;">
                       <div style="display:flex; justify-content:space-between;"><span>Amount:</span><strong class="num" id="amt-lbl-${a.id}">${eur0(a.amount_eur)}</strong></div>
                       <input type="range" id="amt-${a.id}" min="${a.min_amount_eur}" max="${a.max_amount_eur}" step="${a.step_eur}" value="${a.amount_eur}"
                         oninput="document.getElementById('amt-lbl-${a.id}').textContent = '€' + Number(this.value).toLocaleString('en-US')" />
@@ -880,10 +944,10 @@
                 <div class="action-controls">
                   <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
                     <button type="button" class="btn primary sm" onclick="decideAction('${a.id}', 'approved')">
-                      ${a.category === "fraud" ? "✅ Confirm Fraud Hold" : "✅ Approve Action"}
+                      ${a.category === "fraud" ? "✅ Keep Blocked" : "✅ Approve Action"}
                     </button>
-                    <button type="button" class="btn sm" onclick="decideAction('${a.id}', 'snoozed')">⏰ Snooze 7d</button>
-                    <button type="button" class="btn danger sm" onclick="decideAction('${a.id}', 'rejected')">✕ Reject</button>
+                    <button type="button" class="btn sm" onclick="decideAction('${a.id}', 'snoozed')">⏰ Remind Later</button>
+                    <button type="button" class="btn danger sm" onclick="decideAction('${a.id}', 'rejected')">✕ Decline</button>
                   </div>
                 </div>
               </div>
@@ -914,9 +978,9 @@
         box.innerHTML = receipts.slice(0, 3).map((r) => `
           <div class="receipt-box">
             <div>
-              <strong>Simulated Commerzbank Receipt: ${r.receipt_id}</strong> — ${r.product} (${r.selected_option}) · <strong class="num">${eur(r.amount_eur)}</strong>
+              <strong>Simulated Bank Confirmation: ${r.receipt_id}</strong> — ${r.product} (${r.selected_option}) · <strong class="num">${eur(r.amount_eur)}</strong>
             </div>
-            <div class="mono">Idempotency: ${r.idempotency_key} · ${r.mode}</div>
+            <div class="mono">Confirmed by Owner</div>
           </div>
         `).join("");
       }
@@ -925,140 +989,37 @@
         document.querySelectorAll("[data-tab]").forEach((btn) => {
           btn.classList.toggle("active", btn.dataset.tab === activeWorkspaceTab);
         });
-        ["gov", "profile", "prefs", "privacy", "ledger"].forEach((t) => {
+        ["gov", "ledger", "settings"].forEach((t) => {
           document.getElementById(`panel-${t}`).classList.toggle("hidden", t !== activeWorkspaceTab);
         });
 
-        // 1. Gov & Regulatory Panel
+        // 1. Tax & Grant Tips
         const regs = STATE.regulatory_updates || [];
         document.getElementById("panel-gov").innerHTML = regs.length
           ? `<div class="two-col">${regs.map((r) => `
-              <div class="autonomy-box" style="padding:0.85rem; font-size:0.82rem;">
-                <div style="display:flex; justify-content:space-between; gap:0.4rem; margin-bottom:0.3rem; flex-wrap:wrap;">
-                  <span class="pill ${r.severity === "high" ? "warn" : "teal"}">${r.category.toUpperCase()} · ${r.severity.toUpperCase()}</span>
-                  <span class="pill ok num">Est. Impact: ${eur0(r.estimated_impact_eur)}</span>
+              <div class="autonomy-box" style="padding:0.9rem; font-size:0.84rem;">
+                <div style="display:flex; justify-content:space-between; gap:0.4rem; margin-bottom:0.35rem; flex-wrap:wrap;">
+                  <span class="pill ${r.severity === "high" ? "warn" : "teal"}">${r.category.toUpperCase()}</span>
+                  <span class="pill ok num">Potential Impact: ${eur0(r.estimated_impact_eur)}</span>
                 </div>
                 <div style="font-weight:700; margin-bottom:0.25rem;">${r.title}</div>
                 <p style="margin:0.25rem 0;">${r.what_changed}</p>
-                <p style="margin:0.25rem 0; color:var(--muted);"><strong>Why it applies to you:</strong> ${r.why_it_applies}</p>
+                <p style="margin:0.25rem 0; color:var(--muted);"><strong>Why this matters to you:</strong> ${r.why_it_applies}</p>
                 <ul style="margin:0.35rem 0; padding-left:1.1rem;">${r.action_checklist.map((s) => `<li>${s}</li>`).join("")}</ul>
                 <a href="${r.official_url}" target="_blank" rel="noopener" style="color:var(--accent); font-weight:600;">Official Source: ${r.official_source_name} ↗</a>
               </div>
             `).join("")}</div>`
-          : `<div style="color:var(--muted);">Governmental news stream is muted or filtered by your Comfort Preferences.</div>`;
+          : `<div style="color:var(--muted);">Tax and grant notifications are turned off in your Alert Settings.</div>`;
 
-        // 2. Business Profile Panel
-        const p = STATE.profile;
-        document.getElementById("panel-profile").innerHTML = `
-          <form id="profile-form" class="form-grid">
-            <div class="field"><label>Business Name</label><input name="business_name" value="${p.business_name}" /></div>
-            <div class="field"><label>Owner / Managing Director</label><input name="owner_name" value="${p.owner_name}" /></div>
-            <div class="field"><label>Location (Jurisdiction)</label><input name="location" value="${p.location}" /></div>
-            <div class="field"><label>Industry</label><input name="industry" value="${p.industry}" /></div>
-            <div class="field"><label>Tax Regime</label><input name="tax_regime" value="${p.tax_regime}" /></div>
-            <div class="field"><label>Safety Buffer Target (EUR)</label><input type="number" name="safety_buffer_eur" value="${p.safety_buffer_eur}" /></div>
-            <div class="field" style="grid-column: 1 / -1;"><label>Strategic Context Notes (Fed into OpenShift AI &amp; Regulatory Matcher)</label><textarea name="context_notes" rows="2">${p.context_notes}</textarea></div>
-            <div style="grid-column: 1 / -1;"><button type="submit" class="btn primary sm">Save Business Context</button></div>
-          </form>
-        `;
-        document.getElementById("profile-form").onsubmit = async (e) => {
-          e.preventDefault();
-          const fd = new FormData(e.target);
-          STATE = await api("/api/profile", "POST", {
-            business_name: fd.get("business_name"),
-            owner_name: fd.get("owner_name"),
-            location: fd.get("location"),
-            industry: fd.get("industry"),
-            tax_regime: fd.get("tax_regime"),
-            safety_buffer_eur: Number(fd.get("safety_buffer_eur")),
-            context_notes: fd.get("context_notes"),
-          });
-          renderAll();
-        };
-
-        // 3. Comfort Preferences Panel
-        const pref = STATE.preferences;
-        const em = pref.enabled_modules || {};
-        document.getElementById("panel-prefs").innerHTML = `
-          <div class="two-col">
-            <div class="autonomy-box" style="padding:0.85rem; font-size:0.82rem;">
-              <strong>Anti-Fatigue &amp; Module Toggles</strong>
-              <div style="display:flex; flex-direction:column; gap:0.45rem; margin-top:0.5rem;">
-                <label><input type="checkbox" id="pref-gov" ${em.gov_news ? "checked" : ""} /> Show German Regulatory &amp; Tax Relief Feed</label>
-                <label><input type="checkbox" id="pref-fx" ${em.fx_hedging ? "checked" : ""} /> Show FX Hedging Action Cards</label>
-                <label><input type="checkbox" id="pref-inv" ${em.investments ? "checked" : ""} /> Show Treasury Investment (Festgeld) Cards</label>
-                <label><input type="checkbox" id="pref-fraud" ${em.fraud_guard ? "checked" : ""} /> Show 3-Way Fraud Guard Holds</label>
-              </div>
-            </div>
-            <div class="autonomy-box" style="padding:0.85rem; font-size:0.82rem;">
-              <strong>Severity &amp; Comfort Thresholds</strong>
-              <div class="form-grid" style="margin-top:0.5rem;">
-                <div class="field"><label>Minimum Severity</label>
-                  <select id="pref-sev">
-                    <option value="low" ${pref.min_severity === "low" ? "selected" : ""}>Show All (Low+)</option>
-                    <option value="medium" ${pref.min_severity === "medium" ? "selected" : ""}>Medium &amp; Above</option>
-                    <option value="high" ${pref.min_severity === "high" ? "selected" : ""}>High &amp; Critical Only</option>
-                    <option value="critical" ${pref.min_severity === "critical" ? "selected" : ""}>Critical Only</option>
-                  </select>
-                </div>
-                <div class="field"><label>View Density</label>
-                  <select id="pref-mode">
-                    <option value="calm" ${pref.view_mode === "calm" ? "selected" : ""}>Calm / Minimal</option>
-                    <option value="analyst" ${pref.view_mode === "analyst" ? "selected" : ""}>Analyst / Detailed</option>
-                  </select>
-                </div>
-              </div>
-              <button type="button" class="btn primary sm" style="margin-top:0.65rem;" onclick="savePreferences()">Apply Comfort Settings</button>
-            </div>
-          </div>
-        `;
-
-        // 4. Privacy & EU AI Act Ledger
-        const trace = STATE.last_ai_trace || {};
-        const ledger = STATE.audit_ledger || [];
-        document.getElementById("panel-privacy").innerHTML = `
-          <div class="two-col">
-            <div>
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-                <strong style="font-size:0.85rem;">Anonymized Prompt Sent to OpenShift AI (${trace.token_count || 0} Tokens Masked)</strong>
-                <span class="pill teal">${trace.model || "llama-32-3b-instruct"}</span>
-              </div>
-              <div style="display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.45rem;">
-                ${(trace.masked_tokens || []).map((t) => `<span class="pill mono">${t.token} (${t.category})</span>`).join("")}
-              </div>
-              <pre class="prompt-box mono">${(trace.anonymized_system_prompt || "").replace(/</g, "&lt;")}</pre>
-            </div>
-            <div>
-              <strong style="font-size:0.85rem;">Tamper-Evident EU AI Act Audit Ledger (SHA-256 Chained)</strong>
-              <div style="max-height:330px; overflow-y:auto; margin-top:0.45rem;">
-                <table>
-                  <thead><tr><th>#</th><th>Actor</th><th>Action</th><th>Summary</th><th>SHA-256</th></tr></thead>
-                  <tbody>
-                    ${ledger.map((e) => `
-                      <tr>
-                        <td class="num">${e.seq}</td>
-                        <td><span class="pill">${e.actor}</span></td>
-                        <td class="mono">${e.action_type}</td>
-                        <td>${e.summary}</td>
-                        <td class="mono">${e.sha256.slice(0, 12)}…</td>
-                      </tr>
-                    `).join("")}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        `;
-
-        // 5. Analyst Ledger & Category Breakdown
+        // 2. Bank Statement Categories & History
         const cats = STATE.parsed_summary.categories || [];
         const txs = STATE.parsed_summary.recent_ledger || [];
         document.getElementById("panel-ledger").innerHTML = `
           <div class="two-col">
             <div>
-              <strong style="font-size:0.85rem;">Category Cash Flow Breakdown</strong>
-              <table style="margin-top:0.4rem;">
-                <thead><tr><th>Category</th><th>Bookings</th><th>Net Amount</th></tr></thead>
+              <strong style="font-size:0.88rem;">Spending &amp; Income by Category</strong>
+              <table style="margin-top:0.45rem;">
+                <thead><tr><th>Category</th><th>Count</th><th>Total</th></tr></thead>
                 <tbody>
                   ${cats.map((c) => `
                     <tr>
@@ -1071,10 +1032,10 @@
               </table>
             </div>
             <div>
-              <strong style="font-size:0.85rem;">Recent Normalized Ledger Rows (Latest ${txs.length})</strong>
-              <div style="max-height:320px; overflow-y:auto; margin-top:0.4rem;">
+              <strong style="font-size:0.88rem;">Latest Bank Transactions (${txs.length})</strong>
+              <div style="max-height:330px; overflow-y:auto; margin-top:0.45rem;">
                 <table>
-                  <thead><tr><th>Date</th><th>Counterparty</th><th>Category</th><th>EUR</th></tr></thead>
+                  <thead><tr><th>Date</th><th>Who</th><th>Category</th><th>Amount</th></tr></thead>
                   <tbody>
                     ${txs.map((t) => `
                       <tr>
@@ -1090,15 +1051,61 @@
             </div>
           </div>
         `;
+
+        // 3. Business Details & Alert Settings
+        const p = STATE.profile;
+        const pref = STATE.preferences;
+        const em = pref.enabled_modules || {};
+        document.getElementById("panel-settings").innerHTML = `
+          <div class="two-col">
+            <form id="profile-form" class="form-grid">
+              <div class="field"><label>Business Name</label><input name="business_name" value="${escapeHtml(p.business_name)}" /></div>
+              <div class="field"><label>Owner Name</label><input name="owner_name" value="${escapeHtml(p.owner_name)}" /></div>
+              <div class="field"><label>City / Region</label><input name="location" value="${escapeHtml(p.location)}" /></div>
+              <div class="field"><label>Safety Reserve Goal (€)</label><input type="number" name="safety_buffer_eur" value="${p.safety_buffer_eur}" /></div>
+              <div class="field" style="grid-column: 1 / -1;"><label>Notes for Greg (Staff, Closures, Goals)</label><textarea name="context_notes" rows="2">${escapeHtml(p.context_notes)}</textarea></div>
+              <div style="grid-column: 1 / -1;"><button type="submit" class="btn primary sm">Save Business Details</button></div>
+            </form>
+
+            <div class="autonomy-box" style="padding:0.9rem; font-size:0.84rem;">
+              <strong class="box-title">Choose Which Tips &amp; Alerts You Want to See</strong>
+              <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.55rem;">
+                <label><input type="checkbox" id="pref-gov" ${em.gov_news ? "checked" : ""} /> Show German Tax &amp; Grant Tips</label>
+                <label><input type="checkbox" id="pref-fx" ${em.fx_hedging ? "checked" : ""} /> Show Currency Protection Suggestions</label>
+                <label><input type="checkbox" id="pref-inv" ${em.investments ? "checked" : ""} /> Show Savings Interest Suggestions</label>
+                <label><input type="checkbox" id="pref-fraud" ${em.fraud_guard ? "checked" : ""} /> Show Suspicious Invoice Checks</label>
+              </div>
+              <div class="field" style="margin-top:0.65rem;">
+                <label>Only Show Alerts of Importance:</label>
+                <select id="pref-sev">
+                  <option value="low" ${pref.min_severity === "low" ? "selected" : ""}>Show All Tips &amp; Warnings</option>
+                  <option value="medium" ${pref.min_severity === "medium" ? "selected" : ""}>Medium &amp; Important Only</option>
+                  <option value="high" ${pref.min_severity === "high" ? "selected" : ""}>High Priority Only</option>
+                  <option value="critical" ${pref.min_severity === "critical" ? "selected" : ""}>Urgent Alerts Only</option>
+                </select>
+              </div>
+              <button type="button" class="btn primary sm" style="margin-top:0.65rem;" onclick="savePreferences()">Save Alert Settings</button>
+            </div>
+          </div>
+        `;
+        document.getElementById("profile-form").onsubmit = async (e) => {
+          e.preventDefault();
+          const fd = new FormData(e.target);
+          STATE = await api("/api/profile", "POST", {
+            business_name: fd.get("business_name"),
+            owner_name: fd.get("owner_name"),
+            location: fd.get("location"),
+            safety_buffer_eur: Number(fd.get("safety_buffer_eur")),
+            context_notes: fd.get("context_notes"),
+          });
+          renderAll();
+        };
       }
 
       window.savePreferences = async function () {
         STATE = await api("/api/preferences", "POST", {
-          view_mode: document.getElementById("pref-mode").value,
           min_severity: document.getElementById("pref-sev").value,
           enabled_modules: {
-            warnings: true,
-            recommendations: true,
             gov_news: document.getElementById("pref-gov").checked,
             fx_hedging: document.getElementById("pref-fx").checked,
             investments: document.getElementById("pref-inv").checked,
@@ -1108,39 +1115,25 @@
         renderAll();
       };
 
-      function renderChatChips() {
-        const isGastro = STATE.scenario_id === "pizzeria_amalfi";
-        const prompts = isGastro
-          ? [
-              "Explain the June shutdown overdraft & Commerzbank Credit Line math",
-              "How should I hedge my 4,166.67 CHF monthly Zurich transfers?",
-              "Why was invoice INV-FLV-2026-109 quarantined?",
-              "What German tax & grant rules apply to Pizzeria Amalfi?",
-            ]
-          : [
-              "Explain the Week-4 -€18,450 shortfall & KronoStahl delay",
-              "Compare the Commerzbank EUR/USD Forward vs FX Option",
-              "Why was INV-2026-994 blocked by 3-Way Fraud Guard?",
-            ];
-        document.getElementById("chat-chips").innerHTML = prompts
-          .map((p) => `<button type="button" class="btn sm" onclick="quickAsk(${JSON.stringify(p)})">${p}</button>`)
-          .join("");
-      }
-
-      function appendChatMsg(role, text) {
+      function appendChatMsg(role, text, metaText = "") {
         const log = document.getElementById("chat-log");
         const div = document.createElement("div");
         div.className = `msg ${role}`;
-        div.textContent = text;
+        if (role === "assistant") {
+          div.innerHTML = `<div class="md-body">${formatMarkdown(text)}</div>${metaText ? `<div class="chat-meta">${escapeHtml(metaText)}</div>` : ""}`;
+        } else {
+          div.textContent = text;
+        }
         log.appendChild(div);
         log.scrollTop = log.scrollHeight;
         return div;
       }
 
-      window.quickAsk = function (text) {
-        document.getElementById("chat-input").value = text;
-        sendChat();
-      };
+      function updateAssistantMsg(el, text, metaText = "") {
+        el.innerHTML = `<div class="md-body">${formatMarkdown(text)}</div>${metaText ? `<div class="chat-meta">${escapeHtml(metaText)}</div>` : ""}`;
+        const log = document.getElementById("chat-log");
+        log.scrollTop = log.scrollHeight;
+      }
 
       async function sendChat() {
         const input = document.getElementById("chat-input");
@@ -1153,18 +1146,15 @@
         btn.disabled = true;
         chatHistory.push({ role: "user", content: text });
         appendChatMsg("user", text);
-        const pending = appendChatMsg("assistant", "Consulting OpenShift AI CFO…");
+        const pending = appendChatMsg("assistant", "Thinking…");
 
         try {
           const res = await api("/api/chat", "POST", { messages: chatHistory, include_context: true });
-          const suffix = res.mode === "openshift_ai_live"
-            ? `\n\n[OpenShift AI · ${res.model} · ${res.latency_ms}ms · ${res.masked_token_count} PII tokens masked]`
-            : `\n\n[Deterministic Fallback · ${res.masked_token_count} PII tokens masked]`;
-          pending.textContent = res.reply + suffix;
+          const meta = res.mode === "openshift_ai_live"
+            ? `OpenShift AI (${res.model} · ${res.latency_ms}ms)`
+            : "Instant Financial Summary (OpenShift AI offline locally)";
+          updateAssistantMsg(pending, res.reply, meta);
           chatHistory.push({ role: "assistant", content: res.reply });
-          // Refresh state so Anonymized AI Prompt Inspector reflects this latest call
-          STATE = await api("/api/state");
-          renderWorkspacePanels();
         } catch (err) {
           pending.className = "msg error";
           pending.textContent = `Error: ${err.message}`;
@@ -1182,21 +1172,16 @@
         STATE = await api("/api/upload-csv", "POST", {
           filename: file.name,
           csv_text: text,
-          opening_balance: 2500.0,
         });
         selectedWeek = STATE.kpis.projected_min_13w_week || 1;
+        chartTab = "13w";
         renderAll();
       }
 
-      // Wire UI Listeners
-      document.getElementById("btn-sc-pizzeria").addEventListener("click", async () => {
+      // Wire Listeners
+      document.getElementById("btn-reset-pizzeria").addEventListener("click", async () => {
         STATE = await api("/api/scenario", "POST", { scenario_id: "pizzeria_amalfi" });
         selectedWeek = STATE.kpis.projected_min_13w_week || 7;
-        renderAll();
-      });
-      document.getElementById("btn-sc-mittelstand").addEventListener("click", async () => {
-        STATE = await api("/api/scenario", "POST", { scenario_id: "mittelstand_b2b" });
-        selectedWeek = STATE.kpis.projected_min_13w_week || 4;
         renderAll();
       });
 
@@ -1216,31 +1201,19 @@
       });
       document.getElementById("csv-file-input").addEventListener("change", (e) => {
         if (e.target.files && e.target.files[0]) ingestCsvFile(e.target.files[0]);
-      });
-
-      document.getElementById("btn-view-mode").addEventListener("click", async () => {
-        const nextMode = STATE.preferences.view_mode === "calm" ? "analyst" : "calm";
-        if (nextMode === "analyst") activeWorkspaceTab = "ledger";
-        STATE = await api("/api/preferences", "POST", { view_mode: nextMode });
-        renderAll();
-      });
-
-      document.getElementById("btn-jump-privacy").addEventListener("click", () => {
-        activeWorkspaceTab = "privacy";
-        renderWorkspacePanels();
-        document.getElementById("workspace-tabs-card").scrollIntoView({ behavior: "smooth" });
+        e.target.value = "";
       });
 
       document.getElementById("btn-run-ai").addEventListener("click", async () => {
         const btn = document.getElementById("btn-run-ai");
         btn.disabled = true;
-        btn.textContent = "⏳ Querying OpenShift AI…";
+        btn.textContent = "⏳ Updating Summary…";
         try {
           STATE = await api("/api/ai/analyze", "POST", {});
           renderAll();
         } finally {
           btn.disabled = false;
-          btn.textContent = "✨ Analyze with OpenShift AI";
+          btn.textContent = "✨ Refresh AI Summary";
         }
       });
 
@@ -1286,10 +1259,10 @@
       document.getElementById("btn-clear-chat").addEventListener("click", () => {
         chatHistory.length = 0;
         document.getElementById("chat-log").replaceChildren();
-        appendChatMsg("assistant", "Chat cleared. Ask me anything about your cash forecast, FX exposures, or Commerzbank actions.");
+        appendChatMsg("assistant", "Chat cleared. Feel free to ask any question about your pizzeria's cash balance, upcoming bills, or Commerzbank recommendations.");
       });
 
-      appendChatMsg("assistant", "Hello! I am Greg, your Calm Glass-Box Autonomous CFO running on OpenShift AI. Click a prompt below or ask me about your cash flow.");
+      appendChatMsg("assistant", "Hello Vincenzo! I am **Greg**, your financial assistant. Ask me anything about your bank balance, upcoming costs, or how to protect your cash reserve.");
       loadState();
     </script>
   </body>
