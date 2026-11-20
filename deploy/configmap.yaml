@@ -6,6 +6,5 @@ metadata:
     app: greg
 data:
   PORT: "8000"
-  # Set these to your OpenShift AI (vLLM / MaaS) model endpoint:
-  # LLM_BASE_URL: "http://<model-service>.<namespace>.svc.cluster.local:8000/v1"
-  # LLM_MODEL: "granite-..."
+  LLM_BASE_URL: "http://llama-32-3b-instruct-predictor.my-first-model.svc.cluster.local:8080/v1"
+  LLM_MODEL: "llama-32-3b-instruct"
