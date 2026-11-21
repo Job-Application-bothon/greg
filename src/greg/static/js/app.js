@@ -1,4 +1,5 @@
 /** Main Greg application orchestrator connecting API, chart, CSV mapping, and chat modules. */
+import { syncOnboarding } from "./onboarding.js";
 import { fetchHealth, fetchViewData, postJson } from "./api.js";
 import { createChartController } from "./chart.js";
 import { createChatController } from "./chat.js";
@@ -264,6 +265,7 @@ function renderMethodBar(la) {
 
 function renderState(state) {
   currentState = state;
+  syncOnboarding(state);
   if (!state || !state.has_data) {
     emptyView.classList.remove("hidden");
     workspaceView.classList.add("hidden");
