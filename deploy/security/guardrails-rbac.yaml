@@ -1,0 +1,16 @@
+# Lets Greg's service account call the auth-protected guardrails endpoint
+# (the auth proxy admits identities with `view` on the namespace).
+# Greg reads its mounted service account token automatically when GUARDRAILS_TOKEN is unset.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: greg-guardrails-view
+  labels:
+    app: greg
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: greg

@@ -23,6 +23,9 @@ class Settings:
     static_dir: Path
     session_max: int
     session_ttl: int
+    guardrails_check_url: str = ""
+    guardrails_token: str = ""
+    guardrails_fail_open: bool = False
 
 
 def load_settings() -> Settings:
@@ -46,4 +49,8 @@ def load_settings() -> Settings:
         static_dir=STATIC_DIR,
         session_max=session_max,
         session_ttl=session_ttl,
+        guardrails_check_url=os.environ.get("GUARDRAILS_CHECK_URL", "").strip(),
+        guardrails_token=os.environ.get("GUARDRAILS_TOKEN", "").strip(),
+        guardrails_fail_open=os.environ.get("GUARDRAILS_FAIL_OPEN", "").strip().lower()
+        in {"1", "true", "yes"},
     )

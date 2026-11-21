@@ -99,6 +99,12 @@ export function createChatController(els, { getHorizonPayload }) {
         Object.assign({ messages: chatHistory }, getHorizonPayload())
       );
       const data = await res.json();
+      if (data.blocked) {
+        // Guardrails refused the message: show Greg's refusal, keep it out of history.
+        pendingEl.textContent = data.error;
+        chatHistory.pop();
+        return;
+      }
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       pendingEl.textContent = data.reply;
       chatHistory.push({ role: "assistant", content: data.reply });

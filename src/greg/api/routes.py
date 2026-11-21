@@ -15,7 +15,40 @@ from greg.domain.ledger import LedgerStore
 from greg.domain.sessions import SESSIONS
 from greg.llm.classifier import classify_signatures_with_llm
 from greg.llm.client import call_llm
-from greg.llm.prompts import build_context_system_prompt, build_explain_prompt
+from greg.llm.guardrails import GuardrailUnavailable, check_text, guardrails_enabled
+from greg.llm.prompts import SYSTEM_PROMPT, build_context_system_prompt, build_explain_prompt
+
+CHAT_MAX_MESSAGES = 12
+CHAT_MAX_CHARS = 4000
+CHAT_ALLOWED_ROLES = {"user", "assistant"}
+GUARDRAIL_REFUSAL = (
+    "Sorry, I can't help with that. I can only answer questions about your business's money."
+)
+
+
+def sanitize_chat_messages(messages: list[Any]) -> list[dict[str, str]]:
+    """Keep only well-formed user/assistant turns from the client, newest last.
+
+    Client-supplied `system` messages are rejected so callers cannot replace Greg's
+    grounded system prompt, and history is trimmed to the most recent turns.
+    """
+    cleaned: list[dict[str, str]] = []
+    for msg in messages:
+        if not isinstance(msg, dict):
+            raise ValueError("Each message must be an object with 'role' and 'content'")
+        role = msg.get("role")
+        content = msg.get("content")
+        if role not in CHAT_ALLOWED_ROLES:
+            raise ValueError("Message role must be 'user' or 'assistant'")
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("Message content must be a non-empty string")
+        if len(content) > CHAT_MAX_CHARS:
+            raise ValueError(f"Messages are limited to {CHAT_MAX_CHARS} characters")
+        cleaned.append({"role": role, "content": content})
+    cleaned = cleaned[-CHAT_MAX_MESSAGES:]
+    if not cleaned or cleaned[-1]["role"] != "user":
+        raise ValueError("The last message must come from the user")
+    return cleaned
 
 STATIC_MIME_TYPES: dict[str, str] = {
     ".html": "text/html; charset=utf-8",
@@ -40,6 +73,7 @@ def health_payload() -> dict[str, object]:
         "pod": socket.gethostname(),
         "llm_configured": bool(settings.llm_base_url),
         "llm_model": settings.llm_model or None,
+        "guardrails_enabled": guardrails_enabled(),
     }
 
 
@@ -318,23 +352,39 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             )
             return
 
-        call_messages = list(messages)
-        if store.transactions and call_messages[0].get("role") != "system":
-            month = data.get("selected_month")
-            horizon = parse_optional_int(data.get("horizon_days")) or 30
-            horizon_months = parse_optional_int(data.get("horizon_months"))
-            call_messages.insert(
-                0,
-                {
-                    "role": "system",
-                    "content": build_context_system_prompt(
-                        selected_month=month,
-                        horizon_days=horizon,
-                        horizon_months=horizon_months,
-                        store=store,
-                    ),
-                },
+        try:
+            history = sanitize_chat_messages(messages)
+        except ValueError as exc:
+            self._send_json(400, {"error": str(exc)})
+            return
+
+        try:
+            for msg in history:
+                verdict = check_text(msg["content"])
+                if not verdict.allowed:
+                    self._send_json(
+                        422,
+                        {"error": GUARDRAIL_REFUSAL, "blocked": True, "rails": list(verdict.rails)},
+                    )
+                    return
+        except GuardrailUnavailable as exc:
+            self._send_json(503, {"error": str(exc)})
+            return
+
+        month = data.get("selected_month")
+        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon_months = parse_optional_int(data.get("horizon_months"))
+        system_prompt = (
+            build_context_system_prompt(
+                selected_month=month,
+                horizon_days=horizon,
+                horizon_months=horizon_months,
+                store=store,
             )
+            if store.transactions
+            else SYSTEM_PROMPT
+        )
+        call_messages = [{"role": "system", "content": system_prompt}, *history]
 
         try:
             result = call_llm(call_messages)

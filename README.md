@@ -35,6 +35,7 @@ src/greg/
 │   ├── __init__.py
 │   ├── client.py               # OpenAI-compatible HTTP client (`call_llm`, `/models` discovery)
 │   ├── classifier.py           # Optional LLM signature classifier (`Salaries`/`Taxes`/`Other`)
+│   ├── guardrails.py           # Optional NeMo Guardrails input screening (`/v1/guardrail/checks`)
 │   └── prompts.py              # Grounded system & explain prompt builders
 └── static/
     ├── index.html              # Semantic UI shell
@@ -106,9 +107,33 @@ uv run greg
 | `GREG_PLANNER_DIR` | package `forecasting/models` | Override directory containing `planner.keras` & `planner_config.json` |
 | `GREG_SESSION_MAX` | `50` | Maximum concurrent tab sessions cached in memory |
 | `GREG_SESSION_TTL` | `7200` | Session idle expiry in seconds |
+| `GUARDRAILS_CHECK_URL` | `""` | Full NeMo Guardrails checks URL (`.../v1/guardrail/checks`); unset disables screening |
+| `GUARDRAILS_TOKEN` | `""` | Bearer token for the guardrails endpoint (defaults to the pod's service account token) |
+| `GUARDRAILS_FAIL_OPEN` | `false` | When `true`, chat still works if the guardrails service is unreachable |
 
 ---
 
 ## Container & OpenShift Deployment
 
 Build and deployment manifests live in [`deploy/`](deploy/), built cleanly with [`Containerfile`](Containerfile) (`uv sync --frozen --no-dev --extra planner`) and automated on `main` via [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml).
+
+---
+
+## LLM Security
+
+**Always on (in code):**
+- `/api/chat` rejects client-supplied `system` messages, always injects Greg's own grounded system prompt, accepts only `user`/`assistant` turns of at most 4,000 characters, and keeps the last 12.
+- The system prompt limits Greg to the business's finances and tells the model to treat CSV names and references as data. CSV-derived names are flattened to one short line before they are embedded.
+- The CSV classifier sends transactions as JSON lines inside a `<transactions>` block marked as untrusted, and only accepts `Salaries`/`Taxes`/`Other` back.
+
+**NeMo Guardrails (optional, OpenShift AI 3.5+):** every chat message is screened by a DeBERTa prompt-injection classifier before it reaches the model. Blocked messages return `422` with a polite refusal; if the guardrails service is down, chat returns `503` unless `GUARDRAILS_FAIL_OPEN=true`.
+
+```bash
+oc apply -n my-first-model -f deploy/security/   # guardrails server, RBAC, egress NetworkPolicy
+oc get nemoguardrails,svc -n my-first-model      # find the guardrails service name and port
+```
+
+Then set `GUARDRAILS_CHECK_URL` in [`deploy/configmap.yaml`](deploy/configmap.yaml) to `http(s)://<service>.my-first-model.svc.cluster.local:<port>/v1/guardrail/checks` and redeploy. If the service serves HTTPS with an OpenShift service-CA certificate, also mount the service CA bundle and point `SSL_CERT_FILE` at it.
+
+`deploy/security/` is not applied by CI, because the `NemoGuardrails` CRD only exists once the TrustyAI component is enabled.
+
