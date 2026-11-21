@@ -392,7 +392,7 @@ function renderState(state) {
 
 bindBankConnect(async () => {
   chart.resetAll();
-  chat.clearPeriodContext();
+  chat.resetConversation();
   if (chat.isOpen()) chat.setOpen(false);
   const res = await postJson("/api/bank/connect", {});
   const data = await res.json();
@@ -408,7 +408,8 @@ importForm.addEventListener("submit", async (e) => {
   if (!file) return;
   const text = await file.text();
   chart.resetAll();
-  chat.clearPeriodContext();
+  chat.resetConversation();
+  if (chat.isOpen()) chat.setOpen(false);
   const payload = {
     csv_text: text,
     filename: file.name,
@@ -483,7 +484,7 @@ resetBtn.addEventListener("click", async () => {
   if (res.ok) {
     csvMapping.reset();
     chart.resetAll();
-    chat.clearPeriodContext();
+    chat.resetConversation();
     if (chat.isOpen()) chat.setOpen(false);
     renderState(await res.json());
   }

@@ -22,17 +22,24 @@ export function createChatController(els, { getHorizonPayload }) {
   } = els;
 
   const chatHistory = [];
+  let activeSelectedPeriod = null;
+  const initialMessagesHtml = messagesEl ? messagesEl.innerHTML : "";
 
   function setOpen(open) {
     messenger.hidden = !open;
     chatLauncher.hidden = open;
+    const floatingLauncher = document.getElementById("floating-chat-launcher");
+    if (floatingLauncher) {
+      floatingLauncher.hidden = open;
+      floatingLauncher.setAttribute("aria-expanded", String(open));
+    }
     chatLauncher.setAttribute("aria-expanded", String(open));
     chatLauncher.setAttribute("aria-label", open ? "Close chat with Greg" : "Open chat with Greg");
     if (open) {
       if (!promptEl.disabled) promptEl.focus();
       messagesEl.scrollTop = messagesEl.scrollHeight;
     } else {
-      chatLauncher.focus();
+      (floatingLauncher || chatLauncher).focus({ preventScroll: true });
     }
   }
 
@@ -51,13 +58,22 @@ export function createChatController(els, { getHorizonPayload }) {
   }
 
   function clearPeriodContext() {
+    activeSelectedPeriod = null;
     if (chatPeriodContext) chatPeriodContext.classList.add("hidden");
     window.GREG_SELECTED_PERIOD = null;
+  }
+
+  function resetConversation() {
+    chatHistory.length = 0;
+    clearPeriodContext();
+    if (promptEl) promptEl.value = "";
+    if (messagesEl) messagesEl.innerHTML = initialMessagesHtml;
   }
 
   function receivePeriodAnalysis(payload) {
     if (!payload) return;
 
+    activeSelectedPeriod = payload;
     window.GREG_SELECTED_PERIOD = payload;
     window.dispatchEvent(new CustomEvent("greg:analyze-period", { detail: payload }));
 
@@ -157,10 +173,11 @@ export function createChatController(els, { getHorizonPayload }) {
     const pendingEl = appendMessage("assistant", "Thinking…");
 
     try {
-      const res = await postJson(
-        "/api/chat",
-        Object.assign({ messages: chatHistory }, getHorizonPayload())
-      );
+      const chatPayload = Object.assign({ messages: chatHistory }, getHorizonPayload());
+      if (activeSelectedPeriod) {
+        chatPayload.selected_period = activeSelectedPeriod;
+      }
+      const res = await postJson("/api/chat", chatPayload);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       pendingEl.textContent = data.reply;
@@ -176,5 +193,12 @@ export function createChatController(els, { getHorizonPayload }) {
     }
   });
 
-  return { setOpen, isOpen, appendMessage, receivePeriodAnalysis, clearPeriodContext };
+  return {
+    setOpen,
+    isOpen,
+    appendMessage,
+    receivePeriodAnalysis,
+    clearPeriodContext,
+    resetConversation,
+  };
 }

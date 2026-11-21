@@ -174,6 +174,25 @@ class LedgerStoreTest(unittest.TestCase):
         self.assertIn("2025-06 (June 2025)", prompt)
         self.assertIn("2025-12 (December 2025)", prompt)
 
+    def test_zero_horizon_off_mode_safe_with_negative_balance(self) -> None:
+        txs = synthetic_ledger(date(2025, 1, 1), date(2025, 12, 31))
+        store = make_store_from_txs(txs, opening_balance=-500000.0)
+        view_month = store.get_view(horizon_months=0)
+        la_m = view_month["liquidity_agent"]
+        self.assertEqual(la_m["horizon_months"], 0)
+        self.assertEqual(la_m["forecast_series"], [])
+        self.assertEqual(len(la_m["full_forecast_series"]), 12)
+        self.assertIn("turned off", la_m["recommendation_summary"].lower())
+
+        short_store = LedgerStore()
+        short_store.add_manual_operation("2026-01-10", "expense", 1000.0, "Rent", "Other")
+        view_day = short_store.get_view(horizon_days=0)
+        la_d = view_day["liquidity_agent"]
+        self.assertEqual(la_d["horizon_days"], 0)
+        self.assertEqual(la_d["forecast_series"], [])
+        self.assertEqual(len(la_d["full_forecast_series"]), 365)
+        self.assertIn("turned off", la_d["recommendation_summary"].lower())
+
 
 if __name__ == "__main__":
     unittest.main()

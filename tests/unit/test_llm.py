@@ -130,6 +130,33 @@ class LLMUnitTest(unittest.TestCase):
         self.assertIn("next 6 months", explain)
         self.assertIn("PLN ", explain)
 
+    def test_context_prompt_grounds_selected_chart_period_past_and_future(self) -> None:
+        txs = synthetic_ledger(date(2024, 1, 1), date(2025, 12, 31))
+        store = make_store_from_txs(txs, opening_balance=10000.0)
+        period = {
+            "startDate": "2025-10",
+            "endDate": "2026-02",
+            "mode": "mixed",
+            "modeLabel": "Past & Future",
+            "startBalance": 12000.0,
+            "endBalance": 15500.0,
+            "totalIncome": 90000.0,
+            "totalExpenses": 86500.0,
+            "netFlow": 3500.0,
+            "lowestBalance": 11200.0,
+            "lowestDate": "2025-11",
+        }
+        ctx = build_context_system_prompt(
+            horizon_months=12,
+            store=store,
+            selected_period=period,
+        )
+        self.assertIn("SELECTED CHART PERIOD (2025-10 to 2026-02 · Past & Future)", ctx)
+        self.assertIn("Recorded actual transactions in period:", ctx)
+        self.assertIn("Top expense counterparties in period:", ctx)
+        self.assertIn("Projected forecast entries in period", ctx)
+        self.assertIn("2026-01:", ctx)
+
 
 if __name__ == "__main__":
     unittest.main()

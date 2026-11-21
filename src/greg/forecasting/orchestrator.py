@@ -149,35 +149,54 @@ def run_forecast(
             recovery_date = f"{ly + 1:04d}-01" if lm == 12 else f"{ly:04d}-{lm + 1:02d}"
 
         cur_sym = "€" if account_currency == "EUR" else f"{account_currency} "
-        analysis_summary = (
-            f"Starting after {last_hist_month} with a balance of {cur_sym}{aligned_start_bal:,.2f}, "
-            f"Greg ran the seasonal monthly planner for the next {n_months} months "
-            f"(Inflow: {inflow_s['method_label']}; Outflow: {outflow_s['method_label']}). "
-            f"Expected total income is {cur_sym}{total_expected_in:,.2f} and expected expenses are "
-            f"{cur_sym}{total_expected_out:,.2f}."
-        )
-        if goes_below_zero:
-            rec_text = (
-                f" recovers above zero in {recovery_date}"
-                if recovery_date
-                else f" stays below zero through {months[-1]}"
+        if n_months == 0:
+            analysis_summary = (
+                f"Forecast horizon is turned off. Showing historical balance through "
+                f"{last_hist_month} (ending balance: {cur_sym}{aligned_start_bal:,.2f})."
             )
-            recommendation_summary = (
-                f"Warning: Your expected balance drops below zero in {first_negative_date}, "
-                f"reaching {cur_sym}{lowest_balance:,.2f} in {lowest_date} "
-                f"({months_below_zero} month(s) below zero; it{rec_text}). "
-                f"In a pessimistic stress test, it could reach {cur_sym}{lowest_pess:,.2f} "
-                f"({lowest_pess_date})."
-            )
+            if goes_below_zero:
+                recommendation_summary = (
+                    f"Forecast is turned off. Your latest historical balance in {last_hist_month} "
+                    f"is {cur_sym}{aligned_start_bal:,.2f}. Select a future horizon (+1M to +1Y) "
+                    f"to inspect projected cash recovery and credit needs."
+                )
+            else:
+                recommendation_summary = (
+                    f"Forecast is turned off. Your latest historical balance in {last_hist_month} "
+                    f"is {cur_sym}{aligned_start_bal:,.2f}. Select a future horizon (+1M to +1Y) "
+                    f"to preview upcoming months."
+                )
         else:
-            pess_note = (
-                f" (Pessimistic stress test lowest: {cur_sym}{lowest_pess:,.2f} in {lowest_pess_date}.)"
+            analysis_summary = (
+                f"Starting after {last_hist_month} with a balance of {cur_sym}{aligned_start_bal:,.2f}, "
+                f"Greg ran the seasonal monthly planner for the next {n_months} months "
+                f"(Inflow: {inflow_s['method_label']}; Outflow: {outflow_s['method_label']}). "
+                f"Expected total income is {cur_sym}{total_expected_in:,.2f} and expected expenses are "
+                f"{cur_sym}{total_expected_out:,.2f}."
             )
-            recommendation_summary = (
-                f"Good news: Your expected balance stays above zero for all next {n_months} months, "
-                f"with a lowest expected balance of {cur_sym}{lowest_balance:,.2f} in {lowest_date}."
-                + pess_note
-            )
+            if goes_below_zero:
+                horizon_end_label = months[-1] if months else last_hist_month
+                rec_text = (
+                    f" recovers above zero in {recovery_date}"
+                    if recovery_date
+                    else f" stays below zero through {horizon_end_label}"
+                )
+                recommendation_summary = (
+                    f"Warning: Your expected balance drops below zero in {first_negative_date}, "
+                    f"reaching {cur_sym}{lowest_balance:,.2f} in {lowest_date} "
+                    f"({months_below_zero} month(s) below zero; it{rec_text}). "
+                    f"In a pessimistic stress test, it could reach {cur_sym}{lowest_pess:,.2f} "
+                    f"({lowest_pess_date})."
+                )
+            else:
+                pess_note = (
+                    f" (Pessimistic stress test lowest: {cur_sym}{lowest_pess:,.2f} in {lowest_pess_date}.)"
+                )
+                recommendation_summary = (
+                    f"Good news: Your expected balance stays above zero for all next {n_months} months, "
+                    f"with a lowest expected balance of {cur_sym}{lowest_balance:,.2f} in {lowest_date}."
+                    + pess_note
+                )
 
         return {
             "engine": "greg_planner",

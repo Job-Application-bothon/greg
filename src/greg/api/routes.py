@@ -359,6 +359,8 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             month = data.get("selected_month")
             horizon = parse_int_or_default(data.get("horizon_days"), 30)
             horizon_months = parse_optional_int(data.get("horizon_months"))
+            raw_period = data.get("selected_period")
+            selected_period = raw_period if isinstance(raw_period, dict) else None
             call_messages.insert(
                 0,
                 {
@@ -368,6 +370,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
                         horizon_days=horizon,
                         horizon_months=horizon_months,
                         store=store,
+                        selected_period=selected_period,
                     ),
                 },
             )

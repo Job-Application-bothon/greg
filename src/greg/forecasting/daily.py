@@ -234,34 +234,45 @@ def run_daily_liquidity_forecast(
             recovery_date = (last_neg_dt + timedelta(days=1)).isoformat()
 
     cur_sym = "€" if account_currency == "EUR" else f"{account_currency} "
-    analysis_summary = (
-        f"Starting from {as_of_date.isoformat()} with a balance of {cur_sym}{current_balance:,.2f}, "
-        f"Greg checked your past payment patterns and found {len(recurring_schedules)} regular "
-        f"monthly/quarterly payments. Over the next {horizon_days} days, expected income is "
-        f"{cur_sym}{total_expected_in:,.2f} and expected expenses (including {len(upcoming_bills)} "
-        f"scheduled bills) are {cur_sym}{total_expected_out:,.2f}."
-    )
-
-    if goes_below_zero:
-        rec_text = (
-            f" recovers back above zero on {recovery_date}"
-            if recovery_date
-            else f" stays below zero through the end of the {horizon_days}-day window"
+    if horizon_days == 0:
+        analysis_summary = (
+            f"Forecast horizon is turned off. Showing historical balance through "
+            f"{as_of_date.isoformat()} (current balance: {cur_sym}{current_balance:,.2f})."
         )
         recommendation_summary = (
-            f"Warning: Your account balance is expected to drop below zero on {first_negative_date}, "
-            f"reaching a lowest point of -{cur_sym}{shortfall_amount:,.2f} on {lowest_date} "
-            f"({days_below_zero} days below zero; it{rec_text}). "
-            f"To keep your account safely above zero without paying high unarranged bank overdraft "
-            f"fees, you should request a short-term credit line of "
-            f"{cur_sym}{recommended_credit:,.2f} from your bank."
+            f"Forecast is turned off. Your balance as of {as_of_date.isoformat()} is "
+            f"{cur_sym}{current_balance:,.2f}. Select a future horizon (+1D to +1Y) to inspect "
+            f"upcoming cash projections."
         )
     else:
-        recommendation_summary = (
-            f"Good news: Your account stays above zero for the entire next {horizon_days} days. "
-            f"The lowest expected balance is {cur_sym}{lowest_balance:,.2f} on {lowest_date}. "
-            f"You do not need any short-term bank credit right now."
+        analysis_summary = (
+            f"Starting from {as_of_date.isoformat()} with a balance of {cur_sym}{current_balance:,.2f}, "
+            f"Greg checked your past payment patterns and found {len(recurring_schedules)} regular "
+            f"monthly/quarterly payments. Over the next {horizon_days} days, expected income is "
+            f"{cur_sym}{total_expected_in:,.2f} and expected expenses (including {len(upcoming_bills)} "
+            f"scheduled bills) are {cur_sym}{total_expected_out:,.2f}."
         )
+
+        if goes_below_zero:
+            rec_text = (
+                f" recovers back above zero on {recovery_date}"
+                if recovery_date
+                else f" stays below zero through the end of the {horizon_days}-day window"
+            )
+            recommendation_summary = (
+                f"Warning: Your account balance is expected to drop below zero on {first_negative_date}, "
+                f"reaching a lowest point of -{cur_sym}{shortfall_amount:,.2f} on {lowest_date} "
+                f"({days_below_zero} days below zero; it{rec_text}). "
+                f"To keep your account safely above zero without paying high unarranged bank overdraft "
+                f"fees, you should request a short-term credit line of "
+                f"{cur_sym}{recommended_credit:,.2f} from your bank."
+            )
+        else:
+            recommendation_summary = (
+                f"Good news: Your account stays above zero for the entire next {horizon_days} days. "
+                f"The lowest expected balance is {cur_sym}{lowest_balance:,.2f} on {lowest_date}. "
+                f"You do not need any short-term bank credit right now."
+            )
 
     return {
         "as_of_date": as_of_date.isoformat(),

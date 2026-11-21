@@ -3,12 +3,11 @@ import { fmtMoney } from "./format.js";
 const DEFAULT_BANK_ACTION_HTML = 'Retrieve bank data <span aria-hidden="true">↗</span>';
 
 const main = document.querySelector("main");
-main.insertAdjacentHTML("afterbegin", `    <section id="source-chooser" class="entry-stage" aria-labelledby="entry-title">
-      <div class="entry-heading"><p class="entry-eyebrow">YOUR NUMBERS. A CLEARER PICTURE.</p><h1 id="entry-title">A little clarity.<br>A lot of possibility.</h1><p>Bring your finances together. Start with what you have.</p></div>
+main.insertAdjacentHTML("afterbegin", `    <section id="source-chooser" class="entry-stage" aria-label="Choose your financial data source">
       <div class="source-options">
-        <button type="button" id="choose-csv" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M8 4h11l6 6v18H8zM19 4v7h6M12 17h9M12 22h9"/></svg></span><span class="source-title">Have a CSV file?</span><span class="source-copy">Drop your statement here, or browse files.<br>Review your columns before importing.</span><span class="source-action">Choose a file <span aria-hidden="true">↗</span></span></button>
+        <button type="button" id="choose-csv" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M8 4h11l6 6v18H8zM19 4v7h6M12 17h9M12 22h9"/></svg></span><span class="source-title">Have a CSV file?</span><span class="source-copy">Drop your statement here, or browse files.</span><span class="source-action">Choose a file <span aria-hidden="true">↗</span></span></button>
         <span class="source-or">OR</span>
-        <button type="button" id="choose-bank" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m4 11 12-7 12 7zM7 15v10M16 15v10M25 15v10M4 28h24"/></svg></span><span class="source-title">Connect your bank</span><span class="source-copy">Retrieve a simulated bank statement automatically.<br>Builds your balance overview and interactive forecast.</span><span class="source-action" id="choose-bank-action">${DEFAULT_BANK_ACTION_HTML}</span></button>
+        <button type="button" id="choose-bank" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m4 11 12-7 12 7zM7 15v10M16 15v10M25 15v10M4 28h24"/></svg></span><span class="source-title">Connect your bank</span><span class="source-copy">Retrieve a simulated bank statement automatically.</span><span class="source-action" id="choose-bank-action">${DEFAULT_BANK_ACTION_HTML}</span></button>
       </div>
       <p id="source-error" class="source-error hidden" role="alert"></p>
       <p class="entry-footnote">Your CSV and connected bank data stay isolated in your current Greg session.</p>
@@ -39,6 +38,31 @@ main.append(dashboard);
 tools.append(inputGrid);
 dashboard.append($("empty-view"), $("workspace-view"), tools);
 
+const assistantStage = document.createElement("section");
+assistantStage.id = "assistant-stage";
+assistantStage.className = "assistant-stage hidden";
+assistantStage.setAttribute("aria-labelledby", "assistant-stage-title");
+assistantStage.innerHTML =
+  '<h2 id="assistant-stage-title">Questions about<br>your numbers?</h2><p class="assistant-stage-copy">If something isn’t clear, just ask Greg.<br>Your finance assistant can help you understand the details.</p>';
+main.append(assistantStage);
+
+const assistantButton = $("chat-launcher");
+assistantButton.innerHTML =
+  '<span>Chat with Greg</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+assistantStage.append(assistantButton);
+
+const floatingChatButton = document.createElement("button");
+floatingChatButton.id = "floating-chat-launcher";
+floatingChatButton.type = "button";
+floatingChatButton.setAttribute("aria-label", "Open chat with Greg");
+floatingChatButton.setAttribute("aria-controls", "greg-messenger");
+floatingChatButton.setAttribute("aria-expanded", "false");
+floatingChatButton.innerHTML =
+  '<svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-8 8H4l-2 2v-10a9 9 0 0 1 18 0Z"/><path d="M7 9h8M7 13h5"/></svg>';
+document.body.append(floatingChatButton);
+floatingChatButton.addEventListener("click", () => assistantButton.click());
+document.body.append($("greg-messenger"));
+
 const change = document.createElement("button");
 change.id = "change-source";
 change.type = "button";
@@ -50,10 +74,22 @@ let savedState = null;
 let bankConnectHandler = null;
 let isConnectingBank = false;
 
+const bankRibbon = document.createElement("div");
+bankRibbon.className = "bank-ribbon";
+bankRibbon.setAttribute("aria-hidden", "true");
+chooseBankBtn.prepend(bankRibbon);
+const bankRibbonResize = new ResizeObserver(() => {
+  const title = chooseBankBtn.querySelector(".source-title");
+  if (title) {
+    bankRibbon.style.height = `${Math.max(0, title.offsetTop - 18)}px`;
+  }
+});
+bankRibbonResize.observe(chooseBankBtn);
+
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 reducedMotion.addEventListener("change", () => {
   if (reducedMotion.matches) {
-    for (const el of [chooser, overview, dashboard]) {
+    for (const el of [chooser, overview, dashboard, assistantStage]) {
       for (const animation of el.getAnimations()) animation.cancel();
     }
   }
@@ -61,6 +97,10 @@ reducedMotion.addEventListener("change", () => {
 
 function show(el, visible) {
   el.classList.toggle("hidden", !visible);
+  if (el === overview) assistantStage.classList.toggle("hidden", !visible);
+  if (visible && [overview, dashboard].includes(el)) {
+    document.documentElement.classList.remove("source-screen");
+  }
 }
 
 const headerResize = new ResizeObserver(() => {
@@ -100,7 +140,7 @@ function setBankConnectingState(active, statusText = "Connecting to bank…") {
   chooseBankBtn.classList.toggle("is-connecting", active);
   chooseBankBtn.setAttribute("aria-busy", String(active));
   if (active) {
-    chooseBankAction.innerHTML = `<span class="bank-sync-status"><span class="bank-sync-spinner" aria-hidden="true"></span><span>${statusText}</span></span>`;
+    chooseBankAction.innerHTML = `${statusText} <span aria-hidden="true"><span class="bank-sync-spinner"></span></span>`;
   } else {
     chooseBankAction.innerHTML = DEFAULT_BANK_ACTION_HTML;
   }
@@ -108,6 +148,7 @@ function setBankConnectingState(active, statusText = "Connecting to bank…") {
 
 function choose() {
   document.documentElement.classList.remove("staged-scroll");
+  document.documentElement.classList.add("source-screen");
   setSourceError("");
   show(chooser, true);
   show(overview, false);
@@ -118,6 +159,7 @@ function choose() {
 }
 
 function summary(data) {
+  tools.classList.remove("csv-review");
   document.documentElement.classList.add("staged-scroll");
   show(chooser, false);
   show(overview, true);
@@ -199,6 +241,7 @@ function reviewFile() {
   show($("empty-view"), false);
   show(change, true);
   tools.open = true;
+  tools.classList.add("csv-review");
   tools.scrollIntoView({ block: "start", behavior: reducedMotion.matches ? "instant" : "smooth" });
 }
 
