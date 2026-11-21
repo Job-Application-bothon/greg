@@ -132,18 +132,62 @@ export function initNumberSteppers() {
 }
 
 export function initForecastDotHover() {
-  const forecastStage = document.querySelector(".forecast-stage");
-  if (!forecastStage) return;
-  const dotMotion = matchMedia("(any-hover: hover) and (prefers-reduced-motion: no-preference)");
-  forecastStage.addEventListener("pointermove", (event) => {
-    if (!dotMotion.matches || event.pointerType !== "mouse") return;
-    const bounds = forecastStage.getBoundingClientRect();
-    forecastStage.style.setProperty("--dot-x", `${event.clientX - bounds.left}px`);
-    forecastStage.style.setProperty("--dot-y", `${event.clientY - bounds.top}px`);
-    forecastStage.setAttribute("data-dot-hover", "");
-  });
-  forecastStage.addEventListener("pointerleave", () =>
-    forecastStage.removeAttribute("data-dot-hover")
-  );
-  dotMotion.addEventListener("change", () => forecastStage.removeAttribute("data-dot-hover"));
+  const stage = document.querySelector(".forecast-stage");
+  if (!stage || stage.querySelector('.forecast-halftone')) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'forecast-halftone';
+  canvas.setAttribute('aria-hidden', 'true');
+  stage.prepend(canvas);
+  const ctx = canvas.getContext('2d');
+  const motion = matchMedia('(any-hover: hover) and (prefers-reduced-motion: no-preference)');
+  const pointer = { x: -1000, y: -1000 };
+  let width = 0, height = 0, frame = 0, strength = 0, lastTime = 0;
+
+  function draw(time) {
+    frame = 0;
+    const dt = Math.min((time - lastTime) / 16.67 || 1, 3);
+    lastTime = time;
+    strength = motion.matches ? Math.max(0, strength - 0.018 * dt) : 0;
+    ctx.clearRect(0, 0, width, height);
+    for (let y = 8; y < height; y += 16) {
+      for (let x = 8; x < width; x += 16) {
+        const dx = x - pointer.x, dy = y - pointer.y;
+        const distance = Math.hypot(dx, dy);
+        const influence = Math.max(0, 1 - distance / 125) ** 2 * strength;
+        const push = influence * 22 / (distance || 1);
+        ctx.fillStyle = `rgba(255,255,255,${0.55 + influence * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(x + dx * push, y + dy * push, 0.7 + influence * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    if (strength > 0) frame = requestAnimationFrame(draw);
+  }
+  function schedule() {
+    if (!frame) {
+      lastTime = performance.now();
+      frame = requestAnimationFrame(draw);
+    }
+  }
+  function resize() {
+    width = stage.clientWidth;
+    height = stage.clientHeight;
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    schedule();
+  }
+  stage.addEventListener('pointermove', (event) => {
+    if (!motion.matches || event.pointerType !== 'mouse') return;
+    const bounds = stage.getBoundingClientRect();
+    pointer.x = event.clientX - bounds.left - stage.clientLeft;
+    pointer.y = event.clientY - bounds.top - stage.clientTop;
+    strength = 1;
+    schedule();
+  }, { passive: true });
+  stage.addEventListener('pointerleave', schedule);
+  motion.addEventListener('change', schedule);
+  new ResizeObserver(resize).observe(stage);
+  resize();
 }

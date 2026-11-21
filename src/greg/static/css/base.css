@@ -115,6 +115,13 @@ button {
   fill: currentColor;
 }
 
+.wordmark .brand-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .brand-sub {
   font-size: 13px;
   color: var(--muted);
