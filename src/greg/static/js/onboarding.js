@@ -7,7 +7,7 @@ main.insertAdjacentHTML("afterbegin", `    <section id="source-chooser" class="e
         <span class="source-or">OR</span>
         <button type="button" id="choose-bank" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m4 11 12-7 12 7zM7 15v10M16 15v10M25 15v10M4 28h24"/></svg></span><span class="source-title">Connect your bank</span><span class="source-copy">Try the experience with your monthly totals.</span><span class="source-action">Explore the demo <span aria-hidden="true">↗</span></span></button>
       </div>
-      <p class="entry-footnote">Your CSV stays in your existing Greg session. Bank demo inputs stay in this page.</p>
+
       <button type="button" id="cancel-source" class="secondary hidden">Back to my overview</button>
     </section>
     <section id="bank-entry" class="entry-stage hidden" aria-labelledby="bank-title">
