@@ -543,6 +543,21 @@ SOFTWARE.
   gap: 8px 12px;
 }
 
+.whatif-presets {
+  display:grid;
+  align-items:stretch;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:10px;
+}
+.whatif-presets > button { width:100%; min-height:44px; height:auto; padding:12px 14px; text-align:left; white-space:normal; line-height:1.4; border-radius:10px; }
+#whatif-tune-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.whatif .whatif-presets > button[aria-pressed='true'],
+#whatif-tune-toggle[aria-expanded='true'] { background:var(--ink); color:#fff; border-color:var(--ink); }
+#whatif-tune-toggle[aria-expanded='true'] span { transform:rotate(180deg); }
+.whatif .whatif-grid .field label { color:#363636; font-weight:500; line-height:1.5; }
+.whatif-grid output { color:var(--ink); }
+.whatif-grid { padding-top:12px; }
+.whatif-grid.hidden { display:none; }
 .whatif-head #whatif-reset {
   margin-left: auto;
 }

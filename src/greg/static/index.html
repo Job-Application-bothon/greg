@@ -25,7 +25,7 @@
         <span class="brand-sub">Ultimate Financial Officer</span>
       </div>
       <div class="header-right">
-        <div class="status-pill" role="status">
+        <div class="status-pill hidden" role="status">
           <span class="status-dot standby" id="llm-dot"></span>
           <span id="status">Checking pod &amp; AI status…</span>
         </div>
@@ -298,8 +298,9 @@
               <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="income:-20">Lose 20% of income</button>
               <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="expense:10">Costs rise 10%</button>
               <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="monthly:-3000">Hire someone (−3,000 / month)</button>
+              <button type="button" class="secondary chart-zoom-btn" id="whatif-tune-toggle" aria-expanded="false" aria-controls="whatif-tuning">Fine-tune <span aria-hidden="true">⌄</span></button>
             </div>
-            <div class="whatif-grid">
+            <div class="whatif-grid hidden" id="whatif-tuning">
               <div class="field">
                 <label for="whatif-income">Income change <output id="whatif-income-out">0%</output></label>
                 <input type="range" id="whatif-income" min="-50" max="50" step="5" value="0" />
