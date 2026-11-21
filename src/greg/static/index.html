@@ -675,6 +675,56 @@
       border-radius: 2px;
     }
 
+    .method-bar {
+      margin-top: 16px;
+      padding: 12px 15px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+      color: #f3f3f3;
+    }
+
+    .method-bar-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .method-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 100px;
+      background: var(--pink);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .method-meta {
+      font-size: 12px;
+      color: #cfcfcf;
+    }
+
+    .method-details summary {
+      font-size: 12px;
+      color: var(--pink);
+      cursor: pointer;
+    }
+
+    .method-notes-list {
+      margin: 6px 0 0 18px;
+      font-size: 12px;
+      color: #d9d9d9;
+      display: grid;
+      gap: 3px;
+    }
+
     .alert-box {
       padding: 13px 16px;
       border-radius: 12px;
@@ -1069,6 +1119,9 @@
           </div>
         </div>
 
+        <!-- CHOSEN FORECAST METHOD -->
+        <div id="forecast-method-bar" class="method-bar hidden"></div>
+
         <!-- RECOMMENDATION BANNER -->
         <div id="agent-banner" class="alert-box"></div>
 
@@ -1189,6 +1242,7 @@
     const intervalSelect = document.getElementById("interval-select");
     const horizonSelect = document.getElementById("horizon-select");
     const forecastModeSubtitle = document.getElementById("forecast-mode-subtitle");
+    const forecastMethodBar = document.getElementById("forecast-method-bar");
     const chartLegend = document.getElementById("chart-legend");
 
     const kpiIncome = document.getElementById("kpi-income");
@@ -2026,6 +2080,54 @@
             `Monthly seasonal forecast · Auto (Inflow: ${la.planner_meta.inflow_method_label}, Outflow: ${la.planner_meta.outflow_method_label})`;
         } else {
           forecastModeSubtitle.textContent = "Daily short-term forecast · Under 12 months of history";
+        }
+      }
+
+      if (forecastMethodBar) {
+        const formatMethodBadge = (code) => {
+          const map = {
+            classic: "Classic (Seller Method)",
+            network: "Own Model (Neural Network)",
+            ets: "StatsForecast · ETS",
+            arima: "StatsForecast · ARIMA",
+            theta: "StatsForecast · Theta",
+            combo: "StatsForecast · Combo (ETS + ARIMA + Theta)",
+          };
+          return map[code] || code || "Classic";
+        };
+        if (la.engine === "greg_planner" && la.planner_meta) {
+          const pm = la.planner_meta;
+          const inCode = pm.inflow_method;
+          const outCode = pm.outflow_method;
+          const pillsHtml =
+            inCode === outCode
+              ? `<span class="method-pill">${escapeHtml(formatMethodBadge(inCode))}</span>`
+              : `<span class="method-pill">Inflow: ${escapeHtml(formatMethodBadge(inCode))}</span>` +
+                `<span class="method-pill">Outflow: ${escapeHtml(formatMethodBadge(outCode))}</span>`;
+          const notes = pm.notes || [];
+          const detailsHtml = notes.length
+            ? `<details class="method-details"><summary>Why this method was chosen</summary><ul class="method-notes-list">${notes
+                .map((n) => `<li>${escapeHtml(n)}</li>`)
+                .join("")}</ul></details>`
+            : "";
+          forecastMethodBar.innerHTML = `
+            <div class="method-bar-head">
+              <strong>Method Chosen:</strong>
+              ${pillsHtml}
+              <span class="method-meta">Engine: greg_planner${pm.network_loaded ? " (neural net ready)" : ""}</span>
+            </div>
+            ${detailsHtml}
+          `;
+          forecastMethodBar.classList.remove("hidden");
+        } else {
+          forecastMethodBar.innerHTML = `
+            <div class="method-bar-head">
+              <strong>Method Chosen:</strong>
+              <span class="method-pill">Daily Fallback (Recurring Bills + Weekday Average)</span>
+              <span class="method-meta">${escapeHtml(la.fallback_reason || "Under 12 full months of history")}</span>
+            </div>
+          `;
+          forecastMethodBar.classList.remove("hidden");
         }
       }
 
