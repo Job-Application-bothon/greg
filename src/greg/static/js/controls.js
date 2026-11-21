@@ -1,5 +1,17 @@
 /** UI interaction polish: step carousel, number steppers, and dark dot-grid hover glow. */
 
+export function animateHeight(element, update) {
+  const from = element.getBoundingClientRect().height;
+  element.getAnimations().filter(a => a.id === 'layout-height').forEach(a => a.cancel());
+  update();
+  const to = element.getBoundingClientRect().height;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || Math.abs(to - from) < 1) return;
+  return element.animate(
+    [{ height: `${from}px`, overflow: 'clip' }, { height: `${to}px`, overflow: 'clip' }],
+    { id: 'layout-height', duration: 360, easing: 'cubic-bezier(.22,1,.36,1)' }
+  );
+}
+
 export function initStepCarousel() {
   const root = document.getElementById("forecast-steps");
   const toggle = document.getElementById("steps-toggle");
@@ -98,9 +110,11 @@ export function initStepCarousel() {
   select(0);
 
   toggle.addEventListener("click", () => {
-    root.hidden = !root.hidden;
-    toggle.setAttribute("aria-expanded", String(!root.hidden));
-    if (!root.hidden) select(0);
+    animateHeight(root.parentElement, () => {
+      root.hidden = !root.hidden;
+      toggle.setAttribute("aria-expanded", String(!root.hidden));
+      if (!root.hidden) select(0);
+    });
   });
 }
 
