@@ -562,10 +562,15 @@ class LedgerStore:
         history_series: list[dict[str, Any]] = []
         d_ptr = hist_start
         while d_ptr <= last_of_month:
+            day_txs = tx_by_date.get(d_ptr, [])
+            day_inc = round(sum(t["amount"] for t in day_txs if t["amount"] > 0), 2)
+            day_exp = round(sum(abs(t["amount"]) for t in day_txs if t["amount"] < 0), 2)
             history_series.append(
                 {
                     "date": d_ptr.isoformat(),
                     "balance": daily_balances.get(d_ptr, self.opening_balance),
+                    "income": day_inc,
+                    "expenses": day_exp,
                 }
             )
             d_ptr += timedelta(days=1)

@@ -455,7 +455,7 @@
       .chart-wrap {
         position: relative;
         width: 100%;
-        overflow: hidden;
+        overflow: visible;
       }
       .chart-wrap svg {
         width: 100%;
@@ -785,6 +785,181 @@
         font-size: 11px;
         color: #9ee4ba;
         margin-top: 2px;
+      }
+
+      /* Interactive Animated Pinned Date Panel (Income in Green / Expenses in Red) */
+      .chart-focus-card {
+        position: absolute;
+        z-index: 8;
+        min-width: 168px;
+        max-width: 224px;
+        background: #18181b;
+        color: #ffffff;
+        border: 1.5px solid #d97706;
+        border-radius: 11px;
+        padding: 7px 11px;
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34), 0 0 0 3px rgba(217, 119, 6, 0.16);
+        cursor: pointer;
+        user-select: none;
+        font-variant-numeric: tabular-nums;
+        transform: translate(-50%, -100%);
+        transition:
+          box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+          border-color 0.2s ease,
+          transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+        animation: focusCardPopIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .chart-focus-card.below-dot {
+        transform: translate(-50%, 0%);
+      }
+      .chart-focus-card:hover {
+        border-color: #fbbf24;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.42), 0 0 0 4px rgba(245, 158, 11, 0.24);
+      }
+      @keyframes focusCardPopIn {
+        0% {
+          opacity: 0;
+          scale: 0.9;
+        }
+        100% {
+          opacity: 1;
+          scale: 1;
+        }
+      }
+      .focus-card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .focus-card-date {
+        font-size: 10.5px;
+        font-weight: 600;
+        color: #fcd34d;
+        letter-spacing: 0.01em;
+      }
+      .focus-card-chevron {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(252, 211, 77, 0.14);
+        color: #fcd34d;
+        font-size: 10px;
+        transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease;
+      }
+      .chart-focus-card:hover .focus-card-chevron {
+        background: rgba(252, 211, 77, 0.26);
+      }
+      .chart-focus-card.expanded .focus-card-chevron {
+        transform: rotate(180deg);
+        background: #d97706;
+        color: #ffffff;
+      }
+      .focus-card-bal-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 2px;
+      }
+      .focus-card-bal {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+      .focus-card-hint {
+        font-size: 9.5px;
+        color: #a1a1aa;
+        font-weight: 500;
+      }
+      .focus-card-drawer {
+        display: grid;
+        grid-template-rows: 0fr;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition:
+          grid-template-rows 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.26s ease,
+          transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+          margin-top 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .chart-focus-card.expanded .focus-card-drawer {
+        grid-template-rows: 1fr;
+        opacity: 1;
+        transform: translateY(0);
+        margin-top: 8px;
+      }
+      .focus-card-drawer-inner {
+        overflow: hidden;
+      }
+      .focus-card-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.12);
+        margin-bottom: 7px;
+      }
+      .focus-flow-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 11.5px;
+        padding: 2px 0;
+      }
+      .focus-flow-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #d4d4d8;
+        font-weight: 500;
+      }
+      .focus-dot-inc {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 6px rgba(34, 197, 94, 0.65);
+      }
+      .focus-dot-exp {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #ef4444;
+        box-shadow: 0 0 6px rgba(239, 68, 68, 0.65);
+      }
+      .focus-val-income {
+        color: #4ade80;
+        font-weight: 700;
+      }
+      .focus-val-expense {
+        color: #f87171;
+        font-weight: 700;
+      }
+      .focus-flow-meter {
+        display: flex;
+        width: 100%;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        margin-top: 6px;
+        gap: 2px;
+      }
+      .focus-meter-inc {
+        height: 100%;
+        background: linear-gradient(90deg, #16a34a, #4ade80);
+        border-radius: 999px;
+        width: 0%;
+        transition: width 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .focus-meter-exp {
+        height: 100%;
+        background: linear-gradient(90deg, #ef4444, #f87171);
+        border-radius: 999px;
+        width: 0%;
+        transition: width 0.48s cubic-bezier(0.22, 1, 0.36, 1);
       }
       .chart-legend {
         display: flex;
@@ -1161,6 +1336,14 @@
             </div>
             <div id="chart-tooltip" class="chart-tooltip hidden" role="status" aria-live="polite"></div>
             <div class="chart-wrap">
+              <div
+                id="chart-focus-card"
+                class="chart-focus-card hidden"
+                role="button"
+                tabindex="0"
+                aria-expanded="false"
+                title="Click to open daily Income & Expenses breakdown"
+              ></div>
               <svg id="forecast-chart" viewBox="0 0 900 260" style="width: 100%; height: 260px; display: block"></svg>
             </div>
 
@@ -1322,6 +1505,7 @@
       const forecastPanel = document.getElementById("forecast-panel");
       const forecastChart = document.getElementById("forecast-chart");
       const chartTooltip = document.getElementById("chart-tooltip");
+      const chartFocusCard = document.getElementById("chart-focus-card");
       const chartRangeLabel = document.getElementById("chart-range-label");
       const agentAnalysisText = document.getElementById("agent-analysis-text");
       const agentRecText = document.getElementById("agent-rec-text");
@@ -1345,6 +1529,7 @@
       let selectedHistDays = 90; // Default: 3M
       let selectedForeDays = 30; // Default: +1M
       let selectedFocusDate = "";
+      let focusCardExpanded = false;
       let chartZoom = { key: null, start: 0, end: 0, custom: false };
       let chartDrag = null;
       let minimapDrag = null;
@@ -1456,6 +1641,8 @@
             fullDate: p.date,
             bal: Number(p.balance || 0),
             balCredit: Number(p.balance || 0),
+            income: Number(p.income || 0),
+            expenses: Number(p.expenses || 0),
             kind: "hist",
             dayIdx: idx,
           });
@@ -1467,6 +1654,8 @@
             fullDate: p.date,
             bal: Number(p.balance || 0),
             balCredit: Number(p.balance_with_credit ?? p.balance ?? 0),
+            income: Number(p.expected_in ?? p.income ?? 0),
+            expenses: Number(p.expected_out ?? p.expenses ?? 0),
             kind: "fore",
             dayIdx: baseIdx + idx,
           });
@@ -1884,6 +2073,7 @@
         const clampLabelY = (y) => Math.max(topPad + 6, Math.min(H - bottomPad + 4, y + 4));
 
         let focusMarkerHtml = "";
+        let showFocusCard = false;
         if (selectedFocusDate) {
           let focusLocalIdx = -1;
           for (let i = visPoints.length - 1; i >= 0; i--) {
@@ -1914,18 +2104,23 @@
             }
           }
           if (focusLocalIdx >= 0) {
+            showFocusCard = true;
             const fPt = visPoints[focusLocalIdx];
+            const exactDay =
+              dailyPoints.find((d) => d.date === selectedFocusDate) || fPt;
+            const dayIncome = Number(exactDay.income || 0);
+            const dayExpenses = Number(exactDay.expenses || 0);
+            const totalFlow = dayIncome + dayExpenses;
+            const incPct = totalFlow > 0 ? Math.round((dayIncome / totalFlow) * 100) : 50;
+            const expPct = totalFlow > 0 ? 100 - incPct : 50;
+
             const fx = xFor(focusLocalIdx);
             const fy = yFor(fPt.bal);
             const fKind = fPt.kind === "hist" ? "Past" : "Forecast";
             const fBalText = fmtMoney(fPt.bal, currency);
-            const boxW = 148;
-            const boxH = 42;
-            const boxX = Math.max(
-              leftPad + 6,
-              Math.min(W - rightPad - boxW - 6, fx - boxW / 2)
-            );
-            const boxY = fy - boxH - 14 >= topPad + 2 ? fy - boxH - 14 : Math.min(H - bottomPad - boxH - 4, fy + 14);
+            const fIncText = `+${fmtMoney(dayIncome, currency)}`;
+            const fExpText = `-${fmtMoney(dayExpenses, currency)}`;
+
             focusMarkerHtml = `
               <line id="chart-focus-line" x1="${fx.toFixed(1)}" y1="${topPad}" x2="${fx.toFixed(
               1
@@ -1935,22 +2130,60 @@
             )}" r="9" fill="rgba(217, 119, 6, 0.22)" />
               <circle id="chart-focus-dot" cx="${fx.toFixed(1)}" cy="${fy.toFixed(
               1
-            )}" r="5.5" fill="#d97706" stroke="#ffffff" stroke-width="2" />
-              <g id="chart-focus-callout">
-                <rect x="${boxX.toFixed(1)}" y="${boxY.toFixed(
-              1
-            )}" width="${boxW}" height="${boxH}" rx="8" fill="#18181b" stroke="#d97706" stroke-width="1.4" />
-                <text x="${(boxX + 10).toFixed(1)}" y="${(boxY + 16).toFixed(
-              1
-            )}" font-size="10.5" font-weight="600" fill="#fcd34d">${escapeHtml(
-              selectedFocusDate
-            )} · ${fKind}</text>
-                <text x="${(boxX + 10).toFixed(1)}" y="${(boxY + 33).toFixed(
-              1
-            )}" font-size="12.5" font-weight="700" fill="#ffffff">${escapeHtml(fBalText)}</text>
-              </g>
+            )}" r="5.5" fill="#d97706" stroke="#ffffff" stroke-width="2" style="cursor: pointer" />
             `;
+
+            if (chartFocusCard) {
+              const clampedX = Math.max(leftPad + 86, Math.min(W - rightPad - 86, fx));
+              const placeBelow = fy < 118;
+              const anchorY = placeBelow ? fy + 16 : fy - 14;
+              const leftPct = (clampedX / W) * 100;
+              const topPx = (anchorY / H) * 260;
+
+              chartFocusCard.style.left = `${leftPct.toFixed(2)}%`;
+              chartFocusCard.style.top = `${topPx.toFixed(1)}px`;
+              chartFocusCard.classList.remove("hidden");
+              chartFocusCard.classList.toggle("below-dot", placeBelow);
+              chartFocusCard.classList.toggle("expanded", focusCardExpanded);
+              chartFocusCard.setAttribute("aria-expanded", String(focusCardExpanded));
+              chartFocusCard.setAttribute("data-inc-pct", String(incPct));
+              chartFocusCard.setAttribute("data-exp-pct", String(expPct));
+
+              const barIncW = focusCardExpanded ? incPct : 0;
+              const barExpW = focusCardExpanded ? expPct : 0;
+
+              chartFocusCard.innerHTML = `
+                <div class="focus-card-top">
+                  <span class="focus-card-date">${escapeHtml(selectedFocusDate)} · ${fKind}</span>
+                  <span class="focus-card-chevron" aria-hidden="true">▾</span>
+                </div>
+                <div class="focus-card-bal-row">
+                  <span class="focus-card-bal">${escapeHtml(fBalText)}</span>
+                  <span class="focus-card-hint">${focusCardExpanded ? "Hide flow" : "Click for flow"}</span>
+                </div>
+                <div class="focus-card-drawer">
+                  <div class="focus-card-drawer-inner">
+                    <div class="focus-card-divider"></div>
+                    <div class="focus-flow-row">
+                      <span class="focus-flow-label"><span class="focus-dot-inc"></span>Income</span>
+                      <span class="focus-val-income">${escapeHtml(fIncText)}</span>
+                    </div>
+                    <div class="focus-flow-row">
+                      <span class="focus-flow-label"><span class="focus-dot-exp"></span>Expenses</span>
+                      <span class="focus-val-expense">${escapeHtml(fExpText)}</span>
+                    </div>
+                    <div class="focus-flow-meter" aria-hidden="true">
+                      <div class="focus-meter-inc" style="width: ${barIncW}%"></div>
+                      <div class="focus-meter-exp" style="width: ${barExpW}%"></div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }
           }
+        }
+        if (!showFocusCard && chartFocusCard) {
+          chartFocusCard.classList.add("hidden");
         }
 
         chartHoverMeta = {
@@ -2326,10 +2559,44 @@
         });
       }
 
+      function toggleFocusCardExpanded() {
+        if (!chartFocusCard || chartFocusCard.classList.contains("hidden")) return;
+        focusCardExpanded = !focusCardExpanded;
+        chartFocusCard.classList.toggle("expanded", focusCardExpanded);
+        chartFocusCard.setAttribute("aria-expanded", String(focusCardExpanded));
+        const hintEl = chartFocusCard.querySelector(".focus-card-hint");
+        if (hintEl) {
+          hintEl.textContent = focusCardExpanded ? "Hide flow" : "Click for flow";
+        }
+        const incBar = chartFocusCard.querySelector(".focus-meter-inc");
+        const expBar = chartFocusCard.querySelector(".focus-meter-exp");
+        const incPct = Number(chartFocusCard.getAttribute("data-inc-pct") || 50);
+        const expPct = Number(chartFocusCard.getAttribute("data-exp-pct") || 50);
+        requestAnimationFrame(() => {
+          if (incBar) incBar.style.width = focusCardExpanded ? `${incPct}%` : "0%";
+          if (expBar) expBar.style.width = focusCardExpanded ? `${expPct}%` : "0%";
+        });
+      }
+
+      if (chartFocusCard) {
+        chartFocusCard.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleFocusCardExpanded();
+        });
+        chartFocusCard.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFocusCardExpanded();
+          }
+        });
+      }
+
       if (chartFocusClearBtn) {
         chartFocusClearBtn.addEventListener("click", () => {
           if (!currentState || !currentState.has_data || !chartHoverMeta) return;
           selectedFocusDate = "";
+          focusCardExpanded = false;
           if (chartFocusDateInput) chartFocusDateInput.value = "";
           const total = chartHoverMeta.allPoints.length;
           const todayIdx = chartHoverMeta.todayDailyIdx;
