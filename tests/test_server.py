@@ -229,6 +229,9 @@ class LedgerAndLiquidityAgentTest(unittest.TestCase):
 
         # Verify December 2025 FX division (-4166.67 CHF / 1.047 = -3979.63 EUR) & exact profit
         dec = store.get_view(selected_month="2025-12", horizon_days=30)
+        self.assertEqual(len(dec["history_series"]), 365)
+        self.assertEqual(dec["history_series"][0]["date"], "2025-01-01")
+        self.assertEqual(dec["history_series"][-1]["date"], "2025-12-31")
         self.assertAlmostEqual(dec["month_summary"]["total_income"], 55204.54, places=2)
         self.assertAlmostEqual(dec["month_summary"]["total_expenses"], 45624.08, places=2)
         self.assertAlmostEqual(dec["month_summary"]["profit"], 9580.46, places=2)
@@ -322,6 +325,9 @@ class FrontendCopyTest(unittest.TestCase):
             'id="btn-zoom-in"',
             'id="btn-zoom-out"',
             'id="btn-zoom-reset"',
+            'id="interval-select"',
+            'id="chart-scroll"',
+            'id="chart-range-label"',
             'class="chart-legend hidden"',
             ">Today<",
         ):

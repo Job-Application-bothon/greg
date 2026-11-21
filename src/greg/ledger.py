@@ -557,8 +557,8 @@ class LedgerStore:
                 }
             )
 
-        # Historical chart points (last 60 days up to last_of_month, or from min_date)
-        hist_start = max(min_date, last_of_month - timedelta(days=60))
+        # Complete daily history from first transaction date through end of selected/latest month
+        hist_start = min_date
         history_series: list[dict[str, Any]] = []
         d_ptr = hist_start
         while d_ptr <= last_of_month:

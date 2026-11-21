@@ -455,10 +455,12 @@
       .chart-wrap {
         position: relative;
         width: 100%;
-        overflow-x: auto;
+        overflow: hidden;
       }
       .chart-wrap svg {
-        min-width: 520px;
+        width: 100%;
+        height: 260px;
+        display: block;
         cursor: crosshair;
         user-select: none;
       }
@@ -484,6 +486,27 @@
         padding: 3px 11px;
         font-size: 12px;
         border-radius: 100px;
+      }
+      .chart-scroll-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .chart-scroll-row input[type='range'] {
+        flex: 1;
+        min-height: 24px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        accent-color: var(--ink);
+        cursor: pointer;
+      }
+      .chart-range-label {
+        font-size: 11px;
+        color: var(--muted);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
       }
       .chart-tooltip {
         position: absolute;
@@ -750,8 +773,8 @@
 
       <!-- MAIN WORKSPACE (SHOWN ONLY WHEN DATA EXISTS) -->
       <div id="workspace-view" class="hidden" style="display: flex; flex-direction: column; gap: 24px">
-        <!-- MONTH SELECTOR & SUMMARY -->
-        <section class="card">
+        <!-- MONTH SELECTOR & SUMMARY (hidden for now) -->
+        <section class="card hidden">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px">
             <div>
               <h2 style="margin-bottom: 0">Monthly Overview</h2>
@@ -788,8 +811,8 @@
           </div>
         </section>
 
-        <!-- BREAKDOWN BY PERSON / COMPANY -->
-        <div class="grid-2">
+        <!-- BREAKDOWN BY PERSON / COMPANY (hidden for now) -->
+        <div class="grid-2 hidden">
           <section class="card">
             <h2>Expenses</h2>
             <div id="expense-breakdown-list"></div>
@@ -801,8 +824,8 @@
           </section>
         </div>
 
-        <!-- ALL TRANSACTIONS IN SELECTED MONTH -->
-        <section class="card">
+        <!-- ALL TRANSACTIONS IN SELECTED MONTH (hidden for now) -->
+        <section class="card hidden">
           <details>
             <summary id="tx-table-summary">Show all individual operations in this month</summary>
             <div style="overflow-x: auto; margin-top: 12px">
@@ -830,10 +853,17 @@
               <p class="stage-eyebrow">Cash outlook</p>
               <h2>Forecast</h2>
               <div class="stage-subtitle">
-                Forecasts your daily account balance ahead from the end of the selected month based on your regular bills and recent daily activity
+                Complete account balance history and cash forecast ahead based on your regular bills and recent daily activity
               </div>
             </div>
             <div class="form-row">
+              <div class="field" style="min-width: 130px">
+                <label for="interval-select">View By</label>
+                <select id="interval-select">
+                  <option value="day" selected>Day</option>
+                  <option value="month">Month</option>
+                </select>
+              </div>
               <div class="field" style="min-width: 170px">
                 <label for="horizon-select">Forecast Ahead</label>
                 <select id="horizon-select">
@@ -851,16 +881,20 @@
           <!-- SVG FORECAST CHART -->
           <div class="forecast-panel" id="forecast-panel">
             <div class="chart-toolbar">
-              <span class="subtitle" id="chart-zoom-hint">Scroll or use + / − to zoom, drag to pan</span>
+              <span class="subtitle" id="chart-zoom-hint">Drag chart or slider to scroll history, wheel or + / − to zoom</span>
               <div class="chart-zoom-controls" role="group" aria-label="Chart zoom">
                 <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-in" title="Zoom in">+</button>
                 <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-out" title="Zoom out">−</button>
-                <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-reset" title="Reset zoom" disabled>Reset</button>
+                <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-reset" title="Reset view">Reset</button>
               </div>
             </div>
             <div id="chart-tooltip" class="chart-tooltip hidden" role="status" aria-live="polite"></div>
             <div class="chart-wrap">
-              <svg id="forecast-chart" viewBox="0 0 900 260" style="width: 100%; height: auto; aspect-ratio: 900 / 260; display: block"></svg>
+              <svg id="forecast-chart" viewBox="0 0 900 260" style="width: 100%; height: 260px; display: block"></svg>
+            </div>
+            <div class="chart-scroll-row">
+              <span class="chart-range-label" id="chart-range-label">—</span>
+              <input type="range" id="chart-scroll" min="0" max="0" value="0" aria-label="Scroll history window" />
             </div>
             <div class="chart-legend hidden">
               <span class="legend-item"><span class="swatch" style="background: #805181"></span>Forecast balance</span>
@@ -968,6 +1002,7 @@
       const opCatInput = document.getElementById("op-cat");
 
       const monthSelect = document.getElementById("month-select");
+      const intervalSelect = document.getElementById("interval-select");
       const horizonSelect = document.getElementById("horizon-select");
 
       const kpiIncome = document.getElementById("kpi-income");
@@ -989,6 +1024,8 @@
       const btnZoomIn = document.getElementById("btn-zoom-in");
       const btnZoomOut = document.getElementById("btn-zoom-out");
       const btnZoomReset = document.getElementById("btn-zoom-reset");
+      const chartScroll = document.getElementById("chart-scroll");
+      const chartRangeLabel = document.getElementById("chart-range-label");
       const agentAnalysisText = document.getElementById("agent-analysis-text");
       const agentRecText = document.getElementById("agent-rec-text");
       const upcomingBillsBody = document.getElementById("upcoming-bills-body");
@@ -1049,11 +1086,9 @@
         }
       }
 
-      async function fetchView(month = "", horizon = "") {
-        const m = month || monthSelect.value || "";
+      async function fetchView(horizon = "") {
         const h = horizon || horizonSelect.value || "30";
         const params = new URLSearchParams();
-        if (m) params.set("month", m);
         if (h) params.set("horizon", h);
         const res = await fetch(`/api/view?${params.toString()}`);
         const data = await res.json();
@@ -1098,6 +1133,56 @@
           .join("");
       }
 
+      function buildChartPoints(historySeries, forecastSeries, interval) {
+        const hist = historySeries || [];
+        const fore = forecastSeries || [];
+        if (interval === "month") {
+          const histMap = new Map();
+          hist.forEach((p) => {
+            const ym = p.date.slice(0, 7);
+            histMap.set(ym, { date: ym, fullDate: p.date, bal: p.balance, kind: "hist" });
+          });
+          const histPts = Array.from(histMap.values());
+          const lastHistYm = histPts.length ? histPts[histPts.length - 1].date : "";
+
+          const foreMap = new Map();
+          fore.forEach((p) => {
+            const ym = p.date.slice(0, 7);
+            if (!lastHistYm || ym > lastHistYm) {
+              foreMap.set(ym, {
+                date: ym,
+                fullDate: p.date,
+                bal: p.balance,
+                balCredit: p.balance_with_credit,
+                kind: "fore",
+              });
+            }
+          });
+          if (foreMap.size === 0 && fore.length > 0) {
+            const lastF = fore[fore.length - 1];
+            foreMap.set(lastF.date.slice(0, 7), {
+              date: lastF.date.slice(0, 7) + " (Forecast)",
+              fullDate: lastF.date,
+              bal: lastF.balance,
+              balCredit: lastF.balance_with_credit,
+              kind: "fore",
+            });
+          }
+          return [...histPts, ...Array.from(foreMap.values())];
+        }
+
+        return [
+          ...hist.map((p) => ({ date: p.date, fullDate: p.date, bal: p.balance, kind: "hist" })),
+          ...fore.map((p) => ({
+            date: p.date,
+            fullDate: p.date,
+            bal: p.balance,
+            balCredit: p.balance_with_credit,
+            kind: "fore",
+          })),
+        ];
+      }
+
       function renderChart(historySeries, forecastSeries, currency) {
         const hist = historySeries || [];
         const fore = forecastSeries || [];
@@ -1105,6 +1190,10 @@
         if (hist.length === 0 && fore.length === 0) {
           chartHoverMeta = null;
           forecastChart.innerHTML = "";
+          chartScroll.max = "0";
+          chartScroll.value = "0";
+          chartScroll.disabled = true;
+          chartRangeLabel.textContent = "—";
           return;
         }
 
@@ -1113,30 +1202,37 @@
           currentState.approved_credit &&
           Number(currentState.approved_credit.amount) > 0;
 
-        const allPoints = [
-          ...hist.map((p) => ({ date: p.date, bal: p.balance, kind: "hist" })),
-          ...fore.map((p) => ({
-            date: p.date,
-            bal: p.balance,
-            balCredit: p.balance_with_credit,
-            kind: "fore",
-          })),
-        ];
-
+        const interval = intervalSelect ? intervalSelect.value : "day";
+        const allPoints = buildChartPoints(hist, fore, interval);
         const total = allPoints.length;
-        const zoomKey = `${currentState ? currentState.selected_month : ""}:${fore.length}:${total}`;
+        const defaultWindow = interval === "month" ? 12 : 60;
+        const defaultSpan = Math.min(total, defaultWindow);
+        const defaultStart = Math.max(0, total - defaultSpan);
+        const defaultEnd = Math.max(0, total - 1);
+
+        const zoomKey = `${interval}:${hist.length}:${fore.length}:${total}`;
         if (chartZoom.key !== zoomKey) {
-          chartZoom = { key: zoomKey, start: 0, end: Math.max(0, total - 1) };
+          chartZoom = { key: zoomKey, start: defaultStart, end: defaultEnd };
         }
         const visStart = Math.max(0, Math.min(total - 1, chartZoom.start));
         const visEnd = Math.max(visStart, Math.min(total - 1, chartZoom.end));
         chartZoom.start = visStart;
         chartZoom.end = visEnd;
         const visPoints = allPoints.slice(visStart, visEnd + 1);
-        const isZoomed = visStart > 0 || visEnd < total - 1;
-        btnZoomReset.disabled = !isZoomed;
-        btnZoomIn.disabled = visPoints.length <= 5;
-        btnZoomOut.disabled = !isZoomed;
+        const curSpan = visPoints.length;
+        const isDefaultWindow = visStart === defaultStart && visEnd === defaultEnd;
+        btnZoomReset.disabled = isDefaultWindow;
+        btnZoomIn.disabled = curSpan <= 5;
+        btnZoomOut.disabled = visStart === 0 && visEnd === total - 1;
+
+        const maxScroll = Math.max(0, total - curSpan);
+        chartScroll.max = String(maxScroll);
+        chartScroll.value = String(visStart);
+        chartScroll.disabled = maxScroll === 0;
+
+        const firstDate = visPoints[0].date;
+        const lastDate = visPoints[visPoints.length - 1].date;
+        chartRangeLabel.textContent = `${firstDate} → ${lastDate} (${curSpan} of ${total})`;
 
         const dataValues = [];
         visPoints.forEach((p) => {
@@ -1155,8 +1251,9 @@
           scaleMax += 1000;
         }
 
-        const W = 900;
+        const W = Math.max(520, Math.round(forecastChart.clientWidth || 900));
         const H = 260;
+        forecastChart.setAttribute("viewBox", `0 0 ${W} ${H}`);
         const leftPad = 94;
         const rightPad = 24;
         const topPad = 24;
@@ -1171,9 +1268,15 @@
         const zeroY = yFor(0);
         const maxY = yFor(dataMax);
         const minY = yFor(dataMin);
-        const splitGlobalIdx = Math.max(0, hist.length - 1);
+        let splitGlobalIdx = -1;
+        for (let i = allPoints.length - 1; i >= 0; i--) {
+          if (allPoints[i].kind === "hist") {
+            splitGlobalIdx = i;
+            break;
+          }
+        }
         const splitLocalIdx = splitGlobalIdx - visStart;
-        const showToday = hist.length > 0 && splitLocalIdx >= 0 && splitLocalIdx < visPoints.length;
+        const showToday = splitGlobalIdx >= 0 && splitLocalIdx >= 0 && splitLocalIdx < visPoints.length;
         const splitX = xFor(splitLocalIdx);
 
         const histCoords = [];
@@ -1199,9 +1302,6 @@
           }
         });
 
-        const firstDate = visPoints[0].date;
-        const lastDate = visPoints[visPoints.length - 1].date;
-
         const showMinLabel = Math.abs(minY - maxY) >= 14;
         const showZeroLabel =
           Math.abs(zeroY - maxY) >= 14 && (!showMinLabel || Math.abs(zeroY - minY) >= 14);
@@ -1213,6 +1313,8 @@
           visPoints,
           visStart,
           visEnd,
+          defaultStart,
+          defaultEnd,
           xFor,
           yFor,
           W,
@@ -1349,23 +1451,26 @@
       }
 
       function getHoverRatio(clientX) {
-        const plotArea = document.getElementById("chart-plot-area");
-        if (!plotArea) return 0.5;
-        const plotRect = plotArea.getBoundingClientRect();
-        if (!plotRect.width) return 0.5;
-        return Math.max(0, Math.min(1, (clientX - plotRect.left) / plotRect.width));
+        if (!chartHoverMeta) return 0.5;
+        const ctm = forecastChart.getScreenCTM();
+        if (!ctm) return 0.5;
+        const pt = forecastChart.createSVGPoint();
+        pt.x = clientX;
+        pt.y = 0;
+        const svgPt = pt.matrixTransform(ctm.inverse());
+        return chartHoverMeta.plotW > 0
+          ? Math.max(0, Math.min(1, (svgPt.x - chartHoverMeta.leftPad) / chartHoverMeta.plotW))
+          : 0.5;
       }
 
       function handleChartHover(clientX) {
         if (chartDrag || !chartHoverMeta || !chartHoverMeta.visPoints.length) return;
         const m = chartHoverMeta;
-        const plotArea = document.getElementById("chart-plot-area");
-        if (!plotArea) return;
-        const plotRect = plotArea.getBoundingClientRect();
+        const ctm = forecastChart.getScreenCTM();
         const panelRect = forecastPanel.getBoundingClientRect();
-        if (!plotRect.width || !plotRect.height) return;
+        if (!ctm || !panelRect.width) return;
 
-        const ratio = Math.max(0, Math.min(1, (clientX - plotRect.left) / plotRect.width));
+        const ratio = getHoverRatio(clientX);
         const localIdx =
           m.visPoints.length <= 1
             ? 0
@@ -1419,10 +1524,12 @@
         `;
         chartTooltip.classList.remove("hidden");
 
-        const normX = m.plotW > 0 ? (pxSvg - m.leftPad) / m.plotW : 0;
-        const normY = m.plotH > 0 ? (pySvg - m.topPad) / m.plotH : 0.5;
-        const anchorX = plotRect.left - panelRect.left + normX * plotRect.width;
-        const anchorY = plotRect.top - panelRect.top + normY * plotRect.height;
+        const dotSvgPt = forecastChart.createSVGPoint();
+        dotSvgPt.x = pxSvg;
+        dotSvgPt.y = pySvg;
+        const screenDot = dotSvgPt.matrixTransform(ctm);
+        const anchorX = screenDot.x - panelRect.left;
+        const anchorY = screenDot.y - panelRect.top;
         const tipW = chartTooltip.offsetWidth || 140;
         const tipH = chartTooltip.offsetHeight || 54;
 
@@ -1441,7 +1548,11 @@
       btnZoomOut.addEventListener("click", () => applyZoom(1.5, 0.5));
       btnZoomReset.addEventListener("click", () => {
         if (!chartHoverMeta) return;
-        chartZoom = { key: chartZoom.key, start: 0, end: Math.max(0, chartHoverMeta.allPoints.length - 1) };
+        chartZoom = {
+          key: chartZoom.key,
+          start: chartHoverMeta.defaultStart,
+          end: chartHoverMeta.defaultEnd,
+        };
         renderChart(
           currentState.history_series,
           currentState.liquidity_agent.forecast_series,
@@ -1449,13 +1560,45 @@
         );
       });
 
+      chartScroll.addEventListener("input", () => {
+        if (!chartHoverMeta) return;
+        const total = chartHoverMeta.allPoints.length;
+        const span = chartZoom.end - chartZoom.start + 1;
+        const newStart = Math.max(0, Math.min(total - span, Number(chartScroll.value || 0)));
+        if (newStart !== chartZoom.start) {
+          chartZoom.start = newStart;
+          chartZoom.end = newStart + span - 1;
+          renderChart(
+            currentState.history_series,
+            currentState.liquidity_agent.forecast_series,
+            currentState.currency || "EUR"
+          );
+        }
+      });
+
       forecastChart.addEventListener(
         "wheel",
         (e) => {
           if (!chartHoverMeta || chartHoverMeta.allPoints.length <= 5) return;
           e.preventDefault();
-          const ratio = getHoverRatio(e.clientX);
-          applyZoom(e.deltaY < 0 ? 0.78 : 1.28, ratio);
+          const total = chartHoverMeta.allPoints.length;
+          const span = chartZoom.end - chartZoom.start + 1;
+          if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && span < total) {
+            const step = Math.round((e.deltaX / 240) * Math.max(4, span * 0.25)) || (e.deltaX > 0 ? 1 : -1);
+            const newStart = Math.max(0, Math.min(total - span, chartZoom.start + step));
+            if (newStart !== chartZoom.start) {
+              chartZoom.start = newStart;
+              chartZoom.end = newStart + span - 1;
+              renderChart(
+                currentState.history_series,
+                currentState.liquidity_agent.forecast_series,
+                currentState.currency || "EUR"
+              );
+            }
+          } else {
+            const ratio = getHoverRatio(e.clientX);
+            applyZoom(e.deltaY < 0 ? 0.78 : 1.28, ratio);
+          }
           handleChartHover(e.clientX);
         },
         { passive: false }
@@ -1498,7 +1641,21 @@
         if (!chartDrag) return;
         chartDrag = null;
         forecastChart.classList.remove("panning");
-        handleChartHover(e.clientX);
+        if (forecastChart.contains(e.target)) {
+          handleChartHover(e.clientX);
+        } else {
+          hideChartHover();
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        if (currentState && currentState.has_data) {
+          renderChart(
+            currentState.history_series,
+            currentState.liquidity_agent.forecast_series,
+            currentState.currency || "EUR"
+          );
+        }
       });
 
       forecastChart.addEventListener("mousemove", (e) => handleChartHover(e.clientX));
@@ -1679,7 +1836,6 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             opening_balance: Number(openingBalanceInput.value || 0),
-            selected_month: monthSelect.value,
             horizon_days: Number(horizonSelect.value || 30),
           }),
         });
@@ -1697,7 +1853,6 @@
             amount: Number(opAmountInput.value),
             counterparty: opCpInput.value,
             category: opCatInput.value,
-            selected_month: opDateInput.value.slice(0, 7),
             horizon_days: Number(horizonSelect.value || 30),
           }),
         });
@@ -1721,18 +1876,22 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id,
-            selected_month: monthSelect.value,
             horizon_days: Number(horizonSelect.value || 30),
           }),
         });
         if (res.ok) renderState(await res.json());
       });
 
-      monthSelect.addEventListener("change", () =>
-        fetchView(monthSelect.value, horizonSelect.value)
-      );
+      intervalSelect.addEventListener("change", () => {
+        if (!currentState || !currentState.has_data) return;
+        renderChart(
+          currentState.history_series,
+          currentState.liquidity_agent.forecast_series,
+          currentState.currency || "EUR"
+        );
+      });
       horizonSelect.addEventListener("change", () =>
-        fetchView(monthSelect.value, horizonSelect.value)
+        fetchView(horizonSelect.value)
       );
 
       async function submitCredit(amountVal) {
@@ -1741,7 +1900,6 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             amount: Number(amountVal),
-            selected_month: monthSelect.value,
             horizon_days: Number(horizonSelect.value || 30),
           }),
         });
@@ -1761,6 +1919,8 @@
         });
         if (res.ok) {
           csvFileInput.value = "";
+          chartZoom = { key: null, start: 0, end: 0 };
+          chartDrag = null;
           renderState(await res.json());
         }
       });
@@ -1785,7 +1945,6 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              selected_month: monthSelect.value,
               horizon_days: Number(horizonSelect.value || 30),
             }),
           });
@@ -1820,7 +1979,6 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               messages: chatHistory,
-              selected_month: monthSelect.value,
               horizon_days: Number(horizonSelect.value || 30),
             }),
           });
