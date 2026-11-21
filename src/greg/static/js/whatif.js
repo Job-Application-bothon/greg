@@ -63,7 +63,7 @@ export function createWhatIfController(els, { onChange }) {
     const balances = compute(state);
     els.panel.classList.toggle("active", !!balances);
     if (!balances) {
-      els.summary.textContent = "Move a slider or pick a scenario to compare it with the forecast.";
+      els.summary.textContent = "";
       return;
     }
     const cur = state.currency || "EUR";

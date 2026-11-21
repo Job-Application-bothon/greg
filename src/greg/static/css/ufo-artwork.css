@@ -2,7 +2,7 @@
 .ufo-backdrop { position: relative; isolation: isolate; }
 .ufo-scene {
   position: absolute; top: 0; bottom: 0;
-  left: calc(-1 * var(--gutter)); right: calc(-1 * var(--gutter));
+  left: calc(50% - 50vw); right: calc(50% - 50vw);
   z-index: -1; overflow: hidden; pointer-events: none;
 }
 .ufo-scene img { display: block; width: 100%; height: auto; }
