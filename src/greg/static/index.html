@@ -687,6 +687,12 @@
           transition: none !important;
         }
       }
+
+      table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+      th, td { text-align: left; padding: 0.45rem 0.55rem; border-bottom: 1px solid var(--border); }
+      th { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.76rem; }
+      .hidden { display: none !important; }
     </style>
   </head>
   <body>
@@ -1991,9 +1997,9 @@
           pendingEl.textContent = `Error: ${err.message}`;
           chatHistory.pop();
         } finally {
-          promptEl.disabled = false;
-          sendBtn.disabled = false;
-          promptEl.focus();
+          input.disabled = false;
+          btn.disabled = false;
+          input.focus();
         }
       });
 

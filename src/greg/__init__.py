@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 import json
 import os
 import socket
 import sys
+import tempfile
+import threading
+import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,6 +15,8 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from greg.ledger import STORE, VALID_CATEGORIES
+
+from greg import engine
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 SYSTEM_PROMPT = (
@@ -22,6 +29,152 @@ SYSTEM_PROMPT = (
     "month's income with the full year's income."
 )
 
+STATE_LOCK = threading.RLock()
+
+
+def _default_sim_params() -> dict[str, Any]:
+    return {
+        "revenue_change_pct": 0.0,
+        "delay_days": 0,
+        "fx_shock_pct": 0.0,
+        "extra_monthly_cost_eur": 0.0,
+        "include_commerzbank_actions": True,
+    }
+
+
+def _default_state() -> dict[str, Any]:
+    return {
+        "scenario_id": "pizzeria_amalfi",
+        "custom_csv_text": None,
+        "custom_filename": None,
+        "opening_balance": 2500.0,
+        "profile_overrides": {},
+        "preferences": {},
+        "action_overrides": {},
+        "sim_params": _default_sim_params(),
+        "receipts": [],
+        "audit_ledger": [],
+        "ai_briefing": None,
+        "last_ai_trace": None,
+    }
+
+
+def _state_file_path() -> Path:
+    custom = os.environ.get("GREG_STATE_FILE", "").strip()
+    if custom:
+        return Path(custom)
+    return Path(tempfile.gettempdir()) / "greg_cfo_state.json"
+
+
+def _load_initial_state() -> dict[str, Any]:
+    base = _default_state()
+    path = _state_file_path()
+    try:
+        if path.exists():
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict) and loaded.get("scenario_id") in ("pizzeria_amalfi", "custom_csv"):
+                base.update(loaded)
+                return base
+    except (OSError, ValueError):
+        pass
+    engine.create_audit_entry(
+        base["audit_ledger"],
+        actor="SYSTEM",
+        action_type="INIT_WORKSPACE",
+        target_id="pizzeria_amalfi",
+        summary="Initialized Autonomous CFO workspace with Pizzeria Amalfi 2025 CSV (1,125 transactions).",
+    )
+    return base
+
+
+STATE: dict[str, Any] = _load_initial_state()
+
+
+def _save_state() -> None:
+    path = _state_file_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(STATE), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def reset_state(scenario_id: str = "pizzeria_amalfi") -> dict[str, Any]:
+    """Reset workspace state back to the Pizzeria Amalfi baseline."""
+    with STATE_LOCK:
+        fresh = _default_state()
+        fresh["scenario_id"] = scenario_id
+        engine.create_audit_entry(
+            fresh["audit_ledger"],
+            actor="USER",
+            action_type="SCENARIO_LOAD",
+            target_id=scenario_id,
+            summary=f"Loaded scenario '{scenario_id}'.",
+        )
+        STATE.clear()
+        STATE.update(fresh)
+        _save_state()
+        return get_full_state()
+
+
+def get_current_bundle() -> dict[str, Any]:
+    with STATE_LOCK:
+        return engine.build_scenario_bundle(
+            scenario_id=STATE["scenario_id"],
+            custom_csv_text=STATE.get("custom_csv_text"),
+            custom_filename=STATE.get("custom_filename"),
+            opening_balance=float(STATE.get("opening_balance", 2500.0)),
+            profile_overrides=STATE.get("profile_overrides"),
+            preferences=STATE.get("preferences"),
+            action_overrides=STATE.get("action_overrides"),
+            sim_params=STATE.get("sim_params"),
+        )
+
+
+def _token_kind(token: str) -> str:
+    if token.startswith("IBAN_TOK_"):
+        return "Bank Account / IBAN"
+    if token.startswith("OWNER_REF"):
+        return "Owner PII"
+    if token.startswith("PARTNER"):
+        return "Partner PII"
+    if token.startswith("STAFF"):
+        return "Employee PII"
+    if token.startswith("VENDOR"):
+        return "Supplier Entity"
+    return "Business Entity"
+
+
+def get_full_state() -> dict[str, Any]:
+    with STATE_LOCK:
+        bundle = get_current_bundle()
+        if not STATE.get("last_ai_trace"):
+            anon_sys, token_map = engine.build_anonymized_context_prompt(bundle)
+            STATE["last_ai_trace"] = {
+                "timestamp": None,
+                "mode": "preview",
+                "model": os.environ.get("LLM_MODEL", "").strip() or "llama-32-3b-instruct",
+                "latency_ms": None,
+                "anonymized_system_prompt": anon_sys,
+                "anonymized_user_messages": [],
+                "masked_tokens": [{"token": k, "category": _token_kind(k)} for k in token_map],
+                "token_count": len(token_map),
+            }
+        briefing = STATE.get("ai_briefing") or {
+            "text": engine.build_deterministic_briefing(bundle),
+            "mode": "deterministic_baseline",
+            "model": os.environ.get("LLM_MODEL", "").strip() or "llama-32-3b-instruct",
+            "generated_at": None,
+        }
+        return {
+            **bundle,
+            "llm_status": _health_payload(),
+            "ai_briefing": briefing,
+            "last_ai_trace": STATE["last_ai_trace"],
+            "receipts": list(reversed(STATE.get("receipts", []))),
+            "audit_ledger": list(reversed(STATE.get("audit_ledger", []))),
+        }
+
 
 def _health_payload() -> dict[str, object]:
     """Build the health and environment status payload."""
@@ -33,6 +186,8 @@ def _health_payload() -> dict[str, object]:
         "pod": socket.gethostname(),
         "llm_configured": bool(llm_base_url),
         "llm_model": llm_model or None,
+        "llm_base_url": llm_base_url or None,
+        "active_scenario": STATE.get("scenario_id", "pizzeria_amalfi"),
     }
 
 
@@ -56,7 +211,7 @@ def _resolve_model(base_url: str, configured_model: str) -> str:
     return str(models[0]["id"])
 
 
-def call_llm(messages: list[dict[str, str]]) -> dict[str, str]:
+def call_llm(messages: list[dict[str, str]], max_tokens: int = 512) -> dict[str, str]:
     """Forward chat messages to the configured OpenAI-compatible LLM endpoint."""
     base_url = os.environ.get("LLM_BASE_URL", "").strip().rstrip("/")
     if not base_url:
@@ -71,8 +226,8 @@ def call_llm(messages: list[dict[str, str]]) -> dict[str, str]:
         {
             "model": model,
             "messages": full_messages,
-            "max_tokens": 512,
-            "temperature": 0.3,
+            "max_tokens": max_tokens,
+            "temperature": 0.25,
         }
     ).encode("utf-8")
 
@@ -426,7 +581,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_error(404, "Not Found")
 
     def log_message(self, format: str, *args: object) -> None:
-        # Flush stdout immediately so `oc logs` shows requests in real time.
         sys.stdout.write(f"{self.address_string()} - {format % args}\n")
         sys.stdout.flush()
 
