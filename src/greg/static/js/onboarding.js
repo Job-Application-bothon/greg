@@ -44,6 +44,16 @@ dashboard.append(tools);
 tools.append(inputGrid);
 dashboard.append($("empty-view"), $("workspace-view"));
 dashboard.append(tools);
+const assistantStage = document.createElement('section');
+assistantStage.id = 'assistant-stage';
+assistantStage.className = 'assistant-stage hidden';
+assistantStage.setAttribute('aria-labelledby', 'assistant-stage-title');
+assistantStage.innerHTML = '<h2 id="assistant-stage-title">Questions about<br>your numbers?</h2><p class="assistant-stage-copy">If something isn’t clear, just ask Greg.<br>Your finance assistant can help you understand the details.</p>';
+main.append(assistantStage);
+const assistantButton = $('chat-launcher');
+assistantButton.innerHTML = '<span>Chat with Greg</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+assistantStage.append(assistantButton);
+document.body.append($('greg-messenger'));
 const note = document.createElement("p");
 note.className = "card hidden";
 note.textContent = "Manual demo preview only. No bank is connected. No forecast is generated from these totals. Import a CSV to explore your real dashboard; any existing dashboard below still uses your saved data.";
@@ -64,6 +74,7 @@ reducedMotion.addEventListener("change", () => {
 });
 function show(el, visible) {
   el.classList.toggle("hidden", !visible);
+  if (el === overview) assistantStage.classList.toggle('hidden', !visible);
   if (visible && [bank, overview, dashboard].includes(el)) document.documentElement.classList.remove('source-screen');
 }
 const headerResize = new ResizeObserver(() => {

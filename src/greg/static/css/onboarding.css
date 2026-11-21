@@ -98,3 +98,9 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
 }
 @media (max-width: 380px) { .demo-form { grid-template-columns: 1fr; } .demo-form .field { grid-column: 1; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .source-card { transition: none; } .source-card:hover { transform: none; } }
+
+.assistant-stage { min-height:calc(100dvh - var(--stage-header, 69px)); box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:48px 16px; border-top:1px solid var(--line); scroll-snap-align:start; scroll-snap-stop:always; }
+.assistant-stage h2 { font-size:clamp(38px, 6vw, 80px); line-height:1.08; letter-spacing:-.06em; font-weight:400; margin:0; }
+.assistant-stage-copy { color:var(--muted); font-size:clamp(14px, 1.4vw, 18px); line-height:1.7; margin:24px 0 36px; }
+#assistant-stage #chat-launcher { position:static; width:auto; height:auto; min-height:64px; min-width:260px; padding:18px 28px; border-radius:14px; display:flex; justify-content:space-between; gap:48px; font-size:17px; box-shadow:none; }
+#assistant-stage #chat-launcher[hidden] { display:none; }
