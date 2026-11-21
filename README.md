@@ -131,6 +131,8 @@ Build and deployment manifests live in [`deploy/`](deploy/), built cleanly with 
 
 **Topic gate (on whenever an LLM is configured):** before answering, Greg asks the model a one-word YES/NO question: is this message about the business's money? Off-topic requests (poems, jokes, code, general knowledge) get the same polite `422` refusal, and the UI drops them from history. If the gate call fails, the message goes through. Without imported data, the system prompt forbids inventing numbers.
 
+**Grounded answers:** chat questions that mention dates or months (`2025-03-14`, `14.03.25`, `14 March`, `March 14, 2025`, `in May`, `05/2025`, German month names too) get a DATE LOOKUP section with that day's payments and start/end balance, or that month's category totals, biggest payers and lowest balance. Dates outside the data are reported as having no data. Chat also gets a short guide to the app's screens, so "how do I…?" questions are answered.
+
 **NeMo Guardrails (optional, OpenShift AI 3.5+):** every chat message is screened by a DeBERTa prompt-injection classifier before it reaches the model. Blocked messages return `422` with a polite refusal; if the guardrails service is down, chat returns `503` unless `GUARDRAILS_FAIL_OPEN=true`.
 
 ```bash
