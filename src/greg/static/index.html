@@ -1078,12 +1078,7 @@
             <div class="chart-toolbar">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
                 <span class="granularity-badge" id="chart-granularity-badge">Auto: Daily</span>
-                <span class="subtitle" id="chart-zoom-hint">Drag mini-map handles or chart to adjust range, wheel or + / − to zoom</span>
-              </div>
-              <div class="chart-zoom-controls" role="group" aria-label="Chart zoom">
-                <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-in" title="Zoom in">+</button>
-                <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-out" title="Zoom out">−</button>
-                <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-reset" title="Reset to 3M | Today | +1M">↺ Reset</button>
+                <span class="subtitle" id="chart-zoom-hint">Drag mini-map handles or chart to adjust range, scroll wheel to zoom</span>
               </div>
             </div>
             <div id="chart-tooltip" class="chart-tooltip hidden" role="status" aria-live="polite"></div>
@@ -1246,9 +1241,6 @@
       const forecastPanel = document.getElementById("forecast-panel");
       const forecastChart = document.getElementById("forecast-chart");
       const chartTooltip = document.getElementById("chart-tooltip");
-      const btnZoomIn = document.getElementById("btn-zoom-in");
-      const btnZoomOut = document.getElementById("btn-zoom-out");
-      const btnZoomReset = document.getElementById("btn-zoom-reset");
       const chartRangeLabel = document.getElementById("chart-range-label");
       const agentAnalysisText = document.getElementById("agent-analysis-text");
       const agentRecText = document.getElementById("agent-rec-text");
@@ -1698,16 +1690,6 @@
           chartGranularityBadge.textContent = granLabel;
         }
 
-        const isDefault3M1M =
-          !chartZoom.custom &&
-          selectedHistDays === 90 &&
-          selectedForeDays === 30 &&
-          visStart === defaultPreset.start &&
-          visEnd === defaultPreset.end;
-        btnZoomReset.disabled = isDefault3M1M;
-        btnZoomIn.disabled = spanDays <= 1;
-        btnZoomOut.disabled = visStart === 0 && visEnd === totalDaily - 1;
-
         syncHorizonPillStates(todayDailyIdx, totalDaily, visStart, visEnd);
         renderMiniMap(dailyPoints, todayDailyIdx, visStart, visEnd, hasApprovedCredit);
 
@@ -2066,32 +2048,6 @@
           await fetchView(String(selectedForeDays));
         });
       }
-
-      btnZoomIn.addEventListener("click", () => applyZoom(0.65, 0.5));
-      btnZoomOut.addEventListener("click", () => applyZoom(1.5, 0.5));
-      btnZoomReset.addEventListener("click", async () => {
-        if (!chartHoverMeta || !currentState || !currentState.has_data) return;
-        selectedHistDays = 90;
-        selectedForeDays = 30;
-        const w = computePresetWindow(
-          chartHoverMeta.todayDailyIdx,
-          chartHoverMeta.allPoints.length,
-          selectedHistDays,
-          selectedForeDays
-        );
-        chartZoom = {
-          key: chartZoom.key,
-          start: w.start,
-          end: w.end,
-          custom: false,
-        };
-        renderChart(
-          currentState.history_series,
-          currentState.liquidity_agent.forecast_series,
-          currentState.currency || "EUR"
-        );
-        await fetchView("30");
-      });
 
       // Interactive Mini-Map Range Navigator Drag & Resize Logic
       function startMiniMapDrag(mode, clientX, e) {
