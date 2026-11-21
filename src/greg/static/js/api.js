@@ -1,23 +1,7 @@
-/** Per-tab session isolation and HTTP API client helpers. */
-
-export function getTabSessionId() {
-  const key = "greg_tab_session_id";
-  let sid = sessionStorage.getItem(key);
-  if (!sid) {
-    sid =
-      window.crypto && typeof window.crypto.randomUUID === "function"
-        ? window.crypto.randomUUID()
-        : `s-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    sessionStorage.setItem(key, sid);
-  }
-  return sid;
-}
-
-const SESSION_ID = getTabSessionId();
+/** HTTP API client helpers. The per-browser session rides on the server-issued `greg_session` cookie. */
 
 export function apiFetch(url, options = {}) {
-  const headers = Object.assign({ "X-Greg-Session": SESSION_ID }, options.headers || {});
-  return fetch(url, Object.assign({}, options, { headers }));
+  return fetch(url, Object.assign({ credentials: "same-origin" }, options));
 }
 
 export async function fetchHealth() {
