@@ -65,6 +65,7 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             "chart.js",
             "controls.js",
             "chat.js",
+            "whatif.js",
         ):
             with urllib.request.urlopen(
                 f"http://127.0.0.1:{self.port}/static/js/{js_name}", timeout=5
@@ -137,6 +138,9 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             "Own Model (Neural Network)",
             "StatsForecast",
             'id="chart-hover-pess-dot"',
+            'id="whatif-panel"',
+            'id="chart-hover-whatif-dot"',
+            "What-if scenario",
             'id="csv-mapping-box"',
             'id="map-date"',
             'id="map-amount-mode"',

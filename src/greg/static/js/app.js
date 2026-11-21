@@ -6,6 +6,7 @@ import { createChatController } from "./chat.js";
 import { initForecastDotHover, initNumberSteppers, initStepCarousel } from "./controls.js";
 import { createCsvMappingController } from "./csv-mapping.js";
 import { escapeHtml, fmtMoney, fmtZero } from "./format.js";
+import { createWhatIfController } from "./whatif.js";
 
 initStepCarousel();
 initNumberSteppers();
@@ -92,7 +93,29 @@ const chart = createChartController(
     chartRangeLabel: document.getElementById("chart-range-label"),
     chartLegend: document.getElementById("chart-legend"),
   },
-  { getCurrentState: () => currentState }
+  { getCurrentState: () => currentState, getWhatIf: (state) => whatIf.compute(state) }
+);
+
+const whatIf = createWhatIfController(
+  {
+    panel: document.getElementById("whatif-panel"),
+    summary: document.getElementById("whatif-summary"),
+    resetBtn: document.getElementById("whatif-reset"),
+    incomeInput: document.getElementById("whatif-income"),
+    incomeOut: document.getElementById("whatif-income-out"),
+    expenseInput: document.getElementById("whatif-expense"),
+    expenseOut: document.getElementById("whatif-expense-out"),
+    monthlyInput: document.getElementById("whatif-monthly"),
+    oneOffInput: document.getElementById("whatif-oneoff"),
+    oneOffDateInput: document.getElementById("whatif-oneoff-date"),
+  },
+  {
+    onChange: () => {
+      if (!currentState || !currentState.has_data) return;
+      whatIf.renderSummary(currentState);
+      chart.render(currentState);
+    },
+  }
 );
 
 const csvMapping = createCsvMappingController({
@@ -402,6 +425,7 @@ function renderState(state) {
     }
   }
 
+  whatIf.renderSummary(state);
   chart.render(state);
 }
 
@@ -497,6 +521,7 @@ resetBtn.addEventListener("click", async () => {
     currentGranularity = null;
     chart.resetZoom();
     if (chat.isOpen()) chat.setOpen(false);
+    whatIf.reset();
     renderState(await res.json());
   }
 });

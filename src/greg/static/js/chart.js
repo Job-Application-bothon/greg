@@ -1,7 +1,9 @@
 /** Interactive SVG balance & forecast chart with zoom, pan, range scrub, and crosshair tooltip. */
 import { escapeHtml, fmtMoney, fmtZero } from "./format.js";
 
-export function buildChartPoints(state) {
+const WHATIF_COLOR = "#2f6fdf";
+
+export function buildChartPoints(state, whatIf = null) {
   const la = (state && state.liquidity_agent) || {};
   const gran = la.granularity === "month" ? "month" : "day";
   const fore = la.forecast_series || [];
@@ -15,12 +17,13 @@ export function buildChartPoints(state) {
         bal: Number(p.balance),
         kind: "hist",
       })),
-      ...fore.map((p) => ({
+      ...fore.map((p, i) => ({
         date: p.date,
         fullDate: p.date,
         bal: Number(p.balance),
         balPess: p.balance_pessimistic != null ? Number(p.balance_pessimistic) : null,
         balCredit: p.balance_with_credit != null ? Number(p.balance_with_credit) : null,
+        balWhatIf: whatIf ? whatIf[i] : null,
         expectedIn: p.expected_in != null ? Number(p.expected_in) : null,
         expectedOut: p.expected_out != null ? Number(p.expected_out) : null,
         kind: "fore",
@@ -36,17 +39,20 @@ export function buildChartPoints(state) {
       bal: Number(p.balance),
       kind: "hist",
     })),
-    ...fore.map((p) => ({
+    ...fore.map((p, i) => ({
       date: p.date,
       fullDate: p.date,
       bal: Number(p.balance),
       balCredit: p.balance_with_credit != null ? Number(p.balance_with_credit) : null,
+      balWhatIf: whatIf ? whatIf[i] : null,
+      expectedIn: p.expected_in != null ? Number(p.expected_in) : null,
+      expectedOut: p.expected_out != null ? Number(p.expected_out) : null,
       kind: "fore",
     })),
   ];
 }
 
-export function createChartController(els, { getCurrentState }) {
+export function createChartController(els, { getCurrentState, getWhatIf = () => null }) {
   const {
     forecastPanel,
     forecastChart,
@@ -93,7 +99,9 @@ export function createChartController(els, { getCurrentState }) {
     const hasApprovedCredit =
       state && state.approved_credit && Number(state.approved_credit.amount) > 0;
 
-    const allPoints = buildChartPoints(state);
+    const whatIf = getWhatIf(state);
+    const hasWhatIf = !!whatIf;
+    const allPoints = buildChartPoints(state, whatIf);
     const total = allPoints.length;
     const defaultWindow = interval === "month" ? 24 : 60;
     const defaultSpan = Math.min(total, defaultWindow);
@@ -132,6 +140,9 @@ export function createChartController(els, { getCurrentState }) {
       }
       if (hasApprovedCredit && p.kind === "fore" && p.balCredit != null) {
         dataValues.push(p.balCredit);
+      }
+      if (p.kind === "fore" && p.balWhatIf != null) {
+        dataValues.push(p.balWhatIf);
       }
     });
 
@@ -176,6 +187,7 @@ export function createChartController(els, { getCurrentState }) {
     const foreCoords = [];
     const pessCoords = [];
     const creditCoords = [];
+    const whatIfCoords = [];
     visPoints.forEach((p, localIdx) => {
       const xStr = xFor(localIdx).toFixed(1);
       const yStr = yFor(p.bal).toFixed(1);
@@ -189,6 +201,7 @@ export function createChartController(els, { getCurrentState }) {
           foreCoords.push(`${pxStr},${pyStr}`);
           if (p.balPess != null) pessCoords.push(`${pxStr},${pyStr}`);
           if (hasApprovedCredit) creditCoords.push(`${pxStr},${pyStr}`);
+          if (p.balWhatIf != null) whatIfCoords.push(`${pxStr},${pyStr}`);
         }
         foreCoords.push(`${xStr},${yStr}`);
         if (p.balPess != null) {
@@ -197,9 +210,13 @@ export function createChartController(els, { getCurrentState }) {
         if (hasApprovedCredit && p.balCredit != null) {
           creditCoords.push(`${xStr},${yFor(p.balCredit).toFixed(1)}`);
         }
+        if (p.balWhatIf != null) {
+          whatIfCoords.push(`${xStr},${yFor(p.balWhatIf).toFixed(1)}`);
+        }
       }
     });
 
+    const whatIfLegend = `<span class="legend-item"><span class="swatch" style="background: ${WHATIF_COLOR}"></span>What-if scenario</span>`;
     if (chartLegend) {
       if (interval === "month") {
         const items = [
@@ -212,13 +229,20 @@ export function createChartController(els, { getCurrentState }) {
             '<span class="legend-item"><span class="swatch" style="background: #24664e"></span>With approved credit</span>'
           );
         }
+        if (hasWhatIf) items.push(whatIfLegend);
         chartLegend.innerHTML = items.join("");
         chartLegend.classList.remove("hidden");
-      } else if (hasApprovedCredit) {
-        chartLegend.innerHTML = [
+      } else if (hasApprovedCredit || hasWhatIf) {
+        const items = [
           '<span class="legend-item"><span class="swatch" style="background: #805181"></span>Forecast balance</span>',
-          '<span class="legend-item"><span class="swatch" style="background: #24664e"></span>With approved credit</span>',
-        ].join("");
+        ];
+        if (hasApprovedCredit) {
+          items.push(
+            '<span class="legend-item"><span class="swatch" style="background: #24664e"></span>With approved credit</span>'
+          );
+        }
+        if (hasWhatIf) items.push(whatIfLegend);
+        chartLegend.innerHTML = items.join("");
         chartLegend.classList.remove("hidden");
       } else {
         chartLegend.classList.add("hidden");
@@ -296,10 +320,17 @@ export function createChartController(els, { getCurrentState }) {
           : ""
       }
 
+      ${
+        whatIfCoords.length > 1
+          ? `<polyline fill="none" stroke="${WHATIF_COLOR}" stroke-width="2.5" stroke-dasharray="2 4" stroke-linecap="round" stroke-linejoin="round" points="${whatIfCoords.join(" ")}" />`
+          : ""
+      }
+
       <line id="chart-crosshair" x1="0" y1="${topPad}" x2="0" y2="${H - bottomPad}" stroke="#8a8a8a" stroke-dasharray="3 3" stroke-width="1" visibility="hidden" />
       <line id="chart-crosshair-y" x1="${leftPad}" y1="0" x2="${W - rightPad}" y2="0" stroke="#8a8a8a" stroke-dasharray="3 3" stroke-width="1" visibility="hidden" />
       <circle id="chart-hover-pess-dot" cx="0" cy="0" r="4" fill="#c96b7c" stroke="#ffffff" stroke-width="1.5" visibility="hidden" />
       <circle id="chart-hover-dot" cx="0" cy="0" r="5" fill="#0d0d0d" stroke="#ffffff" stroke-width="2" visibility="hidden" />
+      <circle id="chart-hover-whatif-dot" cx="0" cy="0" r="4.5" fill="${WHATIF_COLOR}" stroke="#ffffff" stroke-width="2" visibility="hidden" />
       <circle id="chart-hover-credit-dot" cx="0" cy="0" r="4.5" fill="#24664e" stroke="#ffffff" stroke-width="2" visibility="hidden" />
       <rect id="chart-plot-area" x="${leftPad}" y="${topPad}" width="${plotW}" height="${plotH}" fill="transparent" pointer-events="all" />
 
@@ -332,6 +363,8 @@ export function createChartController(els, { getCurrentState }) {
     const dot = document.getElementById("chart-hover-dot");
     const pDot = document.getElementById("chart-hover-pess-dot");
     const cDot = document.getElementById("chart-hover-credit-dot");
+    const wDot = document.getElementById("chart-hover-whatif-dot");
+    if (wDot) wDot.setAttribute("visibility", "hidden");
     if (chX) chX.setAttribute("visibility", "hidden");
     if (chY) chY.setAttribute("visibility", "hidden");
     if (dot) dot.setAttribute("visibility", "hidden");
@@ -374,7 +407,17 @@ export function createChartController(els, { getCurrentState }) {
     const dot = document.getElementById("chart-hover-dot");
     const pDot = document.getElementById("chart-hover-pess-dot");
     const cDot = document.getElementById("chart-hover-credit-dot");
+    const wDot = document.getElementById("chart-hover-whatif-dot");
 
+    if (wDot) {
+      if (pt.kind === "fore" && pt.balWhatIf != null) {
+        wDot.setAttribute("cx", pxSvg.toFixed(1));
+        wDot.setAttribute("cy", m.yFor(pt.balWhatIf).toFixed(1));
+        wDot.setAttribute("visibility", "visible");
+      } else {
+        wDot.setAttribute("visibility", "hidden");
+      }
+    }
     if (chX) {
       chX.setAttribute("x1", pxSvg.toFixed(1));
       chX.setAttribute("x2", pxSvg.toFixed(1));
@@ -424,9 +467,15 @@ export function createChartController(els, { getCurrentState }) {
         ? `<div class="tt-credit">With credit: ${escapeHtml(fmtMoney(pt.balCredit, m.currency))}</div>`
         : "";
 
+    const whatIfHtml =
+      pt.kind === "fore" && pt.balWhatIf != null
+        ? `<div class="tt-whatif">What-if: ${escapeHtml(fmtMoney(pt.balWhatIf, m.currency))}</div>`
+        : "";
+
     chartTooltip.innerHTML = `
       <div class="tt-date">${escapeHtml(pt.date)} · ${kindLabel}</div>
       <div class="tt-bal">${escapeHtml(fmtMoney(pt.bal, m.currency))}</div>
+      ${whatIfHtml}
       ${pessHtml}
       ${flowsHtml}
       ${creditHtml}
