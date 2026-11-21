@@ -110,6 +110,7 @@ uv run greg
 | `GUARDRAILS_CHECK_URL` | `""` | Full NeMo Guardrails checks URL (`.../v1/guardrail/checks`); unset disables screening |
 | `GUARDRAILS_TOKEN` | `""` | Bearer token for the guardrails endpoint (defaults to the pod's service account token) |
 | `GUARDRAILS_CA_FILE` | pod's `service-ca.crt` | Extra CA bundle trusted for an `https://` guardrails URL |
+| `GUARDRAILS_TIMEOUT` | `30` | Seconds to wait for a guardrails check (the first check after a restart loads the classifier model) |
 | `GUARDRAILS_FAIL_OPEN` | `false` | When `true`, chat still works if the guardrails service is unreachable |
 
 ---
