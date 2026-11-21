@@ -23,6 +23,7 @@ from greg.llm.prompts import (
     SYSTEM_PROMPT,
     build_context_system_prompt,
     build_explain_prompt,
+    is_refusal,
 )
 from greg.llm.topic import is_on_topic
 
@@ -32,6 +33,22 @@ CHAT_ALLOWED_ROLES = {"user", "assistant"}
 GUARDRAIL_REFUSAL = (
     "Sorry, I can't help with that. I can only answer questions about your business's money."
 )
+
+
+def _drop_refused_turns(messages: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Remove refusals and the questions that caused them.
+
+    Small models copy their own earlier replies, so a refusal left in history makes them
+    refuse later on-topic questions too.
+    """
+    kept: list[dict[str, str]] = []
+    for msg in messages:
+        if msg["role"] == "assistant" and is_refusal(msg["content"]):
+            if kept and kept[-1]["role"] == "user":
+                kept.pop()
+            continue
+        kept.append(msg)
+    return kept
 
 
 def sanitize_chat_messages(messages: list[Any]) -> list[dict[str, str]]:
@@ -53,7 +70,7 @@ def sanitize_chat_messages(messages: list[Any]) -> list[dict[str, str]]:
         if len(content) > CHAT_MAX_CHARS:
             raise ValueError(f"Messages are limited to {CHAT_MAX_CHARS} characters")
         cleaned.append({"role": role, "content": content})
-    cleaned = cleaned[-CHAT_MAX_MESSAGES:]
+    cleaned = _drop_refused_turns(cleaned)[-CHAT_MAX_MESSAGES:]
     if not cleaned or cleaned[-1]["role"] != "user":
         raise ValueError("The last message must come from the user")
     return cleaned

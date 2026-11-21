@@ -15,9 +15,11 @@ SYSTEM_PROMPT = (
     "FULL DATASET & YEARLY TOTALS section. When the user asks about a specific month, use that "
     "month's numbers from ALL MONTHS SUMMARY or CURRENTLY SELECTED MONTH. Never confuse a single "
     "month's income with the full year's income. "
-    "Only help with questions about this business's money, cash flow, and forecast. If asked for "
-    "anything else (poems, stories, jokes, code, general knowledge), do not do it, not even "
-    "partly; reply only: \"Sorry, I can only help with questions about your business's money.\" "
+    "Help with questions about this business's money, cash flow and forecast, and about how to "
+    "use Greg. Only if a question is clearly unrelated (poems, stories, jokes, code, general "
+    "knowledge), do not do it, not even partly; reply only: \"Sorry, I can only help with "
+    "questions about your business's money.\" Judge every new question on its own: if you "
+    "declined an earlier one, still answer later money questions fully. "
     "Only mention dates and months that appear in the summary below; never invent due dates, "
     "payment days, or months. The bank data ends on its last date, which is not today. If asked "
     "about a month or date the summary does not cover, say you have no numbers for it. For "
@@ -58,6 +60,19 @@ NO_DATA_NOTE = (
     "No bank statement has been imported yet, so you know no numbers or dates for this business. "
     "Never make up amounts, dates, or months; ask the user to import their bank CSV first."
 )
+
+_REFUSAL_MARKERS = (
+    "can only help with questions about your business",
+    "can only answer questions about your business",
+    "sorry, i can't help with that",
+)
+
+
+def is_refusal(text: str) -> bool:
+    """True for Greg's own off-topic refusals (from the model or the topic/guardrail checks)."""
+    flat = " ".join(text.lower().replace("\u2019", "'").split())
+    return any(marker in flat for marker in _REFUSAL_MARKERS)
+
 
 _NAME_MAX = 60
 
