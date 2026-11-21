@@ -1,171 +1,26 @@
-from __future__ import annotations
-
 import json
 import os
 import socket
 import sys
-import tempfile
-import threading
-import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
-from greg import engine
+from greg.ledger import STORE, VALID_CATEGORIES
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 SYSTEM_PROMPT = (
-    "You are Greg, an AI-powered Autonomous CFO assistant for SMEs. "
-    "Provide clear, explainable financial guidance and highlight next steps."
+    "You are Greg, a friendly, plain-language financial assistant for small business owners. "
+    "Use simple everyday words without technical or financial jargon so anyone can understand. "
+    "Always answer using the exact numbers provided in the account summary below. "
+    "When the user asks about a full year (such as 2025) or the entire dataset, use the "
+    "FULL DATASET & YEARLY TOTALS section. When the user asks about a specific month, use that "
+    "month's numbers from ALL MONTHS SUMMARY or CURRENTLY SELECTED MONTH. Never confuse a single "
+    "month's income with the full year's income."
 )
-
-STATE_LOCK = threading.RLock()
-
-
-def _default_sim_params() -> dict[str, Any]:
-    return {
-        "revenue_change_pct": 0.0,
-        "delay_days": 0,
-        "fx_shock_pct": 0.0,
-        "extra_monthly_cost_eur": 0.0,
-        "include_commerzbank_actions": True,
-    }
-
-
-def _default_state() -> dict[str, Any]:
-    return {
-        "scenario_id": "pizzeria_amalfi",
-        "custom_csv_text": None,
-        "custom_filename": None,
-        "opening_balance": 2500.0,
-        "profile_overrides": {},
-        "preferences": {},
-        "action_overrides": {},
-        "sim_params": _default_sim_params(),
-        "receipts": [],
-        "audit_ledger": [],
-        "ai_briefing": None,
-        "last_ai_trace": None,
-    }
-
-
-def _state_file_path() -> Path:
-    custom = os.environ.get("GREG_STATE_FILE", "").strip()
-    if custom:
-        return Path(custom)
-    return Path(tempfile.gettempdir()) / "greg_cfo_state.json"
-
-
-def _load_initial_state() -> dict[str, Any]:
-    base = _default_state()
-    path = _state_file_path()
-    try:
-        if path.exists():
-            loaded = json.loads(path.read_text(encoding="utf-8"))
-            if isinstance(loaded, dict) and loaded.get("scenario_id") in ("pizzeria_amalfi", "custom_csv"):
-                base.update(loaded)
-                return base
-    except (OSError, ValueError):
-        pass
-    engine.create_audit_entry(
-        base["audit_ledger"],
-        actor="SYSTEM",
-        action_type="INIT_WORKSPACE",
-        target_id="pizzeria_amalfi",
-        summary="Initialized Autonomous CFO workspace with Pizzeria Amalfi 2025 CSV (1,125 transactions).",
-    )
-    return base
-
-
-STATE: dict[str, Any] = _load_initial_state()
-
-
-def _save_state() -> None:
-    path = _state_file_path()
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(STATE), encoding="utf-8")
-    except OSError:
-        pass
-
-
-def reset_state(scenario_id: str = "pizzeria_amalfi") -> dict[str, Any]:
-    """Reset workspace state back to the Pizzeria Amalfi baseline."""
-    with STATE_LOCK:
-        fresh = _default_state()
-        fresh["scenario_id"] = scenario_id
-        engine.create_audit_entry(
-            fresh["audit_ledger"],
-            actor="USER",
-            action_type="SCENARIO_LOAD",
-            target_id=scenario_id,
-            summary=f"Loaded scenario '{scenario_id}'.",
-        )
-        STATE.clear()
-        STATE.update(fresh)
-        _save_state()
-        return get_full_state()
-
-
-def get_current_bundle() -> dict[str, Any]:
-    with STATE_LOCK:
-        return engine.build_scenario_bundle(
-            scenario_id=STATE["scenario_id"],
-            custom_csv_text=STATE.get("custom_csv_text"),
-            custom_filename=STATE.get("custom_filename"),
-            opening_balance=float(STATE.get("opening_balance", 2500.0)),
-            profile_overrides=STATE.get("profile_overrides"),
-            preferences=STATE.get("preferences"),
-            action_overrides=STATE.get("action_overrides"),
-            sim_params=STATE.get("sim_params"),
-        )
-
-
-def _token_kind(token: str) -> str:
-    if token.startswith("IBAN_TOK_"):
-        return "Bank Account / IBAN"
-    if token.startswith("OWNER_REF"):
-        return "Owner PII"
-    if token.startswith("PARTNER"):
-        return "Partner PII"
-    if token.startswith("STAFF"):
-        return "Employee PII"
-    if token.startswith("VENDOR"):
-        return "Supplier Entity"
-    return "Business Entity"
-
-
-def get_full_state() -> dict[str, Any]:
-    with STATE_LOCK:
-        bundle = get_current_bundle()
-        if not STATE.get("last_ai_trace"):
-            anon_sys, token_map = engine.build_anonymized_context_prompt(bundle)
-            STATE["last_ai_trace"] = {
-                "timestamp": None,
-                "mode": "preview",
-                "model": os.environ.get("LLM_MODEL", "").strip() or "llama-32-3b-instruct",
-                "latency_ms": None,
-                "anonymized_system_prompt": anon_sys,
-                "anonymized_user_messages": [],
-                "masked_tokens": [{"token": k, "category": _token_kind(k)} for k in token_map],
-                "token_count": len(token_map),
-            }
-        briefing = STATE.get("ai_briefing") or {
-            "text": engine.build_deterministic_briefing(bundle),
-            "mode": "deterministic_baseline",
-            "model": os.environ.get("LLM_MODEL", "").strip() or "llama-32-3b-instruct",
-            "generated_at": None,
-        }
-        return {
-            **bundle,
-            "llm_status": _health_payload(),
-            "ai_briefing": briefing,
-            "last_ai_trace": STATE["last_ai_trace"],
-            "receipts": list(reversed(STATE.get("receipts", []))),
-            "audit_ledger": list(reversed(STATE.get("audit_ledger", []))),
-        }
 
 
 def _health_payload() -> dict[str, object]:
@@ -178,8 +33,6 @@ def _health_payload() -> dict[str, object]:
         "pod": socket.gethostname(),
         "llm_configured": bool(llm_base_url),
         "llm_model": llm_model or None,
-        "llm_base_url": llm_base_url or None,
-        "active_scenario": STATE.get("scenario_id", "pizzeria_amalfi"),
     }
 
 
@@ -203,7 +56,7 @@ def _resolve_model(base_url: str, configured_model: str) -> str:
     return str(models[0]["id"])
 
 
-def call_llm(messages: list[dict[str, str]], max_tokens: int = 512) -> dict[str, str]:
+def call_llm(messages: list[dict[str, str]]) -> dict[str, str]:
     """Forward chat messages to the configured OpenAI-compatible LLM endpoint."""
     base_url = os.environ.get("LLM_BASE_URL", "").strip().rstrip("/")
     if not base_url:
@@ -218,8 +71,8 @@ def call_llm(messages: list[dict[str, str]], max_tokens: int = 512) -> dict[str,
         {
             "model": model,
             "messages": full_messages,
-            "max_tokens": max_tokens,
-            "temperature": 0.25,
+            "max_tokens": 512,
+            "temperature": 0.3,
         }
     ).encode("utf-8")
 
@@ -239,115 +92,122 @@ def call_llm(messages: list[dict[str, str]], max_tokens: int = 512) -> dict[str,
     return {"reply": reply, "model": body.get("model", model)}
 
 
-def _deterministic_cfo_chat_reply(bundle: dict[str, Any], prompt_text: str) -> str:
-    q = (prompt_text or "").lower()
-    k = bundle["kpis"]
-    p = bundle["profile"]
-    sim = bundle["simulation"]["summary"]
-    actions = bundle["actions"]
+def _classify_with_llm(signatures: list[dict[str, str]]) -> dict[str, str]:
+    """Use the configured OpenShift LLM to classify unique CSV signatures into Salaries, Taxes, or Other."""
+    if not os.environ.get("LLM_BASE_URL", "").strip() or not signatures:
+        return {}
 
-    if any(w in q for w in ("fraud", "iban", "suspicious", "block", "invoice", "wine")):
-        fraud_act = next((a for a in actions if a["category"] == "fraud"), None)
-        if fraud_act:
-            return (
-                f"**Suspicious Bill Check**: {fraud_act['autonomy']['analyzed_independently']}\n\n"
-                f"**Recommendation**: {fraud_act['autonomy']['recommended_logic']}"
-            )
-    if any(w in q for w in ("chf", "swiss", "fx", "hedge", "zurich", "rate", "franc")):
-        fx_act = next((a for a in actions if a["category"] == "fx"), None)
-        if fx_act:
-            return (
-                f"**Foreign Currency Protection ({k['fx_exposure_label']})**: "
-                f"{fx_act['autonomy']['analyzed_independently']}\n\n"
-                f"**Recommended Action**: {fx_act['autonomy']['recommended_logic']}"
-            )
-    if any(w in q for w in ("tax", "vat", "steuer", "grant", "kfw", "law", "regulat")):
-        regs = bundle["regulatory_updates"]
-        top_reg = regs[0]["title"] if regs else "German SME tax monitoring"
-        return (
-            f"**Tax & Grant Summary for {p['business_name']}**: Found **{len(regs)} relevant German update(s)**, "
-            f"starting with **{top_reg}**. Check the Tax & Grant Tips tab below for the full checklist."
+    capped = signatures[:60]
+    lines = [
+        f'{idx}: counterparty="{s["counterparty"]}" | type="{s["raw_type"]}" | direction="{s["direction"]}" | ref="{s["reference"][:80]}"'
+        for idx, s in enumerate(capped)
+    ]
+    prompt = (
+        "Classify each bank transaction signature into exactly one category: "
+        '"Salaries", "Taxes", or "Other".\n'
+        "- Salaries: employee or owner wages, payroll, salary payments.\n"
+        "- Taxes: direct payments to tax authorities (income tax, wage tax, trade tax, VAT). "
+        "Note: health insurance or social security contributions are Other, not Taxes.\n"
+        "- Other: everything else (sales, rent, suppliers, utilities, insurance, transfers).\n\n"
+        "Respond ONLY with a valid JSON object mapping the numeric index string to the category, "
+        'e.g. {"0": "Other", "1": "Salaries"}.\n\n'
+        + "\n".join(lines)
+    )
+    try:
+        res = call_llm(
+            [
+                {"role": "system", "content": "You are a strict JSON transaction classifier."},
+                {"role": "user", "content": prompt},
+            ]
         )
-    if any(w in q for w in ("festgeld", "invest", "surplus", "deposit", "interest")):
-        inv_act = next((a for a in actions if a["category"] == "investment"), None)
-        if inv_act:
-            return f"**Interest Opportunity**: {inv_act['autonomy']['recommended_logic']}"
+        raw = res.get("reply", "").strip()
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            return {}
+        parsed = json.loads(raw[start : end + 1])
+        if not isinstance(parsed, dict):
+            return {}
+        mapping: dict[str, str] = {}
+        for k, v in parsed.items():
+            try:
+                idx = int(k)
+            except (ValueError, TypeError):
+                continue
+            if 0 <= idx < len(capped) and v in VALID_CATEGORIES:
+                mapping[capped[idx]["key"]] = v
+        return mapping
+    except Exception:
+        return {}
+
+
+def _build_context_system_prompt(selected_month: str | None = None, horizon_days: int = 30) -> str:
+    view = STORE.get_view(selected_month=selected_month, horizon_days=horizon_days)
+    if not view.get("has_data"):
+        return SYSTEM_PROMPT
+
+    cur = view.get("currency", "EUR")
+    sym = "€" if cur == "EUR" else f"{cur} "
+    ds = view["dataset_summary"]
+    ms = view["month_summary"]
+    la = view["liquidity_agent"]
+
+    yearly_lines = []
+    for y in view["yearly_summaries"]:
+        ce = y["category_expenses"]
+        yearly_lines.append(
+            f"- Year {y['year']}: Total Income = {sym}{y['total_income']:,.2f} | "
+            f"Total Expenses = {sym}{y['total_expenses']:,.2f} | "
+            f"Total Profit = {sym}{y['profit']:,.2f} "
+            f"(Expenses -> Salaries: {sym}{ce['Salaries']:,.2f}, Taxes: {sym}{ce['Taxes']:,.2f}, Other: {sym}{ce['Other']:,.2f})"
+        )
+
+    monthly_lines = [
+        f"- {m['month']} ({m['label']}): Income {sym}{m['total_income']:,.2f} | "
+        f"Expenses {sym}{m['total_expenses']:,.2f} | Profit {sym}{m['profit']:,.2f} | "
+        f"End Balance {sym}{m['end_balance']:,.2f}"
+        for m in view["all_months_summary"]
+    ]
+
+    cat_lines = []
+    for cat in view["expense_breakdown"]:
+        top_people = ", ".join(
+            f"{p['name']}: {sym}{p['total']:,.2f}" for p in cat["people"][:6]
+        )
+        cat_lines.append(f"  - {cat['category']}: {sym}{cat['total']:,.2f} ({top_people})")
+
+    bills_preview = ", ".join(
+        f"{b['counterparty']} ({b['amount']:+.2f} on {b['date']})"
+        for b in la["upcoming_bills"][:8]
+    ) or "None detected"
 
     return (
-        f"**Overview for {p['business_name']}**:\n"
-        f"- **Current Bank Balance**: €{k['current_balance_eur']:,.2f}\n"
-        f"- **Lowest Expected Balance (Next 13 Weeks)**: €{k['projected_min_13w_eur']:,.2f} (Week {k['projected_min_13w_week']})\n"
-        f"- **With Commerzbank Safety Actions**: €{sim['min_stabilized_eur']:,.2f} (vs. €{k['safety_buffer_eur']:,.0f} safety reserve)\n\n"
-        "Nothing is sent to the bank until you click **Approve Action**."
+        f"{SYSTEM_PROMPT}\n\n"
+        f"FULL DATASET & YEARLY TOTALS ({ds['first_date']} to {ds['last_date']}):\n"
+        f"- Overall Dataset: Total Income = {sym}{ds['total_income']:,.2f} | "
+        f"Total Expenses = {sym}{ds['total_expenses']:,.2f} | "
+        f"Total Profit = {sym}{ds['profit']:,.2f} | "
+        f"Starting Balance = {sym}{ds['start_balance']:,.2f} | Final Balance = {sym}{ds['end_balance']:,.2f}\n"
+        + "\n".join(yearly_lines)
+        + "\n\nALL MONTHS SUMMARY:\n"
+        + "\n".join(monthly_lines)
+        + f"\n\nCURRENTLY SELECTED MONTH ({view['selected_month_label']}):\n"
+        f"- Income: {sym}{ms['total_income']:,.2f}\n"
+        f"- Expenses: {sym}{ms['total_expenses']:,.2f}\n"
+        f"- Profit: {sym}{ms['profit']:,.2f}\n"
+        f"- Balance at end of {view['selected_month_label']}: {sym}{ms['end_balance']:,.2f}\n"
+        f"- Expenses by category in {view['selected_month_label']}:\n"
+        + ("\n".join(cat_lines) if cat_lines else "  - None")
+        + f"\n\nFORECAST (next {la['horizon_days']} days after {la['as_of_date']}):\n"
+        f"- Lowest predicted balance: {sym}{la['lowest_predicted_balance']:,.2f} on {la['lowest_predicted_date']}\n"
+        f"- Drops below zero: {'YES' if la['goes_below_zero'] else 'NO'}\n"
+        f"- Recommended short-term bank credit needed: {sym}{la['recommended_credit_amount']:,.2f}\n"
+        f"- Upcoming regular bills in forecast window: {bills_preview}\n"
     )
 
 
-def invoke_cfo_llm(
-    user_messages: list[dict[str, str]],
-    include_context: bool = True,
-    max_tokens: int = 512,
-    allow_fallback: bool = True,
-) -> dict[str, Any]:
-    """Send PII-anonymized Unified Business Context + user prompt to the single OpenShift AI LLM."""
-    bundle = get_current_bundle()
-    anon_sys, token_map = engine.build_anonymized_context_prompt(bundle)
-    merged_tokens = dict(token_map)
-
-    cleaned_msgs: list[dict[str, str]] = []
-    for m in user_messages:
-        role = m.get("role", "user")
-        content = str(m.get("content", ""))
-        if role == "system":
-            continue
-        masked_c, extra_toks = engine.anonymize_text(content, profile=bundle["profile"])
-        merged_tokens.update(extra_toks)
-        cleaned_msgs.append({"role": role, "content": masked_c})
-
-    payload_msgs = ([{"role": "system", "content": anon_sys}] + cleaned_msgs) if include_context else list(user_messages)
-
-    start = time.monotonic()
-    mode = "openshift_ai_live"
-    llm_error: str | None = None
-    try:
-        res = call_llm(payload_msgs, max_tokens=max_tokens)
-        reply = engine.deanonymize_text(res["reply"], merged_tokens) if include_context else res["reply"]
-        model_used = res["model"]
-    except (RuntimeError, urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError, OSError) as exc:
-        if not allow_fallback:
-            raise
-        mode = "deterministic_fallback"
-        llm_error = str(exc)
-        last_user = next((m["content"] for m in reversed(user_messages) if m.get("role") == "user"), "")
-        reply = _deterministic_cfo_chat_reply(bundle, last_user)
-        model_used = os.environ.get("LLM_MODEL", "").strip() or "llama-32-3b-instruct"
-
-    latency_ms = round((time.monotonic() - start) * 1000, 1)
-    with STATE_LOCK:
-        STATE["last_ai_trace"] = {
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "mode": mode,
-            "model": model_used,
-            "latency_ms": latency_ms,
-            "llm_error": llm_error,
-            "anonymized_system_prompt": anon_sys,
-            "anonymized_user_messages": cleaned_msgs,
-            "masked_tokens": [{"token": k, "category": _token_kind(k)} for k in merged_tokens],
-            "token_count": len(merged_tokens),
-        }
-        _save_state()
-
-    return {
-        "reply": reply,
-        "model": model_used,
-        "mode": mode,
-        "latency_ms": latency_ms,
-        "llm_error": llm_error,
-        "masked_token_count": len(merged_tokens),
-    }
-
-
 class Handler(BaseHTTPRequestHandler):
-    """HTTP handler serving the Autonomous CFO UI, financial engine API, health check, and OpenShift AI proxy."""
+    """HTTP handler serving the frontend, ledger/liquidity endpoints, health check, and LLM proxy."""
 
     def _send_json(self, status: int, payload: Any) -> None:
         body = json.dumps(payload).encode("utf-8")
@@ -357,28 +217,42 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _read_json(self) -> dict[str, Any] | None:
-        try:
-            length = int(self.headers.get("Content-Length", "0"))
-            raw = self.rfile.read(length) if length > 0 else b"{}"
-            data = json.loads(raw.decode("utf-8"))
-            if not isinstance(data, dict):
-                self._send_json(400, {"error": "JSON body must be an object"})
-                return None
-            return data
-        except (ValueError, UnicodeDecodeError) as exc:
-            self._send_json(400, {"error": f"Invalid JSON request: {exc}"})
-            return None
+    def _read_json(self) -> dict[str, Any]:
+        length = int(self.headers.get("Content-Length", "0"))
+        raw = self.rfile.read(length) if length > 0 else b"{}"
+        data = json.loads(raw.decode("utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("Expected a JSON object")
+        return data
 
     def do_GET(self) -> None:
-        path = self.path.split("?", 1)[0]
+        parsed = urlparse(self.path)
+        path = parsed.path
+
         if path == "/health":
             self._send_json(200, _health_payload())
             return
 
-        if path == "/api/state":
-            self._send_json(200, get_full_state())
+        if path == "/api/view":
+            qs = parse_qs(parsed.query)
+            month = qs.get("month", [None])[0]
+            try:
+                horizon = int(qs.get("horizon", ["30"])[0])
+            except ValueError:
+                horizon = 30
+            self._send_json(200, STORE.get_view(selected_month=month, horizon_days=horizon))
             return
+
+        if path in ("/assets/InterVariable.woff2", "/InterVariable.woff2"):
+            font_path = STATIC_DIR / "InterVariable.woff2"
+            if font_path.exists():
+                font_bytes = font_path.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "font/woff2")
+                self.send_header("Content-Length", str(len(font_bytes)))
+                self.end_headers()
+                self.wfile.write(font_bytes)
+                return
 
         if path in ("/", "/index.html"):
             html = (STATIC_DIR / "index.html").read_bytes()
@@ -392,197 +266,122 @@ class Handler(BaseHTTPRequestHandler):
         self.send_error(404, "Not Found")
 
     def do_POST(self) -> None:
-        path = self.path.split("?", 1)[0]
-        data = self._read_json()
-        if data is None:
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        try:
+            data = self._read_json()
+        except (ValueError, UnicodeDecodeError) as exc:
+            self._send_json(400, {"error": f"Invalid JSON request: {exc}"})
             return
 
-        if path == "/api/scenario":
-            scenario_id = str(data.get("scenario_id", "pizzeria_amalfi")).strip()
-            if scenario_id != "pizzeria_amalfi":
-                self._send_json(400, {"error": f"Unsupported scenario_id: {scenario_id}"})
-                return
-            self._send_json(200, reset_state("pizzeria_amalfi"))
-            return
-
-        if path == "/api/upload-csv":
-            csv_text = str(data.get("csv_text", ""))
-            filename = str(data.get("filename", "uploaded_statement.csv"))
-            if "opening_balance" in data and data["opening_balance"] is not None:
-                opening_bal = float(data["opening_balance"])
-            else:
-                opening_bal = 2500.0 if engine.is_pizzeria_csv(csv_text) else 0.0
+        if path == "/api/import":
+            csv_text = data.get("csv_text", "")
+            filename = str(data.get("filename") or "statement.csv")
             try:
-                parsed_preview = engine.parse_bank_csv(csv_text, opening_balance=engine._d(opening_bal))
+                opening_balance = float(data.get("opening_balance", 0.0))
+                horizon = int(data.get("horizon_days", 30))
+                keep_manual = bool(data.get("keep_manual", False))
+                STORE.import_csv(
+                    csv_text=csv_text,
+                    filename=filename,
+                    opening_balance=opening_balance,
+                    keep_manual=keep_manual,
+                    llm_classifier=_classify_with_llm,
+                )
             except ValueError as exc:
                 self._send_json(400, {"error": str(exc)})
                 return
-            with STATE_LOCK:
-                STATE["scenario_id"] = "custom_csv"
-                STATE["custom_csv_text"] = csv_text
-                STATE["custom_filename"] = filename
-                STATE["opening_balance"] = opening_bal
-                STATE["profile_overrides"] = {}
-                STATE["preferences"] = {}
-                STATE["action_overrides"] = {}
-                STATE["sim_params"] = _default_sim_params()
-                STATE["receipts"] = []
-                STATE["ai_briefing"] = None
-                STATE["last_ai_trace"] = None
-                engine.create_audit_entry(
-                    STATE["audit_ledger"],
-                    actor="USER",
-                    action_type="CSV_INGESTION",
-                    target_id=filename,
-                    summary=f"Imported '{filename}' ({parsed_preview['unique_count']} rows, ending €{parsed_preview['closing_balance']:,.2f}).",
+            self._send_json(200, STORE.get_view(horizon_days=horizon))
+            return
+
+        if path == "/api/operations":
+            try:
+                op = STORE.add_manual_operation(
+                    date_str=str(data.get("date") or ""),
+                    kind=str(data.get("kind") or "expense"),
+                    amount=float(data.get("amount", 0)),
+                    counterparty=str(data.get("counterparty") or ""),
+                    category=str(data.get("category") or "Other"),
+                    description=str(data.get("description") or ""),
                 )
-                _save_state()
-            self._send_json(200, get_full_state())
-            return
-
-        if path == "/api/simulate":
-            query = str(data.get("query", "")).strip()
-            with STATE_LOCK:
-                if query:
-                    parsed_q = engine.parse_what_if_query(query)
-                    STATE["sim_params"] = parsed_q
-                    engine.create_audit_entry(
-                        STATE["audit_ledger"],
-                        actor="USER",
-                        action_type="NL_WHATIF_SIM",
-                        target_id="simulator",
-                        summary=f"Tested What-If: '{query[:100]}'",
-                        payload=parsed_q,
-                    )
-                else:
-                    STATE["sim_params"] = {
-                        "revenue_change_pct": float(data.get("revenue_change_pct", 0.0)),
-                        "delay_days": int(data.get("delay_days", 0)),
-                        "fx_shock_pct": float(data.get("fx_shock_pct", 0.0)),
-                        "extra_monthly_cost_eur": float(data.get("extra_monthly_cost_eur", 0.0)),
-                        "include_commerzbank_actions": bool(data.get("include_commerzbank_actions", True)),
-                    }
-                _save_state()
-            self._send_json(200, get_full_state())
-            return
-
-        if path == "/api/actions/decide":
-            action_id = str(data.get("action_id", "")).strip()
-            decision = str(data.get("decision", "")).strip().lower()
-            if decision not in ("approved", "rejected", "snoozed", "pending"):
-                self._send_json(400, {"error": "Decision must be approved, rejected, snoozed, or pending"})
+            except ValueError as exc:
+                self._send_json(400, {"error": str(exc)})
                 return
-            with STATE_LOCK:
-                bundle = get_current_bundle()
-                target = next((a for a in bundle["actions"] if a["id"] == action_id), None)
-                if not target:
-                    self._send_json(404, {"error": f"Action '{action_id}' not found"})
-                    return
-
-                override: dict[str, Any] = {"status": decision}
-                if "amount_eur" in data and data["amount_eur"] is not None:
-                    override["amount_eur"] = float(data["amount_eur"])
-                if "option" in data and data["option"]:
-                    override["selected_option"] = str(data["option"])
-                STATE["action_overrides"][action_id] = override
-
-                merged_action = {**target, **override}
-                audit_entry = engine.create_audit_entry(
-                    STATE["audit_ledger"],
-                    actor="HUMAN_OWNER",
-                    action_type=f"ACTION_{decision.upper()}",
-                    target_id=action_id,
-                    summary=f"{decision.title()} '{merged_action['product_name']}' (€{merged_action['amount_eur']:,.2f}).",
-                    payload={"option": merged_action["selected_option"], "amount_eur": merged_action["amount_eur"]},
-                )
-                receipt = None
-                if decision == "approved":
-                    receipt = engine.create_execution_receipt(merged_action, audit_entry["sha256"])
-                    STATE["receipts"].append(receipt)
-                _save_state()
-            state_out = get_full_state()
-            state_out["latest_receipt"] = receipt
-            self._send_json(200, state_out)
+            month = data.get("selected_month") or op["date"][:7]
+            horizon = int(data.get("horizon_days", 30))
+            self._send_json(200, STORE.get_view(selected_month=month, horizon_days=horizon))
             return
 
-        if path == "/api/profile":
-            allowed_keys = {
-                "business_name",
-                "owner_name",
-                "legal_form",
-                "location",
-                "industry",
-                "employee_count",
-                "tax_regime",
-                "safety_buffer_eur",
-                "context_notes",
-            }
-            updates = {k: data[k] for k in allowed_keys if k in data}
-            with STATE_LOCK:
-                STATE["profile_overrides"].update(updates)
-                if "safety_buffer_eur" in updates:
-                    STATE["preferences"]["safety_buffer_eur"] = float(updates["safety_buffer_eur"])
-                engine.create_audit_entry(
-                    STATE["audit_ledger"],
-                    actor="USER",
-                    action_type="PROFILE_UPDATE",
-                    target_id="business_profile",
-                    summary="Updated business details & AI context notes.",
-                    payload=updates,
-                )
-                _save_state()
-            self._send_json(200, get_full_state())
+        if path == "/api/operations/delete":
+            op_id = str(data.get("id") or "")
+            STORE.delete_operation(op_id)
+            month = data.get("selected_month")
+            horizon = int(data.get("horizon_days", 30))
+            self._send_json(200, STORE.get_view(selected_month=month, horizon_days=horizon))
             return
 
-        if path == "/api/preferences":
-            with STATE_LOCK:
-                prefs = STATE["preferences"]
-                for k in ("min_severity", "safety_buffer_eur", "enabled_modules", "muted_categories", "muted_action_ids"):
-                    if k in data:
-                        prefs[k] = data[k]
-                if "safety_buffer_eur" in data:
-                    STATE["profile_overrides"]["safety_buffer_eur"] = float(data["safety_buffer_eur"])
-                engine.create_audit_entry(
-                    STATE["audit_ledger"],
-                    actor="USER",
-                    action_type="PREFERENCES_UPDATE",
-                    target_id="ux_preferences",
-                    summary="Updated alert & notification preferences.",
-                )
-                _save_state()
-            self._send_json(200, get_full_state())
+        if path == "/api/opening-balance":
+            try:
+                STORE.set_opening_balance(float(data.get("opening_balance", 0.0)))
+            except ValueError as exc:
+                self._send_json(400, {"error": str(exc)})
+                return
+            month = data.get("selected_month")
+            horizon = int(data.get("horizon_days", 30))
+            self._send_json(200, STORE.get_view(selected_month=month, horizon_days=horizon))
             return
 
-        if path == "/api/ai/analyze":
+        if path == "/api/approve-credit":
+            try:
+                amount = float(data.get("amount", 0.0))
+                month = str(data.get("selected_month") or "")
+                horizon = int(data.get("horizon_days", 30))
+                STORE.approve_credit(amount=amount, month=month, horizon_days=horizon)
+            except ValueError as exc:
+                self._send_json(400, {"error": str(exc)})
+                return
+            self._send_json(200, STORE.get_view(selected_month=month or None, horizon_days=horizon))
+            return
+
+        if path == "/api/reset":
+            STORE.reset()
+            self._send_json(200, STORE.get_view())
+            return
+
+        if path == "/api/explain":
+            month = data.get("selected_month")
+            horizon = int(data.get("horizon_days", 30))
+            view = STORE.get_view(selected_month=month, horizon_days=horizon)
+            if not view.get("has_data"):
+                self._send_json(400, {"error": "Import a CSV or add an operation first."})
+                return
+            la = view["liquidity_agent"]
             prompt = (
-                "Give a clear, friendly 4-bullet summary for the pizzeria owner using plain language and **bold** highlights for key numbers: "
-                "(1) Cash balance & upcoming 13-week low point, (2) Swiss Franc (CHF) transfer protection, "
-                "(3) Blocked suspicious invoice or tax tip, and (4) Next recommended approval step."
+                f"Please explain my cash situation at the end of {view['selected_month_label']} "
+                f"and for the next {la['horizon_days']} days in 3 short, simple bullet points "
+                f"using everyday language (no financial jargon). State clearly if my balance stays safe "
+                f"or drops below zero, which regular bills are coming up, and the exact credit amount "
+                f"(€{la['recommended_credit_amount']:,.2f}) I should ask my bank for if needed."
             )
-            ai_res = invoke_cfo_llm(
-                [{"role": "user", "content": prompt}],
-                include_context=True,
-                max_tokens=450,
-                allow_fallback=True,
+            sys_prompt = _build_context_system_prompt(
+                selected_month=view["selected_month"], horizon_days=horizon
             )
-            with STATE_LOCK:
-                STATE["ai_briefing"] = {
-                    "text": ai_res["reply"],
-                    "mode": ai_res["mode"],
-                    "model": ai_res["model"],
-                    "latency_ms": ai_res["latency_ms"],
-                    "llm_error": ai_res["llm_error"],
-                    "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                }
-                engine.create_audit_entry(
-                    STATE["audit_ledger"],
-                    actor="OPENSHIFT_AI_LLM",
-                    action_type="EXECUTIVE_ANALYSIS",
-                    target_id=ai_res["model"],
-                    summary=f"Generated CFO summary ({ai_res['mode']}, {ai_res['masked_token_count']} PII tokens masked).",
+            try:
+                res = call_llm(
+                    [
+                        {"role": "system", "content": sys_prompt},
+                        {"role": "user", "content": prompt},
+                    ]
                 )
-                _save_state()
-            self._send_json(200, get_full_state())
+                self._send_json(200, {"reply": res["reply"], "model": res["model"], "source": "llm"})
+            except Exception as exc:
+                fallback = (
+                    f"{la['analysis_summary']}\n\n"
+                    f"{la['recommendation_summary']}\n\n"
+                    f"(Note: OpenShift AI LLM was unreachable: {exc})"
+                )
+                self._send_json(200, {"reply": fallback, "model": "built-in-summary", "source": "fallback"})
             return
 
         if path == "/api/chat":
@@ -591,17 +390,28 @@ class Handler(BaseHTTPRequestHandler):
                 messages = [{"role": "user", "content": data["message"]}]
 
             if not isinstance(messages, list) or not messages:
-                self._send_json(400, {"error": "Provide a non-empty 'messages' list or 'message' string"})
+                self._send_json(
+                    400, {"error": "Provide a non-empty 'messages' list or 'message' string"}
+                )
                 return
 
-            include_context = bool(data.get("include_context", False))
-            if include_context:
-                result = invoke_cfo_llm(messages, include_context=True, max_tokens=512, allow_fallback=True)
-                self._send_json(200, result)
-                return
+            # If store has data and caller didn't supply a custom system message, prepend context
+            call_messages = list(messages)
+            if STORE.transactions and call_messages[0].get("role") != "system":
+                month = data.get("selected_month")
+                horizon = int(data.get("horizon_days", 30))
+                call_messages.insert(
+                    0,
+                    {
+                        "role": "system",
+                        "content": _build_context_system_prompt(
+                            selected_month=month, horizon_days=horizon
+                        ),
+                    },
+                )
 
             try:
-                result = call_llm(messages)
+                result = call_llm(call_messages)
             except RuntimeError as exc:
                 self._send_json(503, {"error": str(exc)})
             except urllib.error.HTTPError as exc:
@@ -616,6 +426,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_error(404, "Not Found")
 
     def log_message(self, format: str, *args: object) -> None:
+        # Flush stdout immediately so `oc logs` shows requests in real time.
         sys.stdout.write(f"{self.address_string()} - {format % args}\n")
         sys.stdout.flush()
 
