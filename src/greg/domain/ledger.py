@@ -50,6 +50,8 @@ class LedgerStore:
         self.transactions: list[dict[str, Any]] = []
         self.opening_balance: float = 0.0
         self.filename: str | None = None
+        self.data_source: str = "manual"
+        self.bank_account_name: str | None = None
         self.account_currency: str = "EUR"
         self.approved_credit: dict[str, Any] | None = None
         self._planner_cache: dict[tuple[Any, ...], dict[str, Any]] = {}
@@ -62,6 +64,8 @@ class LedgerStore:
         keep_manual: bool = False,
         llm_classifier: Callable[[list[dict[str, str]]], dict[str, str]] | None = None,
         column_map: dict[str, Any] | None = None,
+        data_source: str = "csv",
+        bank_account_name: str | None = None,
     ) -> dict[str, Any]:
         """Parse and replace CSV transactions in this ledger store."""
         parsed, dominant_currency = parse_csv_transactions(
@@ -77,6 +81,8 @@ class LedgerStore:
         self.transactions.sort(key=lambda t: (t["date"], t["id"]))
         self.opening_balance = float(opening_balance)
         self.filename = filename
+        self.data_source = data_source
+        self.bank_account_name = bank_account_name
         self.approved_credit = None
         self.account_currency = dominant_currency
         self._planner_cache.clear()
@@ -84,6 +90,8 @@ class LedgerStore:
         return {
             "imported_rows": len(parsed),
             "filename": self.filename,
+            "data_source": self.data_source,
+            "bank_account_name": self.bank_account_name,
             "opening_balance": self.opening_balance,
             "first_date": self.transactions[0]["date"],
             "last_date": self.transactions[-1]["date"],
@@ -182,13 +190,15 @@ class LedgerStore:
         horizon_months: int | None = None,
     ) -> dict[str, Any]:
         """Compute complete frontend & LLM summary payload for the requested month and horizon."""
-        horizon_days = max(7, min(180, int(horizon_days)))
+        horizon_days = max(0, min(365, int(horizon_days)))
         if horizon_months is not None:
-            horizon_months = max(1, min(12, int(horizon_months)))
+            horizon_months = max(0, min(12, int(horizon_months)))
         if not self.transactions:
             return {
                 "has_data": False,
                 "filename": None,
+                "data_source": None,
+                "bank_account_name": None,
                 "opening_balance": self.opening_balance,
                 "currency": self.account_currency,
                 "months": [],
@@ -315,10 +325,15 @@ class LedgerStore:
         history_series: list[dict[str, Any]] = []
         d_ptr = min_date
         while d_ptr <= last_of_month:
+            day_txs = tx_by_date.get(d_ptr, [])
+            day_inc = round(sum(t["amount"] for t in day_txs if t["amount"] > 0), 2)
+            day_exp = round(sum(abs(t["amount"]) for t in day_txs if t["amount"] < 0), 2)
             history_series.append(
                 {
                     "date": d_ptr.isoformat(),
                     "balance": daily_balances.get(d_ptr, self.opening_balance),
+                    "income": day_inc,
+                    "expenses": day_exp,
                 }
             )
             d_ptr += timedelta(days=1)
@@ -331,8 +346,18 @@ class LedgerStore:
             m_next = date(ym_y + 1, 1, 1) if ym_m == 12 else date(ym_y, ym_m + 1, 1)
             m_last = m_next - timedelta(days=1)
             m_bal = daily_balances.get(m_last, round(self.opening_balance, 2))
+            m_txs_hist = tx_by_month.get(mk, [])
+            m_inc_hist = round(sum(t["amount"] for t in m_txs_hist if t["amount"] > 0), 2)
+            m_exp_hist = round(sum(abs(t["amount"]) for t in m_txs_hist if t["amount"] < 0), 2)
             month_end_balance_map[mk] = m_bal
-            monthly_history_all.append({"date": mk, "balance": m_bal})
+            monthly_history_all.append(
+                {
+                    "date": mk,
+                    "balance": m_bal,
+                    "income": m_inc_hist,
+                    "expenses": m_exp_hist,
+                }
+            )
             ym_y, ym_m = (ym_y + 1, 1) if ym_m == 12 else (ym_y, ym_m + 1)
 
         forecast = run_forecast(
@@ -355,6 +380,8 @@ class LedgerStore:
         return {
             "has_data": True,
             "filename": self.filename,
+            "data_source": self.data_source,
+            "bank_account_name": self.bank_account_name,
             "opening_balance": self.opening_balance,
             "currency": self.account_currency,
             "total_transactions": len(self.transactions),

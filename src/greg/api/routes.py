@@ -9,8 +9,9 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
-from greg.api.serializers import encode_json, parse_optional_int, read_json_body
+from greg.api.serializers import encode_json, parse_int_or_default, parse_optional_int, read_json_body
 from greg.config import STATIC_DIR, load_settings
+from greg.domain.bank_mock import format_bank_account_label, pick_random_mock_bank_file
 from greg.domain.ledger import LedgerStore
 from greg.domain.sessions import SESSIONS
 from greg.llm.classifier import classify_signatures_with_llm
@@ -155,7 +156,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
         if path == "/api/view":
             qs = parse_qs(parsed.query)
             month = qs.get("month", [None])[0]
-            horizon = parse_optional_int(qs.get("horizon", ["30"])[0]) or 30
+            horizon = parse_int_or_default(qs.get("horizon", ["30"])[0], 30)
             horizon_months = parse_optional_int(qs.get("horizon_months", [None])[0])
             store = self._get_store()
             self._send_json(
@@ -212,6 +213,10 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             self._handle_import(store, data)
             return
 
+        if path == "/api/bank/connect":
+            self._handle_bank_connect(store, data)
+            return
+
         if path == "/api/operations":
             self._handle_add_operation(store, data)
             return
@@ -252,7 +257,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             return
         try:
             opening_balance = float(data.get("opening_balance", 0.0))
-            horizon = parse_optional_int(data.get("horizon_days")) or 30
+            horizon = parse_int_or_default(data.get("horizon_days"), 30)
             horizon_months = parse_optional_int(data.get("horizon_months"))
             keep_manual = bool(data.get("keep_manual", False))
             store.import_csv(
@@ -265,6 +270,37 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             )
         except ValueError as exc:
             self._send_json(400, {"error": str(exc)})
+            return
+        self._send_json(200, store.get_view(horizon_days=horizon, horizon_months=horizon_months))
+
+    def _handle_bank_connect(self, store: LedgerStore, data: dict[str, Any]) -> None:
+        settings = load_settings()
+        try:
+            chosen = pick_random_mock_bank_file(
+                settings.bank_mock_dir,
+                exclude_filename=store.filename,
+            )
+        except FileNotFoundError as exc:
+            self._send_json(404, {"error": str(exc)})
+            return
+
+        account_name = format_bank_account_label(chosen.name)
+        try:
+            csv_text = chosen.read_text(encoding="utf-8-sig")
+            opening_balance = float(data.get("opening_balance", 0.0))
+            horizon = parse_int_or_default(data.get("horizon_days"), 30)
+            horizon_months = parse_optional_int(data.get("horizon_months"))
+            store.import_csv(
+                csv_text=csv_text,
+                filename=chosen.name,
+                opening_balance=opening_balance,
+                keep_manual=False,
+                llm_classifier=classify_signatures_with_llm,
+                data_source="connected_bank",
+                bank_account_name=account_name,
+            )
+        except (OSError, ValueError) as exc:
+            self._send_json(400, {"error": f"Failed to load connected bank statement: {exc}"})
             return
         self._send_json(200, store.get_view(horizon_days=horizon, horizon_months=horizon_months))
 
@@ -282,7 +318,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": str(exc)})
             return
         month = data.get("selected_month") or op["date"][:7]
-        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
         self._send_json(
             200,
@@ -292,7 +328,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
     def _handle_delete_operation(self, store: LedgerStore, data: dict[str, Any]) -> None:
         store.delete_operation(str(data.get("id") or ""))
         month = data.get("selected_month")
-        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
         self._send_json(
             200,
@@ -306,7 +342,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": str(exc)})
             return
         month = data.get("selected_month")
-        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
         self._send_json(
             200,
@@ -317,7 +353,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
         try:
             amount = float(data.get("amount", 0.0))
             month = str(data.get("selected_month") or "")
-            horizon = parse_optional_int(data.get("horizon_days")) or 30
+            horizon = parse_int_or_default(data.get("horizon_days"), 30)
             horizon_months = parse_optional_int(data.get("horizon_months"))
             store.approve_credit(amount=amount, month=month, horizon_days=horizon)
         except ValueError as exc:
@@ -334,7 +370,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_explain(self, store: LedgerStore, data: dict[str, Any]) -> None:
         month = data.get("selected_month")
-        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
         view = store.get_view(selected_month=month, horizon_days=horizon, horizon_months=horizon_months)
         if not view.get("has_data"):
@@ -401,14 +437,17 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             return
 
         month = data.get("selected_month")
-        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
+        raw_period = data.get("selected_period")
+        selected_period = raw_period if isinstance(raw_period, dict) else None
         system_prompt = (
             build_context_system_prompt(
                 selected_month=month,
                 horizon_days=horizon,
                 horizon_months=horizon_months,
                 store=store,
+                selected_period=selected_period,
             )
             if store.transactions
             else f"{SYSTEM_PROMPT}\n\n{NO_DATA_NOTE}\n\n{APP_GUIDE}"

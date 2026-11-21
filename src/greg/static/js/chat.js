@@ -1,5 +1,6 @@
-/** Floating Greg messenger UI, keyboard close, explain trigger, and chat streaming. */
+/** Floating Greg messenger UI, period-analysis handoff, keyboard close, explain trigger, and chat. */
 import { postJson } from "./api.js";
+import { fmtMoney } from "./format.js";
 
 export function createChatController(els, { getHorizonPayload }) {
   const {
@@ -11,17 +12,26 @@ export function createChatController(els, { getHorizonPayload }) {
     promptEl,
     sendBtn,
     aiExplainBtn,
+    chatPeriodContext,
+    chatPeriodModeEl,
+    chatPeriodDatesEl,
+    chatPeriodIncEl,
+    chatPeriodExpEl,
+    chatPeriodNetEl,
+    chatPeriodDismissBtn,
   } = els;
 
   const chatHistory = [];
+  let activeSelectedPeriod = null;
+  const initialMessagesHtml = messagesEl ? messagesEl.innerHTML : "";
 
   function setOpen(open) {
     messenger.hidden = !open;
     chatLauncher.hidden = open;
-    const floatingLauncher = document.getElementById('floating-chat-launcher');
+    const floatingLauncher = document.getElementById("floating-chat-launcher");
     if (floatingLauncher) {
       floatingLauncher.hidden = open;
-      floatingLauncher.setAttribute('aria-expanded', String(open));
+      floatingLauncher.setAttribute("aria-expanded", String(open));
     }
     chatLauncher.setAttribute("aria-expanded", String(open));
     chatLauncher.setAttribute("aria-label", open ? "Close chat with Greg" : "Open chat with Greg");
@@ -47,13 +57,82 @@ export function createChatController(els, { getHorizonPayload }) {
     return div;
   }
 
+  function clearPeriodContext() {
+    activeSelectedPeriod = null;
+    if (chatPeriodContext) chatPeriodContext.classList.add("hidden");
+    window.GREG_SELECTED_PERIOD = null;
+  }
+
+  function resetConversation() {
+    chatHistory.length = 0;
+    clearPeriodContext();
+    if (promptEl) promptEl.value = "";
+    if (messagesEl) messagesEl.innerHTML = initialMessagesHtml;
+  }
+
+  function receivePeriodAnalysis(payload) {
+    if (!payload) return;
+
+    activeSelectedPeriod = payload;
+    window.GREG_SELECTED_PERIOD = payload;
+    window.dispatchEvent(new CustomEvent("greg:analyze-period", { detail: payload }));
+
+    if (chatPeriodContext) {
+      const spanUnit = payload.spanUnit || (payload.granularity === "month" ? "m" : "d");
+      if (chatPeriodModeEl) {
+        chatPeriodModeEl.textContent = payload.modeLabel;
+        chatPeriodModeEl.className = `chat-period-mode${payload.mode === "past" ? "" : ` ${payload.mode}`}`;
+      }
+      if (chatPeriodDatesEl) {
+        chatPeriodDatesEl.textContent = `${payload.startDate} → ${payload.endDate} (${payload.dayCount}${spanUnit})`;
+      }
+      if (chatPeriodIncEl) {
+        chatPeriodIncEl.textContent = `+${fmtMoney(payload.totalIncome, payload.currency)}`;
+      }
+      if (chatPeriodExpEl) {
+        chatPeriodExpEl.textContent = `-${fmtMoney(payload.totalExpenses, payload.currency)}`;
+      }
+      if (chatPeriodNetEl) {
+        const netSign = payload.netFlow > 0 ? "+" : "";
+        chatPeriodNetEl.textContent = `Net: ${netSign}${fmtMoney(payload.netFlow, payload.currency)}`;
+      }
+      chatPeriodContext.classList.remove("hidden");
+    }
+
+    if (promptEl) {
+      promptEl.value = payload.suggestedPrompt || "";
+    }
+
+    setOpen(true);
+
+    if (messenger) {
+      messenger.classList.remove("chat-handoff-pulse");
+      void messenger.offsetWidth;
+      messenger.classList.add("chat-handoff-pulse");
+    }
+
+    if (promptEl && !promptEl.disabled) {
+      requestAnimationFrame(() => {
+        promptEl.focus();
+        if (typeof promptEl.setSelectionRange === "function") {
+          const end = promptEl.value.length;
+          promptEl.setSelectionRange(end, end);
+        }
+      });
+    }
+  }
+
   chatLauncher.addEventListener("click", () => setOpen(messenger.hidden));
   if (chatCloseBtn) {
     chatCloseBtn.addEventListener("click", () => setOpen(false));
   }
+  if (chatPeriodDismissBtn) {
+    chatPeriodDismissBtn.addEventListener("click", () => clearPeriodContext());
+  }
   messenger.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation();
       setOpen(false);
     }
   });
@@ -94,10 +173,11 @@ export function createChatController(els, { getHorizonPayload }) {
     const pendingEl = appendMessage("assistant", "Thinking…");
 
     try {
-      const res = await postJson(
-        "/api/chat",
-        Object.assign({ messages: chatHistory }, getHorizonPayload())
-      );
+      const chatPayload = Object.assign({ messages: chatHistory }, getHorizonPayload());
+      if (activeSelectedPeriod) {
+        chatPayload.selected_period = activeSelectedPeriod;
+      }
+      const res = await postJson("/api/chat", chatPayload);
       const data = await res.json();
       if (data.blocked) {
         // Guardrails refused the message: show Greg's refusal, keep it out of history.
@@ -119,5 +199,12 @@ export function createChatController(els, { getHorizonPayload }) {
     }
   });
 
-  return { setOpen, isOpen, appendMessage };
+  return {
+    setOpen,
+    isOpen,
+    appendMessage,
+    receivePeriodAnalysis,
+    clearPeriodContext,
+    resetConversation,
+  };
 }

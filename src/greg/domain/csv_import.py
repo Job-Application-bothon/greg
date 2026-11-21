@@ -37,6 +37,8 @@ _DATE_CANDIDATES = (
     "buchungstag",
     "datum",
     "month",
+    "week_ending",
+    "week ending",
 )
 _INCOME_CANDIDATES = ("income", "revenue", "inflow", "sales", "credit", "receipts", "money in")
 _EXPENSE_CANDIDATES = (

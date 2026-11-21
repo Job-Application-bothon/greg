@@ -59,9 +59,7 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
 .source-screen .site-head, .source-screen main { position: relative; }
 #source-chooser .source-options { gap: 0; }
 #source-chooser .source-card { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(145deg, #fff 12%, #fafafa 70%, #f1f1f3); border-color: #fff; box-shadow: 0 2px 4px #00000003, 0 20px 60px #17172508, inset 0 0 0 1px #00000004; }
-#source-chooser .source-card::before { content: ""; position: absolute; z-index: -1; pointer-events: none; width: 125%; height: 72%; top: -19%; left: 28%; border: 34px solid #fff9; border-radius: 50%; transform: rotate(-32deg); box-shadow: 0 1px 2px #fff, 0 14px 24px #22223008, inset 0 12px 24px #22223006, 0 0 0 25px #e8e8ec50, 0 0 0 57px #ffffff80, 0 22px 40px 58px #22223006; }
-#source-chooser #choose-bank::before { top: -38%; left: 41%; transform: rotate(122deg); width: 92%; height: 76%; border-width: 42px; border-radius: 48% 52% 42% 58%; box-shadow: 0 1px 2px #fff, -14px 8px 28px #22223009, inset 12px 0 28px #22223006, 0 0 0 30px #e8e8ec50, 0 0 0 68px #ffffff80, -20px 12px 42px 68px #22223005; }
-
+#source-chooser .source-card::before { content: ""; position: absolute; z-index: -1; pointer-events: none; width: 125%; height: 72%; top: -19%; left: 28%; border: 34px solid #fff9; border-radius: 50%; transform: rotate(-32deg); box-shadow: 0 1px 2px #fff, 0 14px 24px #22223008, inset 12px 24px #22223006, 0 0 0 25px #e8e8ec50, 0 0 0 57px #ffffff80, 0 22px 40px 58px #22223006; }
 #source-chooser #choose-bank .source-title, #source-chooser #choose-bank .source-copy, #source-chooser #choose-bank .source-action { position:relative; z-index:1; }
 #source-chooser #choose-bank::before { content:none; }
 .bank-ribbon { position:absolute; top:0; left:0; right:0; overflow:hidden; pointer-events:none; z-index:-1; }
@@ -70,7 +68,7 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
 #source-chooser .source-title { margin-top: 32px; max-width: 9em; line-height: 1.08; }
 #source-chooser .source-copy { font-size: 14px; max-width: 26em; margin: 16px 0 32px; line-height: 1.6; }
 #source-chooser .source-action { margin-top: 0; padding-top: 22px; border-top: 1px solid #00000012; align-items: center; font-size: 13px; font-weight: 500; }
-#source-chooser .source-action > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; }
+#source-chooser .source-action > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; flex: none; }
 #source-chooser .source-card:hover:not(:disabled), #source-chooser .source-card.drag-active { border-color: #c9c9cf; box-shadow: 0 24px 64px #17172510; }
 #source-chooser .source-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
 @media (max-width: 720px) {
@@ -82,7 +80,6 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
   #source-chooser .source-action { padding-top: 12px; font-size: 12px; }
   #source-chooser .source-action > span { width: 28px; height: 28px; }
   #source-chooser .source-card::before { left: 46%; top: -54%; width: 100%; height: 115%; border-width: 22px; }
-  #source-chooser #choose-bank::before { left: 65%; top: -65%; width: 75%; height: 115%; border-width: 28px; transform: rotate(122deg); }
   .source-screen #source-chooser .entry-footnote { font-size: 10px; margin-top: 12px; padding-inline: 12px; }
 }
 @media (max-width: 720px) and (max-height: 700px) {
@@ -92,11 +89,12 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
   #source-chooser .source-action { padding-top: 9px; }
 }
 .source-or { text-align: center; font-size: 10px; color: #999; letter-spacing: .08em; }
+.source-card.is-connecting { border-color: var(--ink); box-shadow: 0 24px 64px #17172512; opacity: 1; cursor: wait; }
+.bank-sync-spinner { width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.28); border-top-color: #ffffff; animation: bankSpin .7s linear infinite; display: block; }
+@keyframes bankSpin { to { transform: rotate(360deg); } }
+.source-error { margin-top: 14px; padding: 10px 14px; border-radius: 10px; background: var(--danger-soft); color: var(--danger); border: 1px solid #e7b4c0; font-size: 12px; text-align: center; max-width: 520px; flex-shrink: 0; }
 .entry-footnote { margin-top: 26px; color: #888; text-align: center; font-size: 11px; }
-#cancel-source { margin-top: 20px; }
-.demo-form { width: min(100%, 660px); display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 32px; }
-.demo-form .field:first-child { grid-column: 1 / -1; }
-.demo-actions { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; }
+#cancel-source { margin-top: 20px; flex-shrink: 0; }
 .balance-stage { text-align: center; position: relative; gap: clamp(36px, 7vh, 75px); padding-bottom: 85px; }
 .balance-stage h1 { font-size: 16px; font-weight: 400; color: var(--muted); margin: 34px 0 12px; }
 .balance-number { font-size: clamp(32px, 8vw, 128px); font-weight: 350; letter-spacing: -.075em; line-height: 1.1; white-space: nowrap; }
@@ -131,11 +129,9 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
   .overview-metrics > div { padding: 0 10px; }
   .balance-number { font-size: clamp(30px, 9vw, 64px); }
   .overview-metrics strong { font-size: clamp(13px, 3.7vw, 24px); }
-  .demo-form { gap: 16px; padding: 20px; }
   #data-tools { padding: 14px; }
 }
-@media (max-width: 380px) { .demo-form { grid-template-columns: 1fr; } .demo-form .field { grid-column: 1; } }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .source-card { transition: none; } .source-card:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .source-card { transition: none; } .source-card:hover { transform: none; } .bank-sync-spinner { animation: none; } }
 
 #floating-chat-launcher { position:fixed; right:24px; bottom:24px; width:60px; height:60px; border-radius:50%; display:grid; place-items:center; padding:0; background:var(--ink); color:#fff; z-index:1001; box-shadow:0 8px 28px #0002; }
 #floating-chat-launcher[hidden] { display:none; }
