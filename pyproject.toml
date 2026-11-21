@@ -9,6 +9,19 @@ authors = [
 requires-python = ">=3.13"
 dependencies = []
 
+[project.optional-dependencies]
+planner = [
+    "numpy>=2",
+    "pandas>=2.2,<3",
+    "h5py>=3.12",
+    "statsforecast>=2.1",
+]
+
+[dependency-groups]
+dev = [
+    "greg[planner]",
+]
+
 [project.scripts]
 greg = "greg:main"
 

@@ -5,6 +5,8 @@ import io
 import math
 import re
 import statistics
+import threading
+import time
 import uuid
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
@@ -97,12 +99,34 @@ def normalize_category(
 
 def _parse_date(raw: str) -> date:
     text = raw.strip().strip('"').strip("'")
-    for fmt in ("%d.%m.%y", "%d.%m.%Y", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
+    if not text:
+        raise ValueError("Empty date value")
+    # Strip trailing time component if timestamp has time (e.g. '2025-01-01 00:00:00' or '...T00:00:00Z')
+    head = re.split(r"[T\s]+", text, maxsplit=1)[0]
+    if head and (":" in text or "T" in text):
+        text = head
+    for fmt in ("%d.%m.%y", "%d.%m.%Y", "%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%m/%d/%Y", "%Y-%m"):
         try:
             return datetime.strptime(text, fmt).date()
         except ValueError:
             continue
     raise ValueError(f"Unrecognized date format: {raw!r}")
+
+
+_CURRENCY_HINT_RE = re.compile(
+    r"(?:^|[_\s(\[-])(eur|pln|usd|chf|gbp|czk|sek|nok|dkk|cad|aud|jpy|huf|ron)(?:$|[_\s)\]-])",
+    re.IGNORECASE,
+)
+
+
+def _infer_currency_from_headers(*col_names: str | None) -> str | None:
+    for col in col_names:
+        if not col:
+            continue
+        m = _CURRENCY_HINT_RE.search(col)
+        if m:
+            return m.group(1).upper()
+    return None
 
 
 def _parse_amount(raw: str) -> float:
@@ -178,6 +202,7 @@ class LedgerStore:
         self.filename: str | None = None
         self.account_currency: str = "EUR"
         self.approved_credit: dict[str, Any] | None = None
+        self._planner_cache: dict[tuple[Any, ...], dict[str, Any]] = {}
 
     def import_csv(
         self,
@@ -186,6 +211,7 @@ class LedgerStore:
         opening_balance: float = 0.0,
         keep_manual: bool = False,
         llm_classifier: Callable[[list[dict[str, str]]], dict[str, str]] | None = None,
+        column_map: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         cleaned = csv_text.lstrip("\ufeff").strip()
         if not cleaned:
@@ -198,16 +224,60 @@ class LedgerStore:
         if not headers:
             raise ValueError("Could not read CSV column headers.")
 
-        date_col = _find_column(
-            headers, ("booking date", "date", "value date", "transaction date", "buchungstag", "datum")
+        cmap = column_map if isinstance(column_map, dict) else {}
+
+        def resolve_col(key: str, fallback_candidates: tuple[str, ...]) -> str | None:
+            if key in cmap:
+                raw_val = cmap.get(key)
+                if raw_val is None or str(raw_val).strip() == "":
+                    return None
+                col_name = str(raw_val)
+                if col_name not in headers:
+                    raise ValueError(
+                        f"Mapped column {col_name!r} for '{key}' not found in CSV headers: {headers}"
+                    )
+                return col_name
+            return _find_column(headers, fallback_candidates)
+
+        date_col = resolve_col(
+            "date", ("booking date", "date", "value date", "transaction date", "buchungstag", "datum", "month")
         )
-        amount_col = _find_column(headers, ("amount", "betrag", "value", "sum"))
-        currency_col = _find_column(headers, ("currency", "währung", "curr"))
-        type_col = _find_column(
-            headers, ("transaction type", "type", "category", "buchungstext", "art")
-        )
-        cp_col = _find_column(
-            headers,
+
+        amount_mode = str(cmap.get("amount_mode") or "").strip().lower()
+        income_candidates = ("income", "revenue", "inflow", "sales", "credit", "receipts", "money in")
+        expense_candidates = ("expenses", "expense", "costs", "cost", "outflow", "spend", "debit", "money out")
+
+        amount_col: str | None = None
+        income_col: str | None = None
+        expenses_col: str | None = None
+
+        if amount_mode == "split":
+            income_col = resolve_col("income", income_candidates)
+            expenses_col = resolve_col("expenses", expense_candidates)
+        elif amount_mode == "single":
+            amount_col = resolve_col("amount", ("amount", "betrag", "value", "sum"))
+        elif amount_mode == "":
+            if ("income" in cmap or "expenses" in cmap) and "amount" not in cmap:
+                income_col = resolve_col("income", income_candidates)
+                expenses_col = resolve_col("expenses", expense_candidates)
+            else:
+                amount_col = resolve_col("amount", ("amount", "betrag", "value", "sum"))
+                if amount_col is None:
+                    income_col = resolve_col("income", income_candidates)
+                    expenses_col = resolve_col("expenses", expense_candidates)
+        else:
+            raise ValueError(f"Unsupported amount_mode: {amount_mode!r}")
+
+        if not date_col or (amount_col is None and income_col is None and expenses_col is None):
+            raise ValueError(
+                "CSV must map a Date column and either an Amount column or Income/Expenses columns. "
+                f"Found headers: {headers}"
+            )
+
+        currency_col = resolve_col("currency", ("currency", "währung", "curr"))
+        type_col = resolve_col("type", ("transaction type", "type", "category", "buchungstext", "art"))
+        cp_col = resolve_col(
+            "counterparty",
             (
                 "beneficiary/payer",
                 "counterparty",
@@ -219,15 +289,17 @@ class LedgerStore:
                 "auftraggeber",
             ),
         )
-        ref_col = _find_column(
-            headers,
+        ref_col = resolve_col(
+            "description",
             ("payment reference", "reference", "description", "verwendungszweck", "details", "info"),
         )
 
-        if not date_col or not amount_col:
-            raise ValueError(
-                f"CSV must contain at least a Date column and an Amount column. Found headers: {headers}"
-            )
+        explicit_currency = str(cmap.get("default_currency") or "").strip().upper()
+        default_currency = (
+            explicit_currency
+            or _infer_currency_from_headers(amount_col, income_col, expenses_col)
+            or "EUR"
+        )
 
         manual_existing = (
             [t for t in self.transactions if t.get("source") == "manual"] if keep_manual else []
@@ -237,21 +309,18 @@ class LedgerStore:
         currencies: list[str] = []
         unique_sigs: dict[str, dict[str, str]] = {}
 
-        for idx, row in enumerate(reader, start=1):
-            raw_date = (row.get(date_col) or "").strip()
-            raw_amt = (row.get(amount_col) or "").strip()
-            if not raw_date and not raw_amt:
-                continue
-            dt = _parse_date(raw_date)
-            orig_amount = _parse_amount(raw_amt)
-            currency = (row.get(currency_col) or "EUR").strip().upper() if currency_col else "EUR"
-            reference = (row.get(ref_col) or "").strip() if ref_col else ""
-            tx_type = (row.get(type_col) or "").strip() if type_col else ""
-            counterparty = (row.get(cp_col) or "").strip() if cp_col else ""
-
+        def register_tx(
+            tx_id: str,
+            dt: date,
+            orig_amount: float,
+            currency: str,
+            tx_type: str,
+            counterparty: str,
+            reference: str,
+        ) -> None:
             # Convert foreign currency amounts when an explicit "EUR/<CURR>" quote appears in reference
             # e.g., "4166.67 CHF @ 1.047 EUR/CHF" means 1 EUR = 1.047 CHF => EUR = CHF / 1.047
-            amount_eur = orig_amount
+            amount_conv = orig_amount
             fx_rate: float | None = None
             if currency != "EUR" and reference:
                 match = re.search(
@@ -260,10 +329,10 @@ class LedgerStore:
                 if match:
                     fx_rate = float(match.group(1).replace(",", "."))
                     if fx_rate > 0:
-                        amount_eur = orig_amount / fx_rate
+                        amount_conv = orig_amount / fx_rate
 
             if not tx_type:
-                tx_type = "INCOME" if amount_eur >= 0 else "EXPENSE"
+                tx_type = "INCOME" if amount_conv >= 0 else "EXPENSE"
             if not counterparty:
                 counterparty = reference or tx_type
 
@@ -274,16 +343,16 @@ class LedgerStore:
                     "counterparty": counterparty,
                     "raw_type": tx_type,
                     "reference": reference,
-                    "direction": "income" if amount_eur >= 0 else "expense",
+                    "direction": "income" if amount_conv >= 0 else "expense",
                 }
 
             currencies.append("EUR" if fx_rate is not None else currency)
             parsed.append(
                 {
-                    "id": f"csv-{idx}",
+                    "id": tx_id,
                     "date": dt.isoformat(),
                     "date_obj": dt,
-                    "amount": round(amount_eur, 2),
+                    "amount": round(amount_conv, 2),
                     "original_amount": round(orig_amount, 2),
                     "original_currency": currency,
                     "fx_rate": fx_rate,
@@ -295,6 +364,63 @@ class LedgerStore:
                     "source": "csv",
                 }
             )
+
+        for idx, row in enumerate(reader, start=1):
+            raw_date = (row.get(date_col) or "").strip()
+            reference = (row.get(ref_col) or "").strip() if ref_col else ""
+            base_type = (row.get(type_col) or "").strip() if type_col else ""
+            base_cp = (row.get(cp_col) or "").strip() if cp_col else ""
+            currency = (
+                ((row.get(currency_col) or "").strip().upper() or default_currency)
+                if currency_col
+                else default_currency
+            )
+
+            if amount_col is not None:
+                raw_amt = (row.get(amount_col) or "").strip()
+                if not raw_date and not raw_amt:
+                    continue
+                dt = _parse_date(raw_date)
+                orig_amount = _parse_amount(raw_amt)
+                register_tx(f"csv-{idx}", dt, orig_amount, currency, base_type, base_cp, reference)
+            else:
+                raw_inc = (row.get(income_col) or "").strip() if income_col else ""
+                raw_exp = (row.get(expenses_col) or "").strip() if expenses_col else ""
+                if not raw_date and not raw_inc and not raw_exp:
+                    continue
+                dt = _parse_date(raw_date)
+                inc_val = abs(_parse_amount(raw_inc)) if raw_inc else 0.0
+                exp_val = abs(_parse_amount(raw_exp)) if raw_exp else 0.0
+                if inc_val > 0:
+                    register_tx(
+                        f"csv-{idx}-in",
+                        dt,
+                        inc_val,
+                        currency,
+                        base_type or "INCOME",
+                        base_cp or (income_col or "Income"),
+                        reference or (income_col or ""),
+                    )
+                if exp_val > 0:
+                    register_tx(
+                        f"csv-{idx}-out",
+                        dt,
+                        -exp_val,
+                        currency,
+                        base_type or "EXPENSE",
+                        base_cp or (expenses_col or "Expenses"),
+                        reference or (expenses_col or ""),
+                    )
+                if inc_val == 0 and exp_val == 0:
+                    register_tx(
+                        f"csv-{idx}-zero",
+                        dt,
+                        0.0,
+                        currency,
+                        base_type or "ZERO",
+                        base_cp or "Zero activity",
+                        reference,
+                    )
 
         if not parsed:
             raise ValueError("No valid transaction rows found in CSV.")
@@ -335,6 +461,7 @@ class LedgerStore:
         self.opening_balance = float(opening_balance)
         self.filename = filename
         self.approved_credit = None
+        self._planner_cache.clear()
         if currencies:
             self.account_currency = max(set(currencies), key=currencies.count)
 
@@ -382,6 +509,7 @@ class LedgerStore:
         }
         self.transactions.append(op)
         self.transactions.sort(key=lambda t: (t["date"], t["id"]))
+        self._planner_cache.clear()
         return self._serialize_tx(op)
 
     def delete_operation(self, op_id: str) -> bool:
@@ -389,6 +517,8 @@ class LedgerStore:
         self.transactions = [
             t for t in self.transactions if not (t["id"] == op_id and t.get("source") == "manual")
         ]
+        if len(self.transactions) < before:
+            self._planner_cache.clear()
         return len(self.transactions) < before
 
     def set_opening_balance(self, amount: float) -> None:
@@ -423,8 +553,15 @@ class LedgerStore:
             "source": tx["source"],
         }
 
-    def get_view(self, selected_month: str | None = None, horizon_days: int = 30) -> dict[str, Any]:
+    def get_view(
+        self,
+        selected_month: str | None = None,
+        horizon_days: int = 30,
+        horizon_months: int | None = None,
+    ) -> dict[str, Any]:
         horizon_days = max(7, min(180, int(horizon_days)))
+        if horizon_months is not None:
+            horizon_months = max(1, min(12, int(horizon_months)))
         if not self.transactions:
             return {
                 "has_data": False,
@@ -433,6 +570,7 @@ class LedgerStore:
                 "currency": self.account_currency,
                 "months": [],
                 "selected_month": None,
+                "monthly_history_series": [],
             }
 
         months_set = sorted({_month_key(t["date_obj"]) for t in self.transactions})
@@ -557,7 +695,7 @@ class LedgerStore:
                 }
             )
 
-        # Complete daily history from first transaction date through end of selected/latest month
+        # Complete daily history and continuous monthly history through end of selected/latest month
         hist_start = min_date
         history_series: list[dict[str, Any]] = []
         d_ptr = hist_start
@@ -570,12 +708,31 @@ class LedgerStore:
             )
             d_ptr += timedelta(days=1)
 
-        # Run the Basic Liquidity Agent forecast for the next `horizon_days` starting after `last_of_month`
-        forecast = self._run_liquidity_forecast(
+        month_end_balance_map: dict[str, float] = {}
+        monthly_history_all: list[dict[str, Any]] = []
+        ym_y, ym_m = min_date.year, min_date.month
+        while (ym_y, ym_m) <= (last_of_month.year, last_of_month.month):
+            mk = f"{ym_y:04d}-{ym_m:02d}"
+            m_next = date(ym_y + 1, 1, 1) if ym_m == 12 else date(ym_y, ym_m + 1, 1)
+            m_last = m_next - timedelta(days=1)
+            m_bal = daily_balances.get(m_last, round(self.opening_balance, 2))
+            month_end_balance_map[mk] = m_bal
+            monthly_history_all.append({"date": mk, "balance": m_bal})
+            ym_y, ym_m = (ym_y + 1, 1) if ym_m == 12 else (ym_y, ym_m + 1)
+
+        # Use greg_planner when >= 12 full months exist; fall back to daily liquidity forecaster otherwise.
+        forecast = self._run_forecast(
             as_of_date=last_of_month,
             current_balance=month_end_balance,
             horizon_days=horizon_days,
+            horizon_months=horizon_months,
+            month_end_balance_map=month_end_balance_map,
         )
+        if forecast.get("engine") == "greg_planner" and forecast.get("last_history_month"):
+            last_hm = forecast["last_history_month"]
+            monthly_history_series = [m for m in monthly_history_all if m["date"] <= last_hm]
+        else:
+            monthly_history_series = monthly_history_all
 
         return {
             "has_data": True,
@@ -607,6 +764,7 @@ class LedgerStore:
                 for t in sorted(month_txs, key=lambda x: (x["date"], x["id"]), reverse=True)
             ],
             "history_series": history_series,
+            "monthly_history_series": monthly_history_series,
             "liquidity_agent": forecast,
             "approved_credit": self.approved_credit,
         }
@@ -659,6 +817,229 @@ class LedgerStore:
 
         result.sort(key=lambda c: c["total"], reverse=True)
         return result
+
+    def _run_forecast(
+        self,
+        as_of_date: date,
+        current_balance: float,
+        horizon_days: int,
+        horizon_months: int | None,
+        month_end_balance_map: dict[str, float],
+    ) -> dict[str, Any]:
+        """Try `greg.planner` (>= 12 full months) for monthly seasonal forecasting; fall back to daily otherwise."""
+        history = [t for t in self.transactions if t["date_obj"] <= as_of_date]
+        fallback_reason: str | None = None
+
+        try:
+            from greg.planner import get_planner, monthly_flows
+
+            planner = get_planner()
+            cache_key = (
+                as_of_date.isoformat(),
+                id(planner),
+                tuple((t["id"], t["date"], t["amount"], t["category"], t["source"]) for t in history),
+            )
+            plan = self._planner_cache.get(cache_key)
+            if plan is None:
+                flows = monthly_flows(history, include_manual=True)
+                if flows is None:
+                    plan = {"available": False, "reason": "No transactions to plan from."}
+                else:
+                    plan = planner.plan(flows, method="auto", start_balance=0.0)
+                self._planner_cache[cache_key] = plan
+        except ImportError as exc:
+            plan = {
+                "available": False,
+                "reason": f"Planner libraries missing ({exc.name}); using daily fallback.",
+            }
+
+        if plan.get("available"):
+            last_hist_month = str(plan["last_history_month"])
+            aligned_start_bal = month_end_balance_map.get(last_hist_month, current_balance)
+            n_months = max(1, min(12, int(horizon_months if horizon_months is not None else 12)))
+
+            inflow_s = plan["series"]["inflow"]
+            outflow_s = plan["series"]["outflow"]
+            months = list(plan["months"])[:n_months]
+
+            manual_in_by_m: dict[str, float] = defaultdict(float)
+            manual_out_by_m: dict[str, float] = defaultdict(float)
+            for t in self.transactions:
+                if t.get("source") == "manual":
+                    mk = _month_key(t["date_obj"])
+                    if mk > last_hist_month and mk in months:
+                        if t["amount"] >= 0:
+                            manual_in_by_m[mk] += float(t["amount"])
+                        else:
+                            manual_out_by_m[mk] += abs(float(t["amount"]))
+
+            credit_cushion = (
+                float(self.approved_credit["amount"])
+                if self.approved_credit and self.approved_credit.get("amount", 0) > 0
+                else 0.0
+            )
+
+            bal = aligned_start_bal
+            bal_pess = aligned_start_bal
+            total_expected_in = 0.0
+            total_expected_out = 0.0
+            lowest_balance = aligned_start_bal
+            lowest_date = last_hist_month
+            lowest_pess = aligned_start_bal
+            lowest_pess_date = last_hist_month
+            first_negative_date: str | None = last_hist_month if aligned_start_bal < 0 else None
+            last_negative_date: str | None = last_hist_month if aligned_start_bal < 0 else None
+            months_below_zero = 0
+            forecast_series: list[dict[str, Any]] = []
+
+            for idx, ym in enumerate(months):
+                add_in = manual_in_by_m.get(ym, 0.0)
+                add_out = manual_out_by_m.get(ym, 0.0)
+                m_in = float(inflow_s["plan"][idx]) + add_in
+                m_in_lo = float(inflow_s["low"][idx]) + add_in
+                m_in_hi = float(inflow_s["high"][idx]) + add_in
+                m_out = float(outflow_s["plan"][idx]) + add_out
+                m_out_lo = float(outflow_s["low"][idx]) + add_out
+                m_out_hi = float(outflow_s["high"][idx]) + add_out
+
+                total_expected_in += m_in
+                total_expected_out += m_out
+                bal = round(bal + (m_in - m_out), 2)
+                bal_pess = round(bal_pess + (m_in_lo - m_out_hi), 2)
+
+                if bal < lowest_balance:
+                    lowest_balance = bal
+                    lowest_date = ym
+                if bal_pess < lowest_pess:
+                    lowest_pess = bal_pess
+                    lowest_pess_date = ym
+
+                if bal < 0:
+                    months_below_zero += 1
+                    if first_negative_date is None:
+                        first_negative_date = ym
+                    last_negative_date = ym
+
+                forecast_series.append(
+                    {
+                        "date": ym,
+                        "balance": bal,
+                        "balance_pessimistic": bal_pess,
+                        "balance_with_credit": round(bal + credit_cushion, 2),
+                        "expected_in": round(m_in, 2),
+                        "expected_out": round(m_out, 2),
+                        "expected_in_low": round(m_in_lo, 2),
+                        "expected_in_high": round(m_in_hi, 2),
+                        "expected_out_low": round(m_out_lo, 2),
+                        "expected_out_high": round(m_out_hi, 2),
+                        "events": [],
+                    }
+                )
+
+            goes_below_zero = lowest_balance < 0
+            shortfall_amount = round(abs(lowest_balance), 2) if goes_below_zero else 0.0
+            recommended_credit = (
+                float(math.ceil((shortfall_amount * 1.10) / 100.0) * 100)
+                if goes_below_zero
+                else 0.0
+            )
+
+            recovery_date: str | None = None
+            if goes_below_zero and last_negative_date and months and last_negative_date < months[-1]:
+                ly, lm = (int(x) for x in last_negative_date.split("-"))
+                recovery_date = f"{ly + 1:04d}-01" if lm == 12 else f"{ly:04d}-{lm + 1:02d}"
+
+            cur_sym = "€" if self.account_currency == "EUR" else f"{self.account_currency} "
+            analysis_summary = (
+                f"Starting after {last_hist_month} with a balance of {cur_sym}{aligned_start_bal:,.2f}, "
+                f"Greg ran the seasonal monthly planner for the next {n_months} months "
+                f"(Inflow: {inflow_s['method_label']}; Outflow: {outflow_s['method_label']}). "
+                f"Expected total income is {cur_sym}{total_expected_in:,.2f} and expected expenses are "
+                f"{cur_sym}{total_expected_out:,.2f}."
+            )
+            if goes_below_zero:
+                rec_text = (
+                    f" recovers above zero in {recovery_date}"
+                    if recovery_date
+                    else f" stays below zero through {months[-1]}"
+                )
+                recommendation_summary = (
+                    f"Warning: Your expected balance drops below zero in {first_negative_date}, "
+                    f"reaching {cur_sym}{lowest_balance:,.2f} in {lowest_date} "
+                    f"({months_below_zero} month(s) below zero; it{rec_text}). "
+                    f"In a pessimistic stress test, it could reach {cur_sym}{lowest_pess:,.2f} ({lowest_pess_date})."
+                )
+            else:
+                pess_note = (
+                    f" (Pessimistic stress test lowest: {cur_sym}{lowest_pess:,.2f} in {lowest_pess_date}.)"
+                )
+                recommendation_summary = (
+                    f"Good news: Your expected balance stays above zero for all next {n_months} months, "
+                    f"with a lowest expected balance of {cur_sym}{lowest_balance:,.2f} in {lowest_date}."
+                    + pess_note
+                )
+
+            return {
+                "engine": "greg_planner",
+                "granularity": "month",
+                "horizon_days": horizon_days,
+                "horizon_months": n_months,
+                "as_of_date": as_of_date.isoformat(),
+                "last_history_month": last_hist_month,
+                "current_balance": aligned_start_bal,
+                "total_expected_in": round(total_expected_in, 2),
+                "total_expected_out": round(total_expected_out, 2),
+                "detected_regular_schedules_count": 0,
+                "upcoming_bills": [],
+                "lowest_predicted_balance": lowest_balance,
+                "lowest_predicted_date": lowest_date,
+                "lowest_pessimistic_balance": lowest_pess,
+                "lowest_pessimistic_date": lowest_pess_date,
+                "goes_below_zero": goes_below_zero,
+                "first_negative_date": first_negative_date,
+                "recovery_date": recovery_date,
+                "days_below_zero": 0,
+                "months_below_zero": months_below_zero,
+                "shortfall_amount": shortfall_amount,
+                "recommended_credit_amount": recommended_credit,
+                "fallback_reason": None,
+                "planner_meta": {
+                    "inflow_method": inflow_s["method"],
+                    "inflow_method_label": inflow_s["method_label"],
+                    "outflow_method": outflow_s["method"],
+                    "outflow_method_label": outflow_s["method_label"],
+                    "inflow_classic_growth": inflow_s["classic_growth"],
+                    "outflow_classic_growth": outflow_s["classic_growth"],
+                    "flagged_inflow_months": inflow_s["flagged_months"],
+                    "flagged_outflow_months": outflow_s["flagged_months"],
+                    "network_loaded": bool(plan.get("network_loaded")),
+                    "notes": list(plan.get("notes") or []),
+                },
+                "analysis_summary": analysis_summary,
+                "recommendation_summary": recommendation_summary,
+                "forecast_series": forecast_series,
+            }
+
+        fallback_reason = str(plan.get("reason") or "Fewer than 12 full months of history.")
+        daily_res = self._run_liquidity_forecast(
+            as_of_date=as_of_date,
+            current_balance=current_balance,
+            horizon_days=horizon_days,
+        )
+        daily_res.update(
+            {
+                "engine": "daily_fallback",
+                "granularity": "day",
+                "horizon_months": None,
+                "last_history_month": None,
+                "months_below_zero": 0,
+                "lowest_pessimistic_balance": None,
+                "lowest_pessimistic_date": None,
+                "fallback_reason": fallback_reason,
+                "planner_meta": None,
+            }
+        )
+        return daily_res
 
     def _run_liquidity_forecast(
         self,
@@ -955,4 +1336,43 @@ class LedgerStore:
         }
 
 
+class SessionManager:
+    """Thread-safe in-memory per-tab store manager with TTL and LRU-style cap."""
+
+    def __init__(self, max_sessions: int = 50, ttl_seconds: int = 7200) -> None:
+        self.max_sessions = max(1, int(max_sessions))
+        self.ttl_seconds = max(1.0, float(ttl_seconds))
+        self._lock = threading.Lock()
+        self._sessions: dict[str, tuple[LedgerStore, float]] = {}
+
+    def get(self, session_id: str | None) -> LedgerStore:
+        if not session_id or not session_id.strip():
+            return STORE
+        sid = session_id.strip()[:64]
+        with self._lock:
+            now = time.monotonic()
+            expired = [k for k, (_, ts) in self._sessions.items() if now - ts > self.ttl_seconds]
+            for k in expired:
+                del self._sessions[k]
+
+            if sid in self._sessions:
+                store, _ = self._sessions[sid]
+                self._sessions[sid] = (store, now)
+                return store
+
+            while len(self._sessions) >= self.max_sessions:
+                oldest_key = min(self._sessions, key=lambda k: self._sessions[k][1])
+                del self._sessions[oldest_key]
+
+            fresh = LedgerStore()
+            self._sessions[sid] = (fresh, now)
+            return fresh
+
+    def clear_all(self) -> None:
+        STORE.reset()
+        with self._lock:
+            self._sessions.clear()
+
+
 STORE = LedgerStore()
+SESSIONS = SessionManager()
