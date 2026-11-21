@@ -3,12 +3,15 @@ import { bindBankConnect, syncOnboarding } from "./onboarding.js";
 import { fetchHealth, fetchViewData, postJson } from "./api.js";
 import { createChartController } from "./chart.js";
 import { createChatController } from "./chat.js";
-import { initForecastDotHover, initNumberSteppers, initStepCarousel } from "./controls.js";
+import { initForecastDotHover, initNumberSteppers } from "./controls.js";
 import { createCsvMappingController } from "./csv-mapping.js";
 import { escapeHtml, fmtMoney, fmtZero } from "./format.js";
+import { createLoanController } from "./loan.js";
 import { createWhatIfController } from "./whatif.js";
 
-initStepCarousel();
+import { initUfoArtwork } from "./ufo-artwork.js";
+
+initUfoArtwork();
 initNumberSteppers();
 initForecastDotHover();
 
@@ -32,6 +35,8 @@ const opCpInput = document.getElementById("op-cp");
 const opCatInput = document.getElementById("op-cat");
 
 const monthSelect = document.getElementById("month-select");
+const intervalSelect = document.getElementById("interval-select");
+const horizonSelect = document.getElementById("horizon-select");
 const forecastModeSubtitle = document.getElementById("forecast-mode-subtitle");
 const forecastMethodBar = document.getElementById("forecast-method-bar");
 
@@ -48,60 +53,42 @@ const txTableSummary = document.getElementById("tx-table-summary");
 const txTableBody = document.getElementById("tx-table-body");
 
 const agentBanner = document.getElementById("agent-banner");
-const agentAnalysisText = document.getElementById("agent-analysis-text");
 const agentRecText = document.getElementById("agent-rec-text");
-const upcomingBillsBody = document.getElementById("upcoming-bills-body");
 const recLowest = document.getElementById("rec-lowest");
 const recBelowLabel = document.getElementById("rec-below-label");
 const recDays = document.getElementById("rec-days");
 const recCredit = document.getElementById("rec-credit");
 const aiExplainBtn = document.getElementById("ai-explain-btn");
 
-const creditForm = document.getElementById("credit-form");
-const creditInput = document.getElementById("credit-input");
-const creditStatus = document.getElementById("credit-status");
-
 let currentState = null;
+let currentGranularity = null;
 
 if (opDateInput) {
   opDateInput.value = new Date().toISOString().slice(0, 10);
 }
 
-const chat = createChatController(
-  {
-    chatLauncher: document.getElementById("chat-launcher"),
-    messenger: document.getElementById("greg-messenger"),
-    chatCloseBtn: document.getElementById("chat-close"),
-    messagesEl: document.getElementById("messages"),
-    chatForm: document.getElementById("chat-form"),
-    promptEl: document.getElementById("prompt"),
-    sendBtn: document.getElementById("send-btn"),
-    aiExplainBtn,
-    chatPeriodContext: document.getElementById("chat-period-context"),
-    chatPeriodModeEl: document.getElementById("chat-period-mode"),
-    chatPeriodDatesEl: document.getElementById("chat-period-dates"),
-    chatPeriodIncEl: document.getElementById("chat-period-inc"),
-    chatPeriodExpEl: document.getElementById("chat-period-exp"),
-    chatPeriodNetEl: document.getElementById("chat-period-net"),
-    chatPeriodDismissBtn: document.getElementById("chat-period-dismiss"),
-  },
-  { getHorizonPayload: () => chart.getHorizonPayload() }
-);
+function getHorizonPayload() {
+  const val = Number((horizonSelect && horizonSelect.value) || 0);
+  if (currentGranularity === "month") {
+    return { horizon_months: [3, 6, 12].includes(val) ? val : 12 };
+  }
+  if (currentGranularity === "day") {
+    return { horizon_days: [30, 60, 90].includes(val) ? val : 30 };
+  }
+  return {};
+}
 
 const chart = createChartController(
   {
     forecastPanel: document.getElementById("forecast-panel"),
     forecastChart: document.getElementById("forecast-chart"),
     chartTooltip: document.getElementById("chart-tooltip"),
-    chartGranularityBadge: document.getElementById("chart-granularity-badge"),
+    chartFocusCard: document.getElementById("chart-focus-card"),
+    btnZoomIn: document.getElementById("btn-zoom-in"),
+    btnZoomOut: document.getElementById("btn-zoom-out"),
+    btnZoomReset: document.getElementById("btn-zoom-reset"),
     chartRangeLabel: document.getElementById("chart-range-label"),
     chartLegend: document.getElementById("chart-legend"),
-    historyPillGroup: document.getElementById("history-pill-group"),
-    forecastPillGroup: document.getElementById("forecast-pill-group"),
-    dateJumpBar: document.getElementById("date-jump-bar"),
-    chartFocusDateInput: document.getElementById("chart-focus-date"),
-    chartFocusClearBtn: document.getElementById("chart-focus-clear"),
-    chartFocusCard: document.getElementById("chart-focus-card"),
     minimapTrack: document.getElementById("minimap-track"),
     minimapSvg: document.getElementById("minimap-svg"),
     minimapMaskLeft: document.getElementById("minimap-mask-left"),
@@ -109,7 +96,6 @@ const chart = createChartController(
     minimapWindow: document.getElementById("minimap-window"),
     minimapHandleLeft: document.getElementById("minimap-handle-left"),
     minimapHandleRight: document.getElementById("minimap-handle-right"),
-    minimapHorizonSummary: document.getElementById("minimap-horizon-summary"),
     periodActionBarWrap: document.getElementById("period-action-bar-wrap"),
     periodRangeDatesEl: document.getElementById("period-range-dates"),
     btnAnalyzePeriod: document.getElementById("btn-analyze-period"),
@@ -117,9 +103,9 @@ const chart = createChartController(
   },
   {
     getCurrentState: () => currentState,
-    onHorizonChange: () => fetchView(),
-    onAnalyzePeriod: (payload) => chat.receivePeriodAnalysis(payload),
     getWhatIf: (state) => whatIf.compute(state),
+    getLoan: (state) => loan.compute(state),
+    onAnalyzePeriod: (payload) => chat.receivePeriodAnalysis(payload),
   }
 );
 
@@ -145,6 +131,23 @@ const whatIf = createWhatIfController(
   }
 );
 
+const loan = createLoanController(
+  {
+    toggle: document.getElementById("loan-toggle"),
+    panel: document.getElementById("loan-panel"),
+    amountInput: document.getElementById("loan-amount"),
+    requestBtn: document.getElementById("loan-request-btn"),
+    status: document.getElementById("loan-status"),
+  },
+  {
+    onChange: () => {
+      if (!currentState || !currentState.has_data) return;
+      loan.render(currentState);
+      chart.render(currentState);
+    },
+  }
+);
+
 const csvMapping = createCsvMappingController({
   csvFileInput,
   csvMappingBox,
@@ -164,6 +167,20 @@ const csvMapping = createCsvMappingController({
   mapDescriptionSelect: document.getElementById("map-description"),
 });
 
+const chat = createChatController(
+  {
+    chatLauncher: document.getElementById("chat-launcher"),
+    messenger: document.getElementById("greg-messenger"),
+    chatCloseBtn: document.getElementById("chat-close"),
+    messagesEl: document.getElementById("messages"),
+    chatForm: document.getElementById("chat-form"),
+    promptEl: document.getElementById("prompt"),
+    sendBtn: document.getElementById("send-btn"),
+    aiExplainBtn,
+  },
+  { getHorizonPayload }
+);
+
 async function loadStatus() {
   try {
     const data = await fetchHealth();
@@ -176,8 +193,38 @@ async function loadStatus() {
   }
 }
 
+function syncHorizonControl(la) {
+  const gran = la && la.granularity === "month" ? "month" : "day";
+  if (intervalSelect) intervalSelect.value = gran;
+  if (currentGranularity !== gran) {
+    if (gran === "month") {
+      horizonSelect.innerHTML = [
+        '<option value="3">Next 3 months</option>',
+        '<option value="6">Next 6 months</option>',
+        '<option value="12">Next 12 months</option>',
+      ].join("");
+      horizonSelect.value = String((la && la.horizon_months) || 12);
+    } else {
+      horizonSelect.innerHTML = [
+        '<option value="30">Next 30 days</option>',
+        '<option value="60">Next 60 days</option>',
+        '<option value="90">Next 90 days</option>',
+      ].join("");
+      horizonSelect.value = String((la && la.horizon_days) || 30);
+    }
+    currentGranularity = gran;
+  } else {
+    const expectedVal = String(
+      gran === "month" ? (la && la.horizon_months) || 12 : (la && la.horizon_days) || 30
+    );
+    if (Array.from(horizonSelect.options).some((o) => o.value === expectedVal)) {
+      horizonSelect.value = expectedVal;
+    }
+  }
+}
+
 async function fetchView() {
-  const data = await fetchViewData(chart.getHorizonPayload());
+  const data = await fetchViewData(getHorizonPayload());
   renderState(data);
 }
 
@@ -286,12 +333,9 @@ function renderState(state) {
 
   const cur = state.currency || "EUR";
   openingBalanceInput.value = state.opening_balance || 0;
-  importInfo.textContent =
-    state.data_source === "connected_bank"
-      ? `Connected bank: ${state.bank_account_name || "Bank Account"} (${state.filename} · ${state.total_transactions} operations)`
-      : state.filename
-      ? `Loaded: ${state.filename} (${state.total_transactions} operations)`
-      : `${state.total_transactions} manual operation(s) loaded`;
+  importInfo.textContent = state.filename
+    ? `Loaded: ${state.filename} (${state.total_transactions} operations)`
+    : `${state.total_transactions} manual operation(s) loaded`;
 
   monthSelect.innerHTML = state.months
     .map(
@@ -341,7 +385,7 @@ function renderState(state) {
     .join("");
 
   const la = state.liquidity_agent;
-  chart.syncGranularity(la);
+  syncHorizonControl(la);
   if (forecastModeSubtitle) {
     if (la.granularity === "month" && la.planner_meta) {
       forecastModeSubtitle.textContent =
@@ -365,7 +409,6 @@ function renderState(state) {
     )}`;
   }
 
-  if (agentAnalysisText) agentAnalysisText.textContent = la.analysis_summary;
   if (agentRecText) agentRecText.textContent = la.recommendation_summary;
   if (recLowest) {
     recLowest.textContent = `${fmtMoney(la.lowest_predicted_balance, cur)} (on ${la.lowest_predicted_date})`;
@@ -384,41 +427,18 @@ function renderState(state) {
   }
   if (recCredit) recCredit.textContent = fmtMoney(la.recommended_credit_amount, cur);
 
-  if (creditInput && creditStatus) {
-    creditInput.value = la.recommended_credit_amount;
-    creditStatus.innerHTML =
-      '<span class="subtitle">Preview only — credit approval simulation does not modify the model or chart.</span>';
-  }
-
-  if (upcomingBillsBody) {
-    if (la.upcoming_bills.length === 0) {
-      const emptyMsg =
-        la.engine === "greg_planner"
-          ? "Monthly seasonal planner active — individual regular bill dates are shown in daily mode (&lt; 12 months)."
-          : "No regular bills detected yet.";
-      upcomingBillsBody.innerHTML = `<tr><td colspan="3" class="subtitle">${emptyMsg}</td></tr>`;
-    } else {
-      upcomingBillsBody.innerHTML = la.upcoming_bills
-        .map(
-          (b) => `
-          <tr>
-            <td>${escapeHtml(b.date)}</td>
-            <td>${escapeHtml(b.counterparty)}</td>
-            <td class="right neg num">${fmtMoney(b.amount, cur)}</td>
-          </tr>`
-        )
-        .join("");
-    }
-  }
-
+  loan.render(state);
   whatIf.renderSummary(state);
   chart.render(state);
 }
 
 bindBankConnect(async () => {
+  currentGranularity = null;
   chart.resetAll();
   chat.resetConversation();
   if (chat.isOpen()) chat.setOpen(false);
+  whatIf.reset();
+  loan.reset();
   const res = await postJson("/api/bank/connect", {});
   const data = await res.json();
   if (!res.ok) {
@@ -432,9 +452,12 @@ importForm.addEventListener("submit", async (e) => {
   const file = csvFileInput.files[0];
   if (!file) return;
   const text = await file.text();
+  currentGranularity = null;
   chart.resetAll();
   chat.resetConversation();
   if (chat.isOpen()) chat.setOpen(false);
+  whatIf.reset();
+  loan.reset();
   const payload = {
     csv_text: text,
     filename: file.name,
@@ -455,7 +478,7 @@ openingBalanceInput.addEventListener("change", async () => {
   if (!currentState || !currentState.has_data) return;
   const res = await postJson(
     "/api/opening-balance",
-    Object.assign({ opening_balance: Number(openingBalanceInput.value || 0) }, chart.getHorizonPayload())
+    Object.assign({ opening_balance: Number(openingBalanceInput.value || 0) }, getHorizonPayload())
   );
   if (res.ok) renderState(await res.json());
 });
@@ -472,7 +495,7 @@ manualForm.addEventListener("submit", async (e) => {
         counterparty: opCpInput.value,
         category: opCatInput.value,
       },
-      chart.getHorizonPayload()
+      getHorizonPayload()
     )
   );
   const data = await res.json();
@@ -492,26 +515,30 @@ txTableBody.addEventListener("click", async (e) => {
   const id = btn.getAttribute("data-del-id");
   const res = await postJson(
     "/api/operations/delete",
-    Object.assign({ id }, chart.getHorizonPayload())
+    Object.assign({ id }, getHorizonPayload())
   );
   if (res.ok) renderState(await res.json());
 });
 
-// Step C ("Approve Credit Plan") stays a preview-only no-op per UX specification.
-if (creditForm) {
-  creditForm.addEventListener("submit", (e) => {
-    e.preventDefault();
+if (intervalSelect) {
+  intervalSelect.addEventListener("change", () => {
+    if (!currentState || !currentState.has_data) return;
+    chart.render(currentState);
   });
 }
+
+horizonSelect.addEventListener("change", () => fetchView());
 
 resetBtn.addEventListener("click", async () => {
   const res = await postJson("/api/reset", {});
   if (res.ok) {
     csvMapping.reset();
+    currentGranularity = null;
     chart.resetAll();
     chat.resetConversation();
     if (chat.isOpen()) chat.setOpen(false);
     whatIf.reset();
+    loan.reset();
     renderState(await res.json());
   }
 });

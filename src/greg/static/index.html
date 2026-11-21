@@ -4,34 +4,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Greg - Autonomous CFO</title>
-  <link rel="icon"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%230d0d0d' d='M4 18a7 7 0 0 1 7-7h6v6a7 7 0 0 1-7 7H4Zm14-10h4a6 6 0 0 1 0 12h-4Z'/%3E%3C/svg%3E" />
+  <title>UFO - Ultimate Financial Officer</title>
+  <link rel="icon" type="image/png" href="/static/images/ufo-logo.png" />
   <link rel="preload" href="/static/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/static/css/base.css" />
   <link rel="stylesheet" href="/static/css/forecast.css" />
   <link rel="stylesheet" href="/static/css/messenger.css" />
   <link rel="stylesheet" href="/static/css/onboarding.css" />
+  <link rel="stylesheet" href="/static/css/ufo-artwork.css" />
 </head>
 
 <body>
   <header class="site-head">
     <div class="shell">
       <div class="wordmark-wrap">
-        <a href="/" class="wordmark" aria-label="Greg home">
-          <svg viewBox="0 0 32 32" aria-hidden="true">
-            <path d="M4 18a7 7 0 0 1 7-7h6v6a7 7 0 0 1-7 7H4Zm14-10h4a6 6 0 0 1 0 12h-4Z" />
-          </svg>
-          greg
+        <a href="/" class="wordmark" aria-label="UFO home">
+          <img class="brand-logo" src="/static/images/ufo-logo.png" width="36" height="36" alt="" />
+          UFO
         </a>
-        <span class="brand-sub">Autonomous CFO</span>
+        <span class="brand-sub">Ultimate Financial Officer</span>
       </div>
       <div class="header-right">
-        <div class="status-pill" role="status">
+        <div class="status-pill hidden" role="status">
           <span class="status-dot standby" id="llm-dot"></span>
           <span id="status">Checking pod &amp; AI status…</span>
         </div>
-        <button type="button" class="secondary hidden" id="reset-btn">Clear All Data</button>
+        <button type="button" class="secondary hidden" id="reset-btn">Restart</button>
       </div>
     </div>
   </header>
@@ -108,7 +106,7 @@
               </div>
             </details>
           </div>
-          <div class="csv-confirm-row"><p class="subtitle">Ready? Confirm to see your financial overview.</p><button type="submit" id="import-btn">Confirm</button></div>
+          <div class="csv-confirm-row"><button type="submit" id="import-btn">Confirm</button></div>
         </form>
         <div id="import-info" class="subtitle" style="margin-top: 10px"></div>
       </section>
@@ -236,55 +234,29 @@
           <div>
             <p class="stage-eyebrow">Cash outlook</p>
             <h2>Forecast</h2>
-            <div class="stage-subtitle" id="forecast-mode-subtitle">
-              Complete account balance history and cash forecast ahead
-            </div>
+
           </div>
-          <!-- 1. SYMMETRIC TOP HORIZON CONTROLS (Past | Today | Future) + SPECIFIC DATE PICKER -->
-          <div class="forecast-controls-row">
-            <div class="horizon-selector-bar" id="horizon-selector-bar" role="toolbar" aria-label="Past lookback and future forecast horizon selector">
-              <div class="horizon-group" id="history-pill-group" role="group" aria-label="History lookback">
-                <span class="horizon-group-label"><span class="horizon-swatch-solid"></span>Past</span>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="1">1D</button>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="7">7D</button>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="30">1M</button>
-                <button type="button" class="horizon-pill hist-pill active" data-hist-days="90">3M</button>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="180">6M</button>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="365">1Y</button>
-              </div>
-
-              <div class="horizon-today-divider" aria-hidden="true">
-                <span class="horizon-today-badge">Today</span>
-              </div>
-
-              <div class="horizon-group" id="forecast-pill-group" role="group" aria-label="Future forecast">
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="0">Off</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="1">+1D</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="7">+7D</button>
-                <button type="button" class="horizon-pill fore-pill active" data-fore-days="30">+1M</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="90">+3M</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="180">+6M</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="365">+1Y</button>
-                <span class="horizon-group-label">Future<span class="horizon-swatch-dashed"></span></span>
-              </div>
+          <div class="form-row">
+            <div class="field hidden" style="min-width: 130px">
+              <label for="interval-select">View By</label>
+              <select id="interval-select">
+                <option value="day" selected>Day</option>
+                <option value="month">Month</option>
+              </select>
             </div>
-
-            <div class="date-jump-bar" id="date-jump-bar" role="group" aria-label="Select specific date to zoom and highlight on chart">
-              <span class="horizon-group-label"><span class="date-focus-dot"></span>Date</span>
-              <input
-                type="date"
-                id="chart-focus-date"
-                class="date-jump-input"
-                aria-label="Pick a specific date to highlight and zoom in on the chart"
-                title="Pick a specific date to highlight and zoom in on the chart"
-              />
-              <button type="button" id="chart-focus-clear" class="horizon-pill date-clear-pill hidden" title="Clear pinned date">✕</button>
+            <div class="field" style="min-width: 170px">
+              <label for="horizon-select">Forecast</label>
+              <select id="horizon-select">
+                <option value="30" selected>Next 30 days</option>
+                <option value="60">Next 60 days</option>
+                <option value="90">Next 90 days</option>
+              </select>
             </div>
           </div>
         </div>
 
         <!-- CHOSEN FORECAST METHOD -->
-        <div id="forecast-method-bar" class="method-bar hidden"></div>
+
 
         <!-- RECOMMENDATION BANNER -->
         <div id="agent-banner" class="alert-box"></div>
@@ -292,81 +264,63 @@
         <!-- SVG FORECAST CHART -->
         <div class="forecast-panel" id="forecast-panel">
           <div class="chart-toolbar">
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
-              <span class="granularity-badge" id="chart-granularity-badge">Auto: Daily</span>
-              <span class="subtitle" id="chart-zoom-hint">Hold Ctrl + drag to highlight a period · Drag to pan · Scroll to zoom</span>
-            </div>
+            <span class="subtitle" id="chart-zoom-hint">Drag chart to scroll, wheel to zoom, click a point for details, Ctrl and drag to select a period</span>
           </div>
           <div id="chart-tooltip" class="chart-tooltip hidden" role="status" aria-live="polite"></div>
           <div class="chart-wrap">
-            <div
-              id="chart-focus-card"
-              class="chart-focus-card hidden"
-              role="button"
-              tabindex="0"
-              aria-expanded="false"
-              title="Click to open Income &amp; Expenses breakdown"
-            ></div>
             <svg id="forecast-chart" viewBox="0 0 900 260" style="width: 100%; height: 260px; display: block"></svg>
+            <div id="chart-focus-card" class="chart-focus-card hidden" role="button" tabindex="0" aria-expanded="false"></div>
           </div>
-
-          <!-- 2. INTERACTIVE MINI-MAP RANGE NAVIGATOR (Bottom Scrollbar) -->
+          <div id="period-action-bar-wrap" class="period-action-bar-wrap">
+            <div class="period-action-bar-inner">
+              <div class="period-action-bar">
+                <span class="period-range-text">
+                  <span class="period-range-dot"></span>
+                  <span id="period-range-dates"></span>
+                </span>
+                <button type="button" id="btn-analyze-period" class="period-analyze-btn">Analyze</button>
+                <button type="button" id="btn-clear-period" class="period-clear-btn" title="Clear selection" aria-label="Clear selected period">✕</button>
+              </div>
+            </div>
+          </div>
           <div class="minimap-container" id="minimap-container">
-            <div class="minimap-track" id="minimap-track" aria-label="Interactive timeline mini-map navigator">
+            <div class="minimap-track" id="minimap-track" role="region" aria-label="Chart timeline navigator">
               <svg id="minimap-svg" viewBox="0 0 900 42" preserveAspectRatio="none"></svg>
               <div class="minimap-mask" id="minimap-mask-left" style="left: 0; width: 0%"></div>
               <div class="minimap-mask" id="minimap-mask-right" style="right: 0; width: 0%"></div>
               <div class="minimap-window" id="minimap-window" style="left: 0%; width: 100%">
-                <div class="minimap-handle left" id="minimap-handle-left" title="Drag to adjust Past lookback window">
+                <div class="minimap-handle left" id="minimap-handle-left" title="Drag to adjust start">
                   <span class="minimap-handle-grip"></span>
                 </div>
-                <div class="minimap-handle right" id="minimap-handle-right" title="Drag to adjust Future forecast window">
+                <div class="minimap-handle right" id="minimap-handle-right" title="Drag to adjust end">
                   <span class="minimap-handle-grip"></span>
                 </div>
               </div>
             </div>
             <div class="minimap-meta-row">
               <span class="chart-range-label" id="chart-range-label">—</span>
-              <span id="minimap-horizon-summary">Past: 3M · Forecast: +1M</span>
-            </div>
-            <!-- Centered Period Analysis Action Bar (revealed when Ctrl + LMB period is selected) -->
-            <div id="period-action-bar-wrap" class="period-action-bar-wrap" aria-live="polite">
-              <div class="period-action-bar-inner">
-                <div class="period-action-bar" id="period-action-bar" role="region" aria-label="Selected period actions">
-                  <span class="period-range-text">
-                    <span class="period-range-dot"></span>
-                    <span id="period-range-dates">—</span>
-                  </span>
-                  <button type="button" id="btn-analyze-period" class="period-analyze-btn">
-                    Analyze →
-                  </button>
-                  <button type="button" id="btn-clear-period" class="period-clear-btn" title="Clear selected period (Esc)" aria-label="Clear selected period">
-                    ✕
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
-
           <div class="chart-legend hidden" id="chart-legend">
             <span class="legend-item"><span class="swatch" style="background: #0d0d0d"></span>Past</span>
-            <span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected forecast</span>
-            <span class="legend-item"><span class="swatch" style="background: #c96b7c"></span>Pessimistic stress test</span>
+            <span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected</span>
+            <span class="legend-item"><span class="swatch" style="background: #c96b7c"></span>Pessimistic</span>
           </div>
 
           <!-- WHAT-IF SCENARIO -->
           <div class="whatif" id="whatif-panel">
             <div class="whatif-head">
               <strong>What if…?</strong>
-              <span class="subtitle">Try a scenario — the blue dotted line shows your balance under it.</span>
+              <span class="subtitle">Try a scenario - the blue dotted line shows your balance under it.</span>
               <button type="button" class="secondary chart-zoom-btn" id="whatif-reset">Clear</button>
             </div>
             <div class="whatif-presets">
               <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="income:-20">Lose 20% of income</button>
               <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="expense:10">Costs rise 10%</button>
               <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="monthly:-3000">Hire someone (−3,000 / month)</button>
+              <button type="button" class="secondary chart-zoom-btn" id="whatif-tune-toggle" aria-expanded="false" aria-controls="whatif-tuning">Fine-tune <span aria-hidden="true">⌄</span></button>
             </div>
-            <div class="whatif-grid">
+            <div class="whatif-grid hidden" id="whatif-tuning">
               <div class="field">
                 <label for="whatif-income">Income change <output id="whatif-income-out">0%</output></label>
                 <input type="range" id="whatif-income" min="-50" max="50" step="5" value="0" />
@@ -392,77 +346,31 @@
           </div>
         </div>
 
-        <!-- GOVERNANCE STAGES -->
-        <button type="button" id="steps-toggle" class="secondary" aria-expanded="false" aria-controls="forecast-steps">Explore the steps</button>
-        <div class="nav-demo nav-next" id="forecast-steps" data-navigation="carousel" hidden>
-          <div class="nav-surface collection-surface">
-            <div class="collection-window" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Forecast steps">
-              <div class="collection-track">
-                <section class="collection-slide stage-box" role="group" aria-roledescription="slide" aria-label="1 of 3">
-                  <span class="slide-emblem"><i class="menu-glyph" data-icon="folder" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="M4.5 9a2 2 0 0 1 2-2h5l2.5 3h7.5a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2Z"/></svg></i></span>
-                  <h3 class="sr-only">Analysis</h3>
-                  <span class="stage-tag">Step A · Analyzed Automatically</span>
-                  <p id="agent-analysis-text" style="font-size: 13px; color: var(--body)"></p>
-                  <h3>Upcoming Regular Bills Detected</h3>
-                  <div style="max-height: 190px; overflow-y: auto">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Expected Date</th>
-                          <th>Who</th>
-                          <th class="right">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody id="upcoming-bills-body"></tbody>
-                    </table>
-                  </div>
-                </section>
-                <section class="collection-slide stage-box" role="group" aria-roledescription="slide" aria-label="2 of 3" inert aria-hidden="true">
-                  <span class="slide-emblem"><i class="menu-glyph" data-icon="file" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="M7 4h10l6 6v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm10 0v6h6"/></svg></i></span>
-                  <h3 class="sr-only">Recommendation</h3>
-                  <span class="stage-tag">Step B · Recommended Action</span>
-                  <p id="agent-rec-text" style="font-size: 13px; color: var(--body)"></p>
-                  <div class="credit-summary-box num">
-                    <div><strong>Lowest Expected Balance:</strong> <span id="rec-lowest">€0.00</span></div>
-                    <div><strong id="rec-below-label">Days Below €0:</strong> <span id="rec-days">0 days</span></div>
-                    <div style="margin-top: 4px; font-size: 14px">
-                      <strong>Credit Amount Needed from Your Bank:</strong>
-                      <span id="rec-credit" style="font-weight: 700">€0.00</span>
-                    </div>
-                  </div>
-                  <div style="margin-top: auto; padding-top: 6px">
-                    <button type="button" id="ai-explain-btn" class="secondary" style="width: 100%; white-space: normal">
-                      Ask Greg (OpenShift AI) to Explain in Simple Words
-                    </button>
-                  </div>
-                </section>
-                <section class="collection-slide stage-box" role="group" aria-roledescription="slide" aria-label="3 of 3" inert aria-hidden="true">
-                  <span class="slide-emblem"><i class="menu-glyph" data-icon="edit" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="m5 23 1.5-5.5L19 5a2.8 2.8 0 0 1 4 4L10.5 21.5 5 23ZM16.5 7.5l4 4M6.5 17.5l4 4"/></svg></i></span>
-                  <h3 class="sr-only">Approval</h3>
-                  <span class="stage-tag">Step C · Your Approval (Simulated)</span>
-                  <p style="font-size: 13px; color: var(--body)">
-                    You choose the bank and credit line yourself. Enter the credit amount you want to simulate below to see
-                    how it keeps your account balance above €0.
-                  </p>
-                  <form id="credit-form" class="form-row">
-                    <div class="field">
-                      <label for="credit-input">Credit Amount to Simulate (€)</label>
-                      <input type="number" id="credit-input" step="100" min="0" value="0" />
-                    </div>
-                    <button type="submit">Approve Credit Plan</button>
-                  </form>
-                  <div id="credit-status" style="font-size: 13px"></div>
-                </section>
-              </div>
-            </div>
-            <div class="collection-controls">
-              <button type="button" data-prev-slide aria-label="Previous step"><i class="menu-glyph arrow-left" data-icon="chevron" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="m8 11 6 6 6-6"/></svg></i></button>
-              <nav class="collection-dots" aria-label="Choose step"><button type="button" data-slide="0" aria-label="Analysis" aria-current="true"><span></span></button><button type="button" data-slide="1" aria-label="Recommendation"><span></span></button><button type="button" data-slide="2" aria-label="Approval"><span></span></button></nav>
-              <button type="button" data-next-slide aria-label="Next step"><i class="menu-glyph arrow-right" data-icon="chevron" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="m8 11 6 6 6-6"/></svg></i></button>
-            </div>
-            <p class="sr-only" data-slide-status role="status">Analysis, 1 of 3</p>
-          </div>
+        <!-- LOAN RECOMMENDATION & EXPLAIN ACTIONS -->
+        <div class="forecast-action-row">
+          <button type="button" id="loan-toggle" class="secondary" aria-expanded="false" aria-controls="loan-panel">Explore a loan</button>
+          <button type="button" id="ai-explain-btn" class="secondary">Ask Greg to Explain in Simple Words</button>
         </div>
+        <section class="stage-box" id="loan-panel" aria-labelledby="loan-title" hidden>
+          <h3 id="loan-title">Recommended Action</h3>
+          <p id="agent-rec-text" style="font-size: 13px; color: var(--body)"></p>
+          <div class="credit-summary-box num">
+            <div><strong>Lowest Expected Balance:</strong> <span id="rec-lowest">€0.00</span></div>
+            <div><strong id="rec-below-label">Days Below €0:</strong> <span id="rec-days">0 days</span></div>
+            <div style="margin-top: 4px; font-size: 14px">
+              <strong>Credit Amount Needed from Your Bank:</strong>
+              <span id="rec-credit" style="font-weight: 700">€0.00</span>
+            </div>
+          </div>
+          <div class="loan-actions">
+            <div class="field">
+              <label for="loan-amount">Loan amount</label>
+              <input type="number" id="loan-amount" step="100" min="0" value="0" />
+            </div>
+            <button type="button" id="loan-request-btn" aria-pressed="false">Request a loan from Commerzbank</button>
+          </div>
+          <div id="loan-status" role="status" aria-live="polite"></div>
+        </section>
       </section>
 
       <!-- Floating Greg support messenger -->
@@ -482,16 +390,6 @@
         </header>
         <div class="chat-log" id="messages" role="log" aria-live="polite">
           <div class="msg assistant" id="empty-state">Hi, I’m Greg. Ask me about your monthly expenses, salaries, taxes, or cash flow. I’ll help you make sense of your numbers.</div>
-        </div>
-        <div id="chat-period-context" class="chat-period-context hidden" role="status" aria-live="polite">
-          <div class="chat-period-left">
-            <span id="chat-period-mode" class="chat-period-mode">Past</span>
-            <span id="chat-period-dates" class="chat-period-dates">—</span>
-            <span id="chat-period-inc" class="chat-period-stat-inc">+€0.00</span>
-            <span id="chat-period-exp" class="chat-period-stat-exp">-€0.00</span>
-            <span id="chat-period-net" class="chat-period-stat-net">Net: €0.00</span>
-          </div>
-          <button type="button" id="chat-period-dismiss" class="chat-period-dismiss" title="Dismiss selected period context" aria-label="Dismiss selected period context">✕</button>
         </div>
         <form id="chat-form" class="form-row">
           <input type="text" id="prompt"

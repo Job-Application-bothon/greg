@@ -140,8 +140,6 @@ export function createCsvMappingController(els) {
         "buchungstag",
         "datum",
         "month",
-        "week_ending",
-        "week ending",
       ]) || headers[0];
     const guessAmount = findBestHeader(headers, ["amount", "betrag", "value", "sum"]);
     const guessIncome = findBestHeader(headers, [

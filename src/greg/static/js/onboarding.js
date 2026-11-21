@@ -10,7 +10,6 @@ main.insertAdjacentHTML("afterbegin", `    <section id="source-chooser" class="e
         <button type="button" id="choose-bank" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m4 11 12-7 12 7zM7 15v10M16 15v10M25 15v10M4 28h24"/></svg></span><span class="source-title">Connect your bank</span><span class="source-copy">Retrieve a simulated bank statement automatically.</span><span class="source-action" id="choose-bank-action">${DEFAULT_BANK_ACTION_HTML}</span></button>
       </div>
       <p id="source-error" class="source-error hidden" role="alert"></p>
-      <p class="entry-footnote">Your CSV and connected bank data stay isolated in your current Greg session.</p>
       <button type="button" id="cancel-source" class="secondary hidden">Back to my overview</button>
     </section>
     <section id="balance-overview" class="balance-stage hidden" aria-labelledby="balance-title">
@@ -29,14 +28,34 @@ const sourceError = $("source-error");
 const overview = $("balance-overview");
 const tools = document.createElement("details");
 tools.id = "data-tools";
-tools.innerHTML = "<summary>Manage data &amp; add operations</summary>";
+tools.innerHTML = '<summary class="hidden">CSV import</summary>';
+tools.className = "hidden";
 const inputGrid = main.querySelector(".grid-2");
 const dashboard = document.createElement("section");
 dashboard.id = "dashboard";
 dashboard.setAttribute("aria-label", "Financial dashboard");
 main.append(dashboard);
+dashboard.append(tools);
 tools.append(inputGrid);
-dashboard.append($("empty-view"), $("workspace-view"), tools);
+dashboard.append($("empty-view"), $("workspace-view"));
+dashboard.append(tools);
+
+const graphActions = document.createElement("div");
+graphActions.id = "graph-actions";
+graphActions.className = "hidden";
+graphActions.innerHTML =
+  '<details id="manual-entry"><summary><span aria-hidden="true">＋</span> Add manually <span class="manual-chevron" aria-hidden="true">⌄</span></summary><div class="manual-entry-panel"><h2>Add a transaction</h2><p class="subtitle">Record an income or expense that isn’t in your statement.</p></div></details><div class="bank-demo-action"><button type="button" class="secondary" id="connect-bank-demo" aria-expanded="false" aria-controls="bank-demo-hint">Connect to bank <span class="demo-tag">Demo</span></button><p id="bank-demo-hint" class="subtitle hidden" role="status">Bank connection preview only. No bank is connected.</p></div>';
+const manualSection = $("manual-form").closest("section");
+graphActions.querySelector(".manual-entry-panel").append($("manual-form"));
+manualSection.remove();
+graphActions.querySelector("#add-op-btn").textContent = "Add transaction";
+dashboard.append(graphActions);
+graphActions.querySelector("#connect-bank-demo").addEventListener("click", (event) => {
+  const button = event.currentTarget;
+  const expanded = button.getAttribute("aria-expanded") !== "true";
+  button.setAttribute("aria-expanded", String(expanded));
+  show($("bank-demo-hint"), expanded);
+});
 
 const assistantStage = document.createElement("section");
 assistantStage.id = "assistant-stage";
@@ -45,7 +64,6 @@ assistantStage.setAttribute("aria-labelledby", "assistant-stage-title");
 assistantStage.innerHTML =
   '<h2 id="assistant-stage-title">Questions about<br>your numbers?</h2><p class="assistant-stage-copy">If something isn’t clear, just ask Greg.<br>Your finance assistant can help you understand the details.</p>';
 main.append(assistantStage);
-
 const assistantButton = $("chat-launcher");
 assistantButton.innerHTML =
   '<span>Chat with Greg</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
@@ -80,16 +98,14 @@ bankRibbon.setAttribute("aria-hidden", "true");
 chooseBankBtn.prepend(bankRibbon);
 const bankRibbonResize = new ResizeObserver(() => {
   const title = chooseBankBtn.querySelector(".source-title");
-  if (title) {
-    bankRibbon.style.height = `${Math.max(0, title.offsetTop - 18)}px`;
-  }
+  if (title) bankRibbon.style.height = `${Math.max(0, title.offsetTop - 18)}px`;
 });
 bankRibbonResize.observe(chooseBankBtn);
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 reducedMotion.addEventListener("change", () => {
   if (reducedMotion.matches) {
-    for (const el of [chooser, overview, dashboard, assistantStage]) {
+    for (const el of [chooser, overview, dashboard]) {
       for (const animation of el.getAnimations()) animation.cancel();
     }
   }
@@ -111,7 +127,74 @@ const headerResize = new ResizeObserver(() => {
 });
 headerResize.observe(document.querySelector(".site-head"));
 
+function graphScrollBoundary() {
+  return (
+    dashboard.getBoundingClientRect().top +
+    window.scrollY -
+    document.querySelector(".site-head").getBoundingClientRect().height
+  );
+}
+
+function updateScrollMode(delta) {
+  const root = document.documentElement;
+  if (!root.classList.contains("staged-scroll") || !delta) return;
+  root.classList.toggle(
+    "free-scroll",
+    window.scrollY > graphScrollBoundary() + 2 || (delta > 0 && window.scrollY >= graphScrollBoundary() - 2)
+  );
+}
+
+window.addEventListener(
+  "wheel",
+  (event) => {
+    if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    const wasFree = document.documentElement.classList.contains("free-scroll");
+    updateScrollMode(event.deltaY);
+    if (!wasFree && document.documentElement.classList.contains("free-scroll")) {
+      event.preventDefault();
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
+      window.scrollBy({ top: event.deltaY * unit, behavior: "instant" });
+    } else if (wasFree && !document.documentElement.classList.contains("free-scroll")) {
+      event.preventDefault();
+      window.scrollTo({
+        top:
+          overview.getBoundingClientRect().top +
+          window.scrollY -
+          document.querySelector(".site-head").getBoundingClientRect().height,
+        behavior: reducedMotion.matches ? "instant" : "smooth",
+      });
+    }
+  },
+  { passive: false }
+);
+
+let touchY = null;
+window.addEventListener(
+  "touchstart",
+  (event) => {
+    touchY = event.touches[0]?.clientY ?? null;
+  },
+  { passive: true }
+);
+window.addEventListener(
+  "touchmove",
+  (event) => {
+    if (touchY !== null && event.touches[0]) updateScrollMode(touchY - event.touches[0].clientY);
+  },
+  { passive: true }
+);
+window.addEventListener(
+  "scroll",
+  () => {
+    if (document.documentElement.classList.contains("staged-scroll") && window.scrollY < graphScrollBoundary() - 2) {
+      document.documentElement.classList.remove("free-scroll");
+    }
+  },
+  { passive: true }
+);
+
 function top() {
+  document.documentElement.classList.remove("free-scroll");
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
@@ -160,6 +243,11 @@ function choose() {
 
 function summary(data) {
   tools.classList.remove("csv-review");
+  show(tools, false);
+  show(graphActions, true);
+  show(graphActions.querySelector(".bank-demo-action"), true);
+  $("connect-bank-demo").setAttribute("aria-expanded", "false");
+  show($("bank-demo-hint"), false);
   document.documentElement.classList.add("staged-scroll");
   show(chooser, false);
   show(overview, true);
@@ -241,6 +329,8 @@ function reviewFile() {
   show($("empty-view"), false);
   show(change, true);
   tools.open = true;
+  show(tools, true);
+  show(graphActions, false);
   tools.classList.add("csv-review");
   tools.scrollIntoView({ block: "start", behavior: reducedMotion.matches ? "instant" : "smooth" });
 }
