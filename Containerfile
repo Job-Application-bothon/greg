@@ -8,12 +8,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Copy project metadata and source
-COPY pyproject.toml .python-version README.md ./
+COPY pyproject.toml uv.lock .python-version README.md ./
 COPY src/ ./src/
 
-# Install runtime dependencies into /app/.venv
-# Once uv.lock is committed, switch to: uv sync --frozen --no-dev
-RUN uv sync --no-dev
+# Install runtime dependencies (including planner extra) into /app/.venv
+RUN uv sync --frozen --no-dev --extra planner
+
+# Verify planner.keras NumPy runner and statsforecast load cleanly inside the image
+RUN /app/.venv/bin/python -c "from greg.forecasting.seasonal import get_planner; from statsforecast.models import AutoETS, AutoARIMA, AutoTheta; assert get_planner().model is not None"
 
 # OpenShift runs containers with an arbitrary UID in gid 0 (root group).
 # Ensure /app is readable and group-executable/writable for gid 0.
