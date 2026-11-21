@@ -182,9 +182,9 @@ class LedgerStore:
         horizon_months: int | None = None,
     ) -> dict[str, Any]:
         """Compute complete frontend & LLM summary payload for the requested month and horizon."""
-        horizon_days = max(7, min(180, int(horizon_days)))
+        horizon_days = max(0, min(365, int(horizon_days)))
         if horizon_months is not None:
-            horizon_months = max(1, min(12, int(horizon_months)))
+            horizon_months = max(0, min(12, int(horizon_months)))
         if not self.transactions:
             return {
                 "has_data": False,
@@ -315,10 +315,15 @@ class LedgerStore:
         history_series: list[dict[str, Any]] = []
         d_ptr = min_date
         while d_ptr <= last_of_month:
+            day_txs = tx_by_date.get(d_ptr, [])
+            day_inc = round(sum(t["amount"] for t in day_txs if t["amount"] > 0), 2)
+            day_exp = round(sum(abs(t["amount"]) for t in day_txs if t["amount"] < 0), 2)
             history_series.append(
                 {
                     "date": d_ptr.isoformat(),
                     "balance": daily_balances.get(d_ptr, self.opening_balance),
+                    "income": day_inc,
+                    "expenses": day_exp,
                 }
             )
             d_ptr += timedelta(days=1)
@@ -331,8 +336,18 @@ class LedgerStore:
             m_next = date(ym_y + 1, 1, 1) if ym_m == 12 else date(ym_y, ym_m + 1, 1)
             m_last = m_next - timedelta(days=1)
             m_bal = daily_balances.get(m_last, round(self.opening_balance, 2))
+            m_txs_hist = tx_by_month.get(mk, [])
+            m_inc_hist = round(sum(t["amount"] for t in m_txs_hist if t["amount"] > 0), 2)
+            m_exp_hist = round(sum(abs(t["amount"]) for t in m_txs_hist if t["amount"] < 0), 2)
             month_end_balance_map[mk] = m_bal
-            monthly_history_all.append({"date": mk, "balance": m_bal})
+            monthly_history_all.append(
+                {
+                    "date": mk,
+                    "balance": m_bal,
+                    "income": m_inc_hist,
+                    "expenses": m_exp_hist,
+                }
+            )
             ym_y, ym_m = (ym_y + 1, 1) if ym_m == 12 else (ym_y, ym_m + 1)
 
         forecast = run_forecast(

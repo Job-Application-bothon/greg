@@ -53,18 +53,19 @@ def run_forecast(
     if plan.get("available"):
         last_hist_month = str(plan["last_history_month"])
         aligned_start_bal = month_end_balance_map.get(last_hist_month, current_balance)
-        n_months = max(1, min(12, int(horizon_months if horizon_months is not None else 12)))
+        n_months = max(0, min(12, int(horizon_months if horizon_months is not None else 12)))
 
         inflow_s = plan["series"]["inflow"]
         outflow_s = plan["series"]["outflow"]
-        months = list(plan["months"])[:n_months]
+        all_plan_months = list(plan["months"])[:12]
+        months = all_plan_months[:n_months]
 
         manual_in_by_m: dict[str, float] = defaultdict(float)
         manual_out_by_m: dict[str, float] = defaultdict(float)
         for t in transactions:
             if t.get("source") == "manual":
                 mk = _ym(t["date_obj"])
-                if mk > last_hist_month and mk in months:
+                if mk > last_hist_month and mk in all_plan_months:
                     if t["amount"] >= 0:
                         manual_in_by_m[mk] += float(t["amount"])
                     else:
@@ -88,8 +89,9 @@ def run_forecast(
         last_negative_date: str | None = last_hist_month if aligned_start_bal < 0 else None
         months_below_zero = 0
         forecast_series: list[dict[str, Any]] = []
+        full_forecast_series: list[dict[str, Any]] = []
 
-        for idx, ym in enumerate(months):
+        for idx, ym in enumerate(all_plan_months):
             add_in = manual_in_by_m.get(ym, 0.0)
             add_out = manual_out_by_m.get(ym, 0.0)
             m_in = float(inflow_s["plan"][idx]) + add_in
@@ -99,39 +101,41 @@ def run_forecast(
             m_out_lo = float(outflow_s["low"][idx]) + add_out
             m_out_hi = float(outflow_s["high"][idx]) + add_out
 
-            total_expected_in += m_in
-            total_expected_out += m_out
             bal = round(bal + (m_in - m_out), 2)
             bal_pess = round(bal_pess + (m_in_lo - m_out_hi), 2)
 
-            if bal < lowest_balance:
-                lowest_balance = bal
-                lowest_date = ym
-            if bal_pess < lowest_pess:
-                lowest_pess = bal_pess
-                lowest_pess_date = ym
+            pt_obj = {
+                "date": ym,
+                "balance": bal,
+                "balance_pessimistic": bal_pess,
+                "balance_with_credit": round(bal + credit_cushion, 2),
+                "expected_in": round(m_in, 2),
+                "expected_out": round(m_out, 2),
+                "expected_in_low": round(m_in_lo, 2),
+                "expected_in_high": round(m_in_hi, 2),
+                "expected_out_low": round(m_out_lo, 2),
+                "expected_out_high": round(m_out_hi, 2),
+                "events": [],
+            }
+            full_forecast_series.append(pt_obj)
 
-            if bal < 0:
-                months_below_zero += 1
-                if first_negative_date is None:
-                    first_negative_date = ym
-                last_negative_date = ym
+            if idx < n_months:
+                total_expected_in += m_in
+                total_expected_out += m_out
+                if bal < lowest_balance:
+                    lowest_balance = bal
+                    lowest_date = ym
+                if bal_pess < lowest_pess:
+                    lowest_pess = bal_pess
+                    lowest_pess_date = ym
 
-            forecast_series.append(
-                {
-                    "date": ym,
-                    "balance": bal,
-                    "balance_pessimistic": bal_pess,
-                    "balance_with_credit": round(bal + credit_cushion, 2),
-                    "expected_in": round(m_in, 2),
-                    "expected_out": round(m_out, 2),
-                    "expected_in_low": round(m_in_lo, 2),
-                    "expected_in_high": round(m_in_hi, 2),
-                    "expected_out_low": round(m_out_lo, 2),
-                    "expected_out_high": round(m_out_hi, 2),
-                    "events": [],
-                }
-            )
+                if bal < 0:
+                    months_below_zero += 1
+                    if first_negative_date is None:
+                        first_negative_date = ym
+                    last_negative_date = ym
+
+                forecast_series.append(pt_obj)
 
         goes_below_zero = lowest_balance < 0
         shortfall_amount = round(abs(lowest_balance), 2) if goes_below_zero else 0.0
@@ -214,6 +218,7 @@ def run_forecast(
             "analysis_summary": analysis_summary,
             "recommendation_summary": recommendation_summary,
             "forecast_series": forecast_series,
+            "full_forecast_series": full_forecast_series,
         }
 
     fallback_reason = str(plan.get("reason") or "Fewer than 12 full months of history.")

@@ -31,8 +31,6 @@ const opCpInput = document.getElementById("op-cp");
 const opCatInput = document.getElementById("op-cat");
 
 const monthSelect = document.getElementById("month-select");
-const intervalSelect = document.getElementById("interval-select");
-const horizonSelect = document.getElementById("horizon-select");
 const forecastModeSubtitle = document.getElementById("forecast-mode-subtitle");
 const forecastMethodBar = document.getElementById("forecast-method-bar");
 
@@ -63,36 +61,64 @@ const creditInput = document.getElementById("credit-input");
 const creditStatus = document.getElementById("credit-status");
 
 let currentState = null;
-let currentGranularity = null;
 
 if (opDateInput) {
   opDateInput.value = new Date().toISOString().slice(0, 10);
 }
 
-function getHorizonPayload() {
-  const val = Number((horizonSelect && horizonSelect.value) || 0);
-  if (currentGranularity === "month") {
-    return { horizon_months: [3, 6, 12].includes(val) ? val : 12 };
-  }
-  if (currentGranularity === "day") {
-    return { horizon_days: [30, 60, 90].includes(val) ? val : 30 };
-  }
-  return {};
-}
+const chat = createChatController(
+  {
+    chatLauncher: document.getElementById("chat-launcher"),
+    messenger: document.getElementById("greg-messenger"),
+    chatCloseBtn: document.getElementById("chat-close"),
+    messagesEl: document.getElementById("messages"),
+    chatForm: document.getElementById("chat-form"),
+    promptEl: document.getElementById("prompt"),
+    sendBtn: document.getElementById("send-btn"),
+    aiExplainBtn,
+    chatPeriodContext: document.getElementById("chat-period-context"),
+    chatPeriodModeEl: document.getElementById("chat-period-mode"),
+    chatPeriodDatesEl: document.getElementById("chat-period-dates"),
+    chatPeriodIncEl: document.getElementById("chat-period-inc"),
+    chatPeriodExpEl: document.getElementById("chat-period-exp"),
+    chatPeriodNetEl: document.getElementById("chat-period-net"),
+    chatPeriodDismissBtn: document.getElementById("chat-period-dismiss"),
+  },
+  { getHorizonPayload: () => chart.getHorizonPayload() }
+);
 
 const chart = createChartController(
   {
     forecastPanel: document.getElementById("forecast-panel"),
     forecastChart: document.getElementById("forecast-chart"),
     chartTooltip: document.getElementById("chart-tooltip"),
-    btnZoomIn: document.getElementById("btn-zoom-in"),
-    btnZoomOut: document.getElementById("btn-zoom-out"),
-    btnZoomReset: document.getElementById("btn-zoom-reset"),
-    chartScroll: document.getElementById("chart-scroll"),
+    chartGranularityBadge: document.getElementById("chart-granularity-badge"),
     chartRangeLabel: document.getElementById("chart-range-label"),
     chartLegend: document.getElementById("chart-legend"),
+    historyPillGroup: document.getElementById("history-pill-group"),
+    forecastPillGroup: document.getElementById("forecast-pill-group"),
+    dateJumpBar: document.getElementById("date-jump-bar"),
+    chartFocusDateInput: document.getElementById("chart-focus-date"),
+    chartFocusClearBtn: document.getElementById("chart-focus-clear"),
+    chartFocusCard: document.getElementById("chart-focus-card"),
+    minimapTrack: document.getElementById("minimap-track"),
+    minimapSvg: document.getElementById("minimap-svg"),
+    minimapMaskLeft: document.getElementById("minimap-mask-left"),
+    minimapMaskRight: document.getElementById("minimap-mask-right"),
+    minimapWindow: document.getElementById("minimap-window"),
+    minimapHandleLeft: document.getElementById("minimap-handle-left"),
+    minimapHandleRight: document.getElementById("minimap-handle-right"),
+    minimapHorizonSummary: document.getElementById("minimap-horizon-summary"),
+    periodActionBarWrap: document.getElementById("period-action-bar-wrap"),
+    periodRangeDatesEl: document.getElementById("period-range-dates"),
+    btnAnalyzePeriod: document.getElementById("btn-analyze-period"),
+    btnClearPeriod: document.getElementById("btn-clear-period"),
   },
-  { getCurrentState: () => currentState }
+  {
+    getCurrentState: () => currentState,
+    onHorizonChange: () => fetchView(),
+    onAnalyzePeriod: (payload) => chat.receivePeriodAnalysis(payload),
+  }
 );
 
 const csvMapping = createCsvMappingController({
@@ -114,20 +140,6 @@ const csvMapping = createCsvMappingController({
   mapDescriptionSelect: document.getElementById("map-description"),
 });
 
-const chat = createChatController(
-  {
-    chatLauncher: document.getElementById("chat-launcher"),
-    messenger: document.getElementById("greg-messenger"),
-    chatCloseBtn: document.getElementById("chat-close"),
-    messagesEl: document.getElementById("messages"),
-    chatForm: document.getElementById("chat-form"),
-    promptEl: document.getElementById("prompt"),
-    sendBtn: document.getElementById("send-btn"),
-    aiExplainBtn,
-  },
-  { getHorizonPayload }
-);
-
 async function loadStatus() {
   try {
     const data = await fetchHealth();
@@ -140,38 +152,8 @@ async function loadStatus() {
   }
 }
 
-function syncHorizonControl(la) {
-  const gran = la && la.granularity === "month" ? "month" : "day";
-  if (intervalSelect) intervalSelect.value = gran;
-  if (currentGranularity !== gran) {
-    if (gran === "month") {
-      horizonSelect.innerHTML = [
-        '<option value="3">Next 3 months</option>',
-        '<option value="6">Next 6 months</option>',
-        '<option value="12">Next 12 months</option>',
-      ].join("");
-      horizonSelect.value = String((la && la.horizon_months) || 12);
-    } else {
-      horizonSelect.innerHTML = [
-        '<option value="30">Next 30 days</option>',
-        '<option value="60">Next 60 days</option>',
-        '<option value="90">Next 90 days</option>',
-      ].join("");
-      horizonSelect.value = String((la && la.horizon_days) || 30);
-    }
-    currentGranularity = gran;
-  } else {
-    const expectedVal = String(
-      gran === "month" ? (la && la.horizon_months) || 12 : (la && la.horizon_days) || 30
-    );
-    if (Array.from(horizonSelect.options).some((o) => o.value === expectedVal)) {
-      horizonSelect.value = expectedVal;
-    }
-  }
-}
-
 async function fetchView() {
-  const data = await fetchViewData(getHorizonPayload());
+  const data = await fetchViewData(chart.getHorizonPayload());
   renderState(data);
 }
 
@@ -332,7 +314,7 @@ function renderState(state) {
     .join("");
 
   const la = state.liquidity_agent;
-  syncHorizonControl(la);
+  chart.syncGranularity(la);
   if (forecastModeSubtitle) {
     if (la.granularity === "month" && la.planner_meta) {
       forecastModeSubtitle.textContent =
@@ -410,8 +392,8 @@ importForm.addEventListener("submit", async (e) => {
   const file = csvFileInput.files[0];
   if (!file) return;
   const text = await file.text();
-  currentGranularity = null;
-  chart.resetZoom();
+  chart.resetAll();
+  chat.clearPeriodContext();
   const payload = {
     csv_text: text,
     filename: file.name,
@@ -432,7 +414,7 @@ openingBalanceInput.addEventListener("change", async () => {
   if (!currentState || !currentState.has_data) return;
   const res = await postJson(
     "/api/opening-balance",
-    Object.assign({ opening_balance: Number(openingBalanceInput.value || 0) }, getHorizonPayload())
+    Object.assign({ opening_balance: Number(openingBalanceInput.value || 0) }, chart.getHorizonPayload())
   );
   if (res.ok) renderState(await res.json());
 });
@@ -449,7 +431,7 @@ manualForm.addEventListener("submit", async (e) => {
         counterparty: opCpInput.value,
         category: opCatInput.value,
       },
-      getHorizonPayload()
+      chart.getHorizonPayload()
     )
   );
   const data = await res.json();
@@ -469,19 +451,10 @@ txTableBody.addEventListener("click", async (e) => {
   const id = btn.getAttribute("data-del-id");
   const res = await postJson(
     "/api/operations/delete",
-    Object.assign({ id }, getHorizonPayload())
+    Object.assign({ id }, chart.getHorizonPayload())
   );
   if (res.ok) renderState(await res.json());
 });
-
-if (intervalSelect) {
-  intervalSelect.addEventListener("change", () => {
-    if (!currentState || !currentState.has_data) return;
-    chart.render(currentState);
-  });
-}
-
-horizonSelect.addEventListener("change", () => fetchView());
 
 // Step C ("Approve Credit Plan") stays a preview-only no-op per UX specification.
 if (creditForm) {
@@ -494,8 +467,8 @@ resetBtn.addEventListener("click", async () => {
   const res = await postJson("/api/reset", {});
   if (res.ok) {
     csvMapping.reset();
-    currentGranularity = null;
-    chart.resetZoom();
+    chart.resetAll();
+    chat.clearPeriodContext();
     if (chat.isOpen()) chat.setOpen(false);
     renderState(await res.json());
   }

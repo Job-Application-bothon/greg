@@ -48,7 +48,7 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             self.assertIn('/static/css/base.css', html)
             self.assertIn('/static/js/app.js', html)
 
-        for css_name in ("base.css", "forecast.css", "messenger.css"):
+        for css_name in ("base.css", "forecast.css", "messenger.css", "onboarding.css"):
             with urllib.request.urlopen(
                 f"http://127.0.0.1:{self.port}/static/css/{css_name}", timeout=5
             ) as resp:
@@ -65,6 +65,7 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             "chart.js",
             "controls.js",
             "chat.js",
+            "onboarding.js",
         ):
             with urllib.request.urlopen(
                 f"http://127.0.0.1:{self.port}/static/js/{js_name}", timeout=5
@@ -124,11 +125,18 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             'id="chart-crosshair"',
             'id="chart-hover-dot"',
             'id="chart-plot-area"',
-            'id="btn-zoom-in"',
-            'id="btn-zoom-out"',
-            'id="btn-zoom-reset"',
-            'id="interval-select"',
-            'id="chart-scroll"',
+            'id="horizon-selector-bar"',
+            'id="history-pill-group"',
+            'id="forecast-pill-group"',
+            'id="date-jump-bar"',
+            'id="chart-focus-date"',
+            'id="chart-focus-card"',
+            'id="chart-granularity-badge"',
+            'id="minimap-track"',
+            'id="period-action-bar"',
+            'id="btn-analyze-period"',
+            'id="chat-period-context"',
+            'greg:analyze-period',
             'id="chart-range-label"',
             'class="chart-legend hidden"',
             'id="forecast-mode-subtitle"',

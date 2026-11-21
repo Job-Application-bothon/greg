@@ -1,5 +1,6 @@
-/** Floating Greg messenger UI, keyboard close, explain trigger, and chat streaming. */
+/** Floating Greg messenger UI, period-analysis handoff, keyboard close, explain trigger, and chat. */
 import { postJson } from "./api.js";
+import { fmtMoney } from "./format.js";
 
 export function createChatController(els, { getHorizonPayload }) {
   const {
@@ -11,6 +12,13 @@ export function createChatController(els, { getHorizonPayload }) {
     promptEl,
     sendBtn,
     aiExplainBtn,
+    chatPeriodContext,
+    chatPeriodModeEl,
+    chatPeriodDatesEl,
+    chatPeriodIncEl,
+    chatPeriodExpEl,
+    chatPeriodNetEl,
+    chatPeriodDismissBtn,
   } = els;
 
   const chatHistory = [];
@@ -42,13 +50,73 @@ export function createChatController(els, { getHorizonPayload }) {
     return div;
   }
 
+  function clearPeriodContext() {
+    if (chatPeriodContext) chatPeriodContext.classList.add("hidden");
+    window.GREG_SELECTED_PERIOD = null;
+  }
+
+  function receivePeriodAnalysis(payload) {
+    if (!payload) return;
+
+    window.GREG_SELECTED_PERIOD = payload;
+    window.dispatchEvent(new CustomEvent("greg:analyze-period", { detail: payload }));
+
+    if (chatPeriodContext) {
+      const spanUnit = payload.spanUnit || (payload.granularity === "month" ? "m" : "d");
+      if (chatPeriodModeEl) {
+        chatPeriodModeEl.textContent = payload.modeLabel;
+        chatPeriodModeEl.className = `chat-period-mode${payload.mode === "past" ? "" : ` ${payload.mode}`}`;
+      }
+      if (chatPeriodDatesEl) {
+        chatPeriodDatesEl.textContent = `${payload.startDate} → ${payload.endDate} (${payload.dayCount}${spanUnit})`;
+      }
+      if (chatPeriodIncEl) {
+        chatPeriodIncEl.textContent = `+${fmtMoney(payload.totalIncome, payload.currency)}`;
+      }
+      if (chatPeriodExpEl) {
+        chatPeriodExpEl.textContent = `-${fmtMoney(payload.totalExpenses, payload.currency)}`;
+      }
+      if (chatPeriodNetEl) {
+        const netSign = payload.netFlow > 0 ? "+" : "";
+        chatPeriodNetEl.textContent = `Net: ${netSign}${fmtMoney(payload.netFlow, payload.currency)}`;
+      }
+      chatPeriodContext.classList.remove("hidden");
+    }
+
+    if (promptEl) {
+      promptEl.value = payload.suggestedPrompt || "";
+    }
+
+    setOpen(true);
+
+    if (messenger) {
+      messenger.classList.remove("chat-handoff-pulse");
+      void messenger.offsetWidth;
+      messenger.classList.add("chat-handoff-pulse");
+    }
+
+    if (promptEl && !promptEl.disabled) {
+      requestAnimationFrame(() => {
+        promptEl.focus();
+        if (typeof promptEl.setSelectionRange === "function") {
+          const end = promptEl.value.length;
+          promptEl.setSelectionRange(end, end);
+        }
+      });
+    }
+  }
+
   chatLauncher.addEventListener("click", () => setOpen(messenger.hidden));
   if (chatCloseBtn) {
     chatCloseBtn.addEventListener("click", () => setOpen(false));
   }
+  if (chatPeriodDismissBtn) {
+    chatPeriodDismissBtn.addEventListener("click", () => clearPeriodContext());
+  }
   messenger.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation();
       setOpen(false);
     }
   });
@@ -108,5 +176,5 @@ export function createChatController(els, { getHorizonPayload }) {
     }
   });
 
-  return { setOpen, isOpen, appendMessage };
+  return { setOpen, isOpen, appendMessage, receivePeriodAnalysis, clearPeriodContext };
 }

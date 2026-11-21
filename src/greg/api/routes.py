@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
-from greg.api.serializers import encode_json, parse_optional_int, read_json_body
+from greg.api.serializers import encode_json, parse_int_or_default, parse_optional_int, read_json_body
 from greg.config import STATIC_DIR, load_settings
 from greg.domain.ledger import LedgerStore
 from greg.domain.sessions import SESSIONS
@@ -96,7 +96,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
         if path == "/api/view":
             qs = parse_qs(parsed.query)
             month = qs.get("month", [None])[0]
-            horizon = parse_optional_int(qs.get("horizon", ["30"])[0]) or 30
+            horizon = parse_int_or_default(qs.get("horizon", ["30"])[0], 30)
             horizon_months = parse_optional_int(qs.get("horizon_months", [None])[0])
             store = self._get_store()
             self._send_json(
@@ -193,7 +193,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             return
         try:
             opening_balance = float(data.get("opening_balance", 0.0))
-            horizon = parse_optional_int(data.get("horizon_days")) or 30
+            horizon = parse_int_or_default(data.get("horizon_days"), 30)
             horizon_months = parse_optional_int(data.get("horizon_months"))
             keep_manual = bool(data.get("keep_manual", False))
             store.import_csv(
@@ -223,7 +223,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": str(exc)})
             return
         month = data.get("selected_month") or op["date"][:7]
-        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
         self._send_json(
             200,
@@ -233,7 +233,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
     def _handle_delete_operation(self, store: LedgerStore, data: dict[str, Any]) -> None:
         store.delete_operation(str(data.get("id") or ""))
         month = data.get("selected_month")
-        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
         self._send_json(
             200,
@@ -247,7 +247,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": str(exc)})
             return
         month = data.get("selected_month")
-        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
         self._send_json(
             200,
@@ -258,7 +258,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
         try:
             amount = float(data.get("amount", 0.0))
             month = str(data.get("selected_month") or "")
-            horizon = parse_optional_int(data.get("horizon_days")) or 30
+            horizon = parse_int_or_default(data.get("horizon_days"), 30)
             horizon_months = parse_optional_int(data.get("horizon_months"))
             store.approve_credit(amount=amount, month=month, horizon_days=horizon)
         except ValueError as exc:
@@ -275,7 +275,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_explain(self, store: LedgerStore, data: dict[str, Any]) -> None:
         month = data.get("selected_month")
-        horizon = parse_optional_int(data.get("horizon_days")) or 30
+        horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
         view = store.get_view(selected_month=month, horizon_days=horizon, horizon_months=horizon_months)
         if not view.get("has_data"):
@@ -321,7 +321,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
         call_messages = list(messages)
         if store.transactions and call_messages[0].get("role") != "system":
             month = data.get("selected_month")
-            horizon = parse_optional_int(data.get("horizon_days")) or 30
+            horizon = parse_int_or_default(data.get("horizon_days"), 30)
             horizon_months = parse_optional_int(data.get("horizon_months"))
             call_messages.insert(
                 0,

@@ -240,21 +240,45 @@
               Complete account balance history and cash forecast ahead
             </div>
           </div>
-          <div class="form-row">
-            <div class="field hidden" style="min-width: 130px">
-              <label for="interval-select">View By</label>
-              <select id="interval-select">
-                <option value="day" selected>Day</option>
-                <option value="month">Month</option>
-              </select>
+          <!-- 1. SYMMETRIC TOP HORIZON CONTROLS (Past | Today | Future) + SPECIFIC DATE PICKER -->
+          <div class="forecast-controls-row">
+            <div class="horizon-selector-bar" id="horizon-selector-bar" role="toolbar" aria-label="Past lookback and future forecast horizon selector">
+              <div class="horizon-group" id="history-pill-group" role="group" aria-label="History lookback">
+                <span class="horizon-group-label"><span class="horizon-swatch-solid"></span>Past</span>
+                <button type="button" class="horizon-pill hist-pill" data-hist-days="1">1D</button>
+                <button type="button" class="horizon-pill hist-pill" data-hist-days="7">7D</button>
+                <button type="button" class="horizon-pill hist-pill" data-hist-days="30">1M</button>
+                <button type="button" class="horizon-pill hist-pill active" data-hist-days="90">3M</button>
+                <button type="button" class="horizon-pill hist-pill" data-hist-days="180">6M</button>
+                <button type="button" class="horizon-pill hist-pill" data-hist-days="365">1Y</button>
+              </div>
+
+              <div class="horizon-today-divider" aria-hidden="true">
+                <span class="horizon-today-badge">Today</span>
+              </div>
+
+              <div class="horizon-group" id="forecast-pill-group" role="group" aria-label="Future forecast">
+                <button type="button" class="horizon-pill fore-pill" data-fore-days="0">Off</button>
+                <button type="button" class="horizon-pill fore-pill" data-fore-days="1">+1D</button>
+                <button type="button" class="horizon-pill fore-pill" data-fore-days="7">+7D</button>
+                <button type="button" class="horizon-pill fore-pill active" data-fore-days="30">+1M</button>
+                <button type="button" class="horizon-pill fore-pill" data-fore-days="90">+3M</button>
+                <button type="button" class="horizon-pill fore-pill" data-fore-days="180">+6M</button>
+                <button type="button" class="horizon-pill fore-pill" data-fore-days="365">+1Y</button>
+                <span class="horizon-group-label">Future<span class="horizon-swatch-dashed"></span></span>
+              </div>
             </div>
-            <div class="field" style="min-width: 170px">
-              <label for="horizon-select">Forecast Ahead</label>
-              <select id="horizon-select">
-                <option value="30" selected>Next 30 days</option>
-                <option value="60">Next 60 days</option>
-                <option value="90">Next 90 days</option>
-              </select>
+
+            <div class="date-jump-bar" id="date-jump-bar" role="group" aria-label="Select specific date to zoom and highlight on chart">
+              <span class="horizon-group-label"><span class="date-focus-dot"></span>Date</span>
+              <input
+                type="date"
+                id="chart-focus-date"
+                class="date-jump-input"
+                aria-label="Pick a specific date to highlight and zoom in on the chart"
+                title="Pick a specific date to highlight and zoom in on the chart"
+              />
+              <button type="button" id="chart-focus-clear" class="horizon-pill date-clear-pill hidden" title="Clear pinned date">✕</button>
             </div>
           </div>
         </div>
@@ -268,23 +292,62 @@
         <!-- SVG FORECAST CHART -->
         <div class="forecast-panel" id="forecast-panel">
           <div class="chart-toolbar">
-            <span class="subtitle" id="chart-zoom-hint">Drag chart or slider to scroll history, wheel or + / − to
-              zoom</span>
-            <div class="chart-zoom-controls" role="group" aria-label="Chart zoom">
-              <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-in" title="Zoom in">+</button>
-              <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-out" title="Zoom out">−</button>
-              <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-reset"
-                title="Reset view">Reset</button>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+              <span class="granularity-badge" id="chart-granularity-badge">Auto: Daily</span>
+              <span class="subtitle" id="chart-zoom-hint">Hold Ctrl + drag to highlight a period · Drag to pan · Scroll to zoom</span>
             </div>
           </div>
           <div id="chart-tooltip" class="chart-tooltip hidden" role="status" aria-live="polite"></div>
           <div class="chart-wrap">
+            <div
+              id="chart-focus-card"
+              class="chart-focus-card hidden"
+              role="button"
+              tabindex="0"
+              aria-expanded="false"
+              title="Click to open Income &amp; Expenses breakdown"
+            ></div>
             <svg id="forecast-chart" viewBox="0 0 900 260" style="width: 100%; height: 260px; display: block"></svg>
           </div>
-          <div class="chart-scroll-row">
-            <span class="chart-range-label" id="chart-range-label">—</span>
-            <input type="range" id="chart-scroll" min="0" max="0" value="0" aria-label="Scroll history window" />
+
+          <!-- 2. INTERACTIVE MINI-MAP RANGE NAVIGATOR (Bottom Scrollbar) -->
+          <div class="minimap-container" id="minimap-container">
+            <div class="minimap-track" id="minimap-track" aria-label="Interactive timeline mini-map navigator">
+              <svg id="minimap-svg" viewBox="0 0 900 42" preserveAspectRatio="none"></svg>
+              <div class="minimap-mask" id="minimap-mask-left" style="left: 0; width: 0%"></div>
+              <div class="minimap-mask" id="minimap-mask-right" style="right: 0; width: 0%"></div>
+              <div class="minimap-window" id="minimap-window" style="left: 0%; width: 100%">
+                <div class="minimap-handle left" id="minimap-handle-left" title="Drag to adjust Past lookback window">
+                  <span class="minimap-handle-grip"></span>
+                </div>
+                <div class="minimap-handle right" id="minimap-handle-right" title="Drag to adjust Future forecast window">
+                  <span class="minimap-handle-grip"></span>
+                </div>
+              </div>
+            </div>
+            <div class="minimap-meta-row">
+              <span class="chart-range-label" id="chart-range-label">—</span>
+              <span id="minimap-horizon-summary">Past: 3M · Forecast: +1M</span>
+            </div>
+            <!-- Centered Period Analysis Action Bar (revealed when Ctrl + LMB period is selected) -->
+            <div id="period-action-bar-wrap" class="period-action-bar-wrap" aria-live="polite">
+              <div class="period-action-bar-inner">
+                <div class="period-action-bar" id="period-action-bar" role="region" aria-label="Selected period actions">
+                  <span class="period-range-text">
+                    <span class="period-range-dot"></span>
+                    <span id="period-range-dates">—</span>
+                  </span>
+                  <button type="button" id="btn-analyze-period" class="period-analyze-btn">
+                    Analyze →
+                  </button>
+                  <button type="button" id="btn-clear-period" class="period-clear-btn" title="Clear selected period (Esc)" aria-label="Clear selected period">
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
+
           <div class="chart-legend hidden" id="chart-legend">
             <span class="legend-item"><span class="swatch" style="background: #0d0d0d"></span>Past</span>
             <span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected forecast</span>
@@ -382,6 +445,16 @@
         </header>
         <div class="chat-log" id="messages" role="log" aria-live="polite">
           <div class="msg assistant" id="empty-state">Hi, I’m Greg. Ask me about your monthly expenses, salaries, taxes, or cash flow. I’ll help you make sense of your numbers.</div>
+        </div>
+        <div id="chat-period-context" class="chat-period-context hidden" role="status" aria-live="polite">
+          <div class="chat-period-left">
+            <span id="chat-period-mode" class="chat-period-mode">Past</span>
+            <span id="chat-period-dates" class="chat-period-dates">—</span>
+            <span id="chat-period-inc" class="chat-period-stat-inc">+€0.00</span>
+            <span id="chat-period-exp" class="chat-period-stat-exp">-€0.00</span>
+            <span id="chat-period-net" class="chat-period-stat-net">Net: €0.00</span>
+          </div>
+          <button type="button" id="chat-period-dismiss" class="chat-period-dismiss" title="Dismiss selected period context" aria-label="Dismiss selected period context">✕</button>
         </div>
         <form id="chat-form" class="form-row">
           <input type="text" id="prompt"
