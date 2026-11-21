@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from greg.api.serializers import encode_json, parse_int_or_default, parse_optional_int, read_json_body
 from greg.config import STATIC_DIR, load_settings
+from greg.domain.bank_mock import format_bank_account_label, pick_random_mock_bank_file
 from greg.domain.ledger import LedgerStore
 from greg.domain.sessions import SESSIONS
 from greg.llm.classifier import classify_signatures_with_llm
@@ -153,6 +154,10 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             self._handle_import(store, data)
             return
 
+        if path == "/api/bank/connect":
+            self._handle_bank_connect(store, data)
+            return
+
         if path == "/api/operations":
             self._handle_add_operation(store, data)
             return
@@ -206,6 +211,37 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             )
         except ValueError as exc:
             self._send_json(400, {"error": str(exc)})
+            return
+        self._send_json(200, store.get_view(horizon_days=horizon, horizon_months=horizon_months))
+
+    def _handle_bank_connect(self, store: LedgerStore, data: dict[str, Any]) -> None:
+        settings = load_settings()
+        try:
+            chosen = pick_random_mock_bank_file(
+                settings.bank_mock_dir,
+                exclude_filename=store.filename,
+            )
+        except FileNotFoundError as exc:
+            self._send_json(404, {"error": str(exc)})
+            return
+
+        account_name = format_bank_account_label(chosen.name)
+        try:
+            csv_text = chosen.read_text(encoding="utf-8-sig")
+            opening_balance = float(data.get("opening_balance", 0.0))
+            horizon = parse_int_or_default(data.get("horizon_days"), 30)
+            horizon_months = parse_optional_int(data.get("horizon_months"))
+            store.import_csv(
+                csv_text=csv_text,
+                filename=chosen.name,
+                opening_balance=opening_balance,
+                keep_manual=False,
+                llm_classifier=classify_signatures_with_llm,
+                data_source="connected_bank",
+                bank_account_name=account_name,
+            )
+        except (OSError, ValueError) as exc:
+            self._send_json(400, {"error": f"Failed to load connected bank statement: {exc}"})
             return
         self._send_json(200, store.get_view(horizon_days=horizon, horizon_months=horizon_months))
 

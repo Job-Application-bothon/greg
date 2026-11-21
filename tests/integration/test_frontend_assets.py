@@ -107,6 +107,8 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             "Month End (",
             "Past balance",
             "/api/approve-credit",
+            "Manual demo preview only",
+            "bank-demo-form",
         ):
             self.assertNotIn(forbidden, combined, msg=f"Unexpected forbidden UI text: {forbidden}")
 
@@ -137,6 +139,8 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             'id="btn-analyze-period"',
             'id="chat-period-context"',
             'greg:analyze-period',
+            "/api/bank/connect",
+            "Retrieve bank data",
             'id="chart-range-label"',
             'class="chart-legend hidden"',
             'id="forecast-mode-subtitle"',

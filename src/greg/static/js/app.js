@@ -1,5 +1,5 @@
 /** Main Greg application orchestrator connecting API, chart, CSV mapping, and chat modules. */
-import { syncOnboarding } from "./onboarding.js";
+import { bindBankConnect, syncOnboarding } from "./onboarding.js";
 import { fetchHealth, fetchViewData, postJson } from "./api.js";
 import { createChartController } from "./chart.js";
 import { createChatController } from "./chat.js";
@@ -262,9 +262,12 @@ function renderState(state) {
 
   const cur = state.currency || "EUR";
   openingBalanceInput.value = state.opening_balance || 0;
-  importInfo.textContent = state.filename
-    ? `Loaded: ${state.filename} (${state.total_transactions} operations)`
-    : `${state.total_transactions} manual operation(s) loaded`;
+  importInfo.textContent =
+    state.data_source === "connected_bank"
+      ? `Connected bank: ${state.bank_account_name || "Bank Account"} (${state.filename} · ${state.total_transactions} operations)`
+      : state.filename
+      ? `Loaded: ${state.filename} (${state.total_transactions} operations)`
+      : `${state.total_transactions} manual operation(s) loaded`;
 
   monthSelect.innerHTML = state.months
     .map(
@@ -386,6 +389,18 @@ function renderState(state) {
 
   chart.render(state);
 }
+
+bindBankConnect(async () => {
+  chart.resetAll();
+  chat.clearPeriodContext();
+  if (chat.isOpen()) chat.setOpen(false);
+  const res = await postJson("/api/bank/connect", {});
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to retrieve bank statement");
+  }
+  renderState(data);
+});
 
 importForm.addEventListener("submit", async (e) => {
   e.preventDefault();

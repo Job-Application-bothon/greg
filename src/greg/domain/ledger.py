@@ -50,6 +50,8 @@ class LedgerStore:
         self.transactions: list[dict[str, Any]] = []
         self.opening_balance: float = 0.0
         self.filename: str | None = None
+        self.data_source: str = "manual"
+        self.bank_account_name: str | None = None
         self.account_currency: str = "EUR"
         self.approved_credit: dict[str, Any] | None = None
         self._planner_cache: dict[tuple[Any, ...], dict[str, Any]] = {}
@@ -62,6 +64,8 @@ class LedgerStore:
         keep_manual: bool = False,
         llm_classifier: Callable[[list[dict[str, str]]], dict[str, str]] | None = None,
         column_map: dict[str, Any] | None = None,
+        data_source: str = "csv",
+        bank_account_name: str | None = None,
     ) -> dict[str, Any]:
         """Parse and replace CSV transactions in this ledger store."""
         parsed, dominant_currency = parse_csv_transactions(
@@ -77,6 +81,8 @@ class LedgerStore:
         self.transactions.sort(key=lambda t: (t["date"], t["id"]))
         self.opening_balance = float(opening_balance)
         self.filename = filename
+        self.data_source = data_source
+        self.bank_account_name = bank_account_name
         self.approved_credit = None
         self.account_currency = dominant_currency
         self._planner_cache.clear()
@@ -84,6 +90,8 @@ class LedgerStore:
         return {
             "imported_rows": len(parsed),
             "filename": self.filename,
+            "data_source": self.data_source,
+            "bank_account_name": self.bank_account_name,
             "opening_balance": self.opening_balance,
             "first_date": self.transactions[0]["date"],
             "last_date": self.transactions[-1]["date"],
@@ -189,6 +197,8 @@ class LedgerStore:
             return {
                 "has_data": False,
                 "filename": None,
+                "data_source": None,
+                "bank_account_name": None,
                 "opening_balance": self.opening_balance,
                 "currency": self.account_currency,
                 "months": [],
@@ -370,6 +380,8 @@ class LedgerStore:
         return {
             "has_data": True,
             "filename": self.filename,
+            "data_source": self.data_source,
+            "bank_account_name": self.bank_account_name,
             "opening_balance": self.opening_balance,
             "currency": self.account_currency,
             "total_transactions": len(self.transactions),

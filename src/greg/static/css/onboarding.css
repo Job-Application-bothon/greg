@@ -20,11 +20,13 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
 .source-action { display: flex; justify-content: space-between; width: 100%; margin-top: auto; font-size: 12px; }
 .source-action > span { font-size: 19px; font-weight: 400; }
 .source-or { text-align: center; font-size: 10px; color: #999; letter-spacing: .08em; }
+.source-card.is-connecting { background: #fafafa; border-color: var(--ink); box-shadow: 0 12px 32px #0000000a; opacity: 1; cursor: wait; }
+.bank-sync-status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--ink); }
+.bank-sync-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #d4d4d4; border-top-color: var(--ink); animation: bankSpin .7s linear infinite; flex: none; }
+@keyframes bankSpin { to { transform: rotate(360deg); } }
+.source-error { margin-top: 18px; padding: 10px 14px; border-radius: 10px; background: var(--danger-soft); color: var(--danger); border: 1px solid #e7b4c0; font-size: 12px; text-align: center; max-width: 520px; }
 .entry-footnote { margin-top: 26px; color: #888; text-align: center; font-size: 11px; }
 #cancel-source { margin-top: 20px; }
-.demo-form { width: min(100%, 660px); display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 32px; }
-.demo-form .field:first-child { grid-column: 1 / -1; }
-.demo-actions { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; }
 .balance-stage { text-align: center; position: relative; gap: clamp(36px, 7vh, 75px); padding-bottom: 85px; }
 .balance-stage h1 { font-size: 16px; font-weight: 400; color: var(--muted); margin: 34px 0 12px; }
 .balance-number { font-size: clamp(32px, 8vw, 128px); font-weight: 350; letter-spacing: -.075em; line-height: 1.1; white-space: nowrap; }
@@ -59,8 +61,6 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
   .overview-metrics > div { padding: 0 10px; }
   .balance-number { font-size: clamp(30px, 9vw, 64px); }
   .overview-metrics strong { font-size: clamp(13px, 3.7vw, 24px); }
-  .demo-form { gap: 16px; padding: 20px; }
   #data-tools { padding: 14px; }
 }
-@media (max-width: 380px) { .demo-form { grid-template-columns: 1fr; } .demo-form .field { grid-column: 1; } }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .source-card { transition: none; } .source-card:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .source-card { transition: none; } .source-card:hover { transform: none; } .bank-sync-spinner { animation: none; } }

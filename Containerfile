@@ -7,9 +7,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Copy project metadata and source
+# Copy project metadata, source, and mock bank CSV statements
 COPY pyproject.toml uv.lock .python-version README.md ./
 COPY src/ ./src/
+COPY bank_mock/ ./bank_mock/
 
 # Install runtime dependencies (including planner extra) into /app/.venv
 RUN uv sync --frozen --no-dev --extra planner
