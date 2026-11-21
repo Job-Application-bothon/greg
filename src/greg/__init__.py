@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from greg.ledger import STORE, VALID_CATEGORIES
+from greg.ledger import LedgerStore, SESSIONS, STORE, VALID_CATEGORIES
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 SYSTEM_PROMPT = (
@@ -159,8 +159,32 @@ def _classify_with_llm(signatures: list[dict[str, str]]) -> dict[str, str]:
         return {}
 
 
-def _build_context_system_prompt(selected_month: str | None = None, horizon_days: int = 30) -> str:
-    view = STORE.get_view(selected_month=selected_month, horizon_days=horizon_days)
+def _parse_optional_int(value: Any) -> int | None:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_int_or_default(value: Any, default: int = 30) -> int:
+    parsed = _parse_optional_int(value)
+    return default if parsed is None else parsed
+
+
+def _build_context_system_prompt(
+    selected_month: str | None = None,
+    horizon_days: int = 30,
+    horizon_months: int | None = None,
+    store: LedgerStore | None = None,
+) -> str:
+    active_store = store if store is not None else STORE
+    view = active_store.get_view(
+        selected_month=selected_month,
+        horizon_days=horizon_days,
+        horizon_months=horizon_months,
+    )
     if not view.get("has_data"):
         return SYSTEM_PROMPT
 
@@ -194,10 +218,31 @@ def _build_context_system_prompt(selected_month: str | None = None, horizon_days
         )
         cat_lines.append(f"  - {cat['category']}: {sym}{cat['total']:,.2f} ({top_people})")
 
-    bills_preview = ", ".join(
-        f"{b['counterparty']} ({b['amount']:+.2f} on {b['date']})"
-        for b in la["upcoming_bills"][:8]
-    ) or "None detected"
+    if la.get("engine") == "greg_planner":
+        pm = la.get("planner_meta") or {}
+        notes_preview = "\n".join(f"  - {n}" for n in (pm.get("notes") or [])[:6])
+        forecast_section = (
+            f"\n\nSEASONAL MONTHLY FORECAST (next {la.get('horizon_months', 12)} months after {la.get('last_history_month')}):\n"
+            f"- Engine: greg_planner (Inflow: {pm.get('inflow_method_label')}; Outflow: {pm.get('outflow_method_label')})\n"
+            f"- Total expected income: {sym}{la['total_expected_in']:,.2f} | Total expected expenses: {sym}{la['total_expected_out']:,.2f}\n"
+            f"- Lowest expected balance: {sym}{la['lowest_predicted_balance']:,.2f} in {la['lowest_predicted_date']}\n"
+            f"- Lowest pessimistic stress-test balance: {sym}{la.get('lowest_pessimistic_balance', 0):,.2f} in {la.get('lowest_pessimistic_date')}\n"
+            f"- Drops below zero: {'YES' if la['goes_below_zero'] else 'NO'}\n"
+            f"- Recommended short-term bank credit needed: {sym}{la['recommended_credit_amount']:,.2f}\n"
+            f"- Planner notes:\n{notes_preview if notes_preview else '  - None'}\n"
+        )
+    else:
+        bills_preview = ", ".join(
+            f"{b['counterparty']} ({b['amount']:+.2f} on {b['date']})"
+            for b in la["upcoming_bills"][:8]
+        ) or "None detected"
+        forecast_section = (
+            f"\n\nFORECAST (next {la['horizon_days']} days after {la['as_of_date']}):\n"
+            f"- Lowest predicted balance: {sym}{la['lowest_predicted_balance']:,.2f} on {la['lowest_predicted_date']}\n"
+            f"- Drops below zero: {'YES' if la['goes_below_zero'] else 'NO'}\n"
+            f"- Recommended short-term bank credit needed: {sym}{la['recommended_credit_amount']:,.2f}\n"
+            f"- Upcoming regular bills in forecast window: {bills_preview}\n"
+        )
 
     return (
         f"{SYSTEM_PROMPT}\n\n"
@@ -216,21 +261,22 @@ def _build_context_system_prompt(selected_month: str | None = None, horizon_days
         f"- Balance at end of {view['selected_month_label']}: {sym}{ms['end_balance']:,.2f}\n"
         f"- Expenses by category in {view['selected_month_label']}:\n"
         + ("\n".join(cat_lines) if cat_lines else "  - None")
-        + f"\n\nFORECAST (next {la['horizon_days']} days after {la['as_of_date']}):\n"
-        f"- Lowest predicted balance: {sym}{la['lowest_predicted_balance']:,.2f} on {la['lowest_predicted_date']}\n"
-        f"- Drops below zero: {'YES' if la['goes_below_zero'] else 'NO'}\n"
-        f"- Recommended short-term bank credit needed: {sym}{la['recommended_credit_amount']:,.2f}\n"
-        f"- Upcoming regular bills in forecast window: {bills_preview}\n"
+        + forecast_section
     )
 
 
 class Handler(BaseHTTPRequestHandler):
     """HTTP handler serving the frontend, ledger/liquidity endpoints, health check, and LLM proxy."""
 
+    def _get_store(self) -> LedgerStore:
+        sid = self.headers.get("X-Greg-Session", "").strip()
+        return SESSIONS.get(sid or None)
+
     def _send_json(self, status: int, payload: Any) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -254,11 +300,17 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/view":
             qs = parse_qs(parsed.query)
             month = qs.get("month", [None])[0]
-            try:
-                horizon = int(qs.get("horizon", ["30"])[0])
-            except ValueError:
-                horizon = 30
-            self._send_json(200, STORE.get_view(selected_month=month, horizon_days=horizon))
+            horizon = _parse_int_or_default(qs.get("horizon", ["30"])[0], 30)
+            horizon_months = _parse_optional_int(qs.get("horizon_months", [None])[0])
+            store = self._get_store()
+            self._send_json(
+                200,
+                store.get_view(
+                    selected_month=month,
+                    horizon_days=horizon,
+                    horizon_months=horizon_months,
+                ),
+            )
             return
 
         if path in ("/assets/InterVariable.woff2", "/InterVariable.woff2"):
@@ -276,6 +328,7 @@ class Handler(BaseHTTPRequestHandler):
             html = (STATIC_DIR / "index.html").read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(html)))
             self.end_headers()
             self.wfile.write(html)
@@ -293,29 +346,37 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": f"Invalid JSON request: {exc}"})
             return
 
+        store = self._get_store()
+
         if path == "/api/import":
             csv_text = data.get("csv_text", "")
             filename = str(data.get("filename") or "statement.csv")
+            column_map = data.get("column_map")
+            if column_map is not None and not isinstance(column_map, dict):
+                self._send_json(400, {"error": "'column_map' must be a JSON object"})
+                return
             try:
                 opening_balance = float(data.get("opening_balance", 0.0))
-                horizon = int(data.get("horizon_days", 30))
+                horizon = _parse_int_or_default(data.get("horizon_days"), 30)
+                horizon_months = _parse_optional_int(data.get("horizon_months"))
                 keep_manual = bool(data.get("keep_manual", False))
-                STORE.import_csv(
+                store.import_csv(
                     csv_text=csv_text,
                     filename=filename,
                     opening_balance=opening_balance,
                     keep_manual=keep_manual,
                     llm_classifier=_classify_with_llm,
+                    column_map=column_map,
                 )
             except ValueError as exc:
                 self._send_json(400, {"error": str(exc)})
                 return
-            self._send_json(200, STORE.get_view(horizon_days=horizon))
+            self._send_json(200, store.get_view(horizon_days=horizon, horizon_months=horizon_months))
             return
 
         if path == "/api/operations":
             try:
-                op = STORE.add_manual_operation(
+                op = store.add_manual_operation(
                     date_str=str(data.get("date") or ""),
                     kind=str(data.get("kind") or "expense"),
                     amount=float(data.get("amount", 0)),
@@ -327,63 +388,92 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": str(exc)})
                 return
             month = data.get("selected_month") or op["date"][:7]
-            horizon = int(data.get("horizon_days", 30))
-            self._send_json(200, STORE.get_view(selected_month=month, horizon_days=horizon))
+            horizon = _parse_int_or_default(data.get("horizon_days"), 30)
+            horizon_months = _parse_optional_int(data.get("horizon_months"))
+            self._send_json(
+                200,
+                store.get_view(selected_month=month, horizon_days=horizon, horizon_months=horizon_months),
+            )
             return
 
         if path == "/api/operations/delete":
             op_id = str(data.get("id") or "")
-            STORE.delete_operation(op_id)
+            store.delete_operation(op_id)
             month = data.get("selected_month")
-            horizon = int(data.get("horizon_days", 30))
-            self._send_json(200, STORE.get_view(selected_month=month, horizon_days=horizon))
+            horizon = _parse_int_or_default(data.get("horizon_days"), 30)
+            horizon_months = _parse_optional_int(data.get("horizon_months"))
+            self._send_json(
+                200,
+                store.get_view(selected_month=month, horizon_days=horizon, horizon_months=horizon_months),
+            )
             return
 
         if path == "/api/opening-balance":
             try:
-                STORE.set_opening_balance(float(data.get("opening_balance", 0.0)))
+                store.set_opening_balance(float(data.get("opening_balance", 0.0)))
             except ValueError as exc:
                 self._send_json(400, {"error": str(exc)})
                 return
             month = data.get("selected_month")
-            horizon = int(data.get("horizon_days", 30))
-            self._send_json(200, STORE.get_view(selected_month=month, horizon_days=horizon))
+            horizon = _parse_int_or_default(data.get("horizon_days"), 30)
+            horizon_months = _parse_optional_int(data.get("horizon_months"))
+            self._send_json(
+                200,
+                store.get_view(selected_month=month, horizon_days=horizon, horizon_months=horizon_months),
+            )
             return
 
         if path == "/api/approve-credit":
             try:
                 amount = float(data.get("amount", 0.0))
                 month = str(data.get("selected_month") or "")
-                horizon = int(data.get("horizon_days", 30))
-                STORE.approve_credit(amount=amount, month=month, horizon_days=horizon)
+                horizon = _parse_int_or_default(data.get("horizon_days"), 30)
+                horizon_months = _parse_optional_int(data.get("horizon_months"))
+                store.approve_credit(amount=amount, month=month, horizon_days=horizon)
             except ValueError as exc:
                 self._send_json(400, {"error": str(exc)})
                 return
-            self._send_json(200, STORE.get_view(selected_month=month or None, horizon_days=horizon))
+            self._send_json(
+                200,
+                store.get_view(
+                    selected_month=month or None,
+                    horizon_days=horizon,
+                    horizon_months=horizon_months,
+                ),
+            )
             return
 
         if path == "/api/reset":
-            STORE.reset()
-            self._send_json(200, STORE.get_view())
+            store.reset()
+            self._send_json(200, store.get_view())
             return
 
         if path == "/api/explain":
             month = data.get("selected_month")
-            horizon = int(data.get("horizon_days", 30))
-            view = STORE.get_view(selected_month=month, horizon_days=horizon)
+            horizon = _parse_int_or_default(data.get("horizon_days"), 30)
+            horizon_months = _parse_optional_int(data.get("horizon_months"))
+            view = store.get_view(selected_month=month, horizon_days=horizon, horizon_months=horizon_months)
             if not view.get("has_data"):
                 self._send_json(400, {"error": "Import a CSV or add an operation first."})
                 return
             la = view["liquidity_agent"]
+            horizon_label = (
+                f"next {la.get('horizon_months', 12)} months"
+                if la.get("engine") == "greg_planner"
+                else f"next {la['horizon_days']} days"
+            )
             prompt = (
                 f"Please explain my cash situation at the end of {view['selected_month_label']} "
-                f"and for the next {la['horizon_days']} days in 3 short, simple bullet points "
+                f"and for the {horizon_label} in 3 short, simple bullet points "
                 f"using everyday language (no financial jargon). State clearly if my balance stays safe "
-                f"or drops below zero, which regular bills are coming up, and the exact credit amount "
+                f"or drops below zero, and note the exact credit amount "
                 f"(€{la['recommended_credit_amount']:,.2f}) I should ask my bank for if needed."
             )
             sys_prompt = _build_context_system_prompt(
-                selected_month=view["selected_month"], horizon_days=horizon
+                selected_month=view["selected_month"],
+                horizon_days=horizon,
+                horizon_months=horizon_months,
+                store=store,
             )
             try:
                 res = call_llm(
@@ -415,15 +505,19 @@ class Handler(BaseHTTPRequestHandler):
 
             # If store has data and caller didn't supply a custom system message, prepend context
             call_messages = list(messages)
-            if STORE.transactions and call_messages[0].get("role") != "system":
+            if store.transactions and call_messages[0].get("role") != "system":
                 month = data.get("selected_month")
-                horizon = int(data.get("horizon_days", 30))
+                horizon = _parse_int_or_default(data.get("horizon_days"), 30)
+                horizon_months = _parse_optional_int(data.get("horizon_months"))
                 call_messages.insert(
                     0,
                     {
                         "role": "system",
                         "content": _build_context_system_prompt(
-                            selected_month=month, horizon_days=horizon
+                            selected_month=month,
+                            horizon_days=horizon,
+                            horizon_months=horizon_months,
+                            store=store,
                         ),
                     },
                 )

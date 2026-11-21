@@ -222,6 +222,36 @@
       input[type='file'] {
         padding: 6px 8px;
       }
+      .mapping-box {
+        margin-top: 14px;
+        padding: 12px 14px;
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .mapping-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+      .mapping-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+        gap: 8px 10px;
+      }
+      .mapping-grid .field {
+        min-width: 0;
+      }
+      .mapping-grid select,
+      .mapping-grid input {
+        min-height: 34px;
+        padding: 4px 8px;
+        font-size: 12px;
+      }
       button {
         display: inline-flex;
         justify-content: center;
@@ -781,6 +811,16 @@
         font-size: 14px;
         font-weight: 600;
       }
+      .chart-tooltip .tt-pess {
+        font-size: 11px;
+        color: #f6b3c0;
+        margin-top: 2px;
+      }
+      .chart-tooltip .tt-flows {
+        font-size: 11px;
+        color: #d5d5d5;
+        margin-top: 2px;
+      }
       .chart-tooltip .tt-credit {
         font-size: 11px;
         color: #9ee4ba;
@@ -1335,16 +1375,74 @@
       <div class="grid-2">
         <section class="card">
           <h2>Import Bank Statement (CSV)</h2>
-          <form id="import-form" class="form-row">
-            <div class="field" style="flex: 2">
-              <label for="csv-file">CSV File</label>
-              <input type="file" id="csv-file" accept=".csv,text/csv" required />
+          <form id="import-form">
+            <div class="form-row">
+              <div class="field" style="flex: 2">
+                <label for="csv-file">CSV File</label>
+                <input type="file" id="csv-file" accept=".csv,text/csv" required />
+              </div>
+              <div class="field">
+                <label for="opening-balance">Starting Balance (€)</label>
+                <input type="number" id="opening-balance" step="0.01" value="0" />
+              </div>
+              <button type="submit" id="import-btn">Import CSV</button>
             </div>
-            <div class="field">
-              <label for="opening-balance">Starting Balance (€)</label>
-              <input type="number" id="opening-balance" step="0.01" value="0" />
+            <div id="csv-mapping-box" class="mapping-box hidden">
+              <div class="mapping-head">
+                <strong>CSV Column Mapping</strong>
+                <span class="subtitle" id="mapping-meta"></span>
+              </div>
+              <div class="mapping-grid">
+                <div class="field">
+                  <label for="map-date">Date</label>
+                  <select id="map-date"></select>
+                </div>
+                <div class="field">
+                  <label for="map-amount-mode">Amount Format</label>
+                  <select id="map-amount-mode">
+                    <option value="single">Single Amount column</option>
+                    <option value="split">Separate Income &amp; Expenses</option>
+                  </select>
+                </div>
+                <div class="field" id="map-amount-wrap">
+                  <label for="map-amount">Amount</label>
+                  <select id="map-amount"></select>
+                </div>
+                <div class="field hidden" id="map-income-wrap">
+                  <label for="map-income">Income / Revenue</label>
+                  <select id="map-income"></select>
+                </div>
+                <div class="field hidden" id="map-expenses-wrap">
+                  <label for="map-expenses">Expenses / Costs</label>
+                  <select id="map-expenses"></select>
+                </div>
+              </div>
+              <details style="margin-top: 10px">
+                <summary class="subtitle" style="font-size: 12px">Optional columns &amp; currency</summary>
+                <div class="mapping-grid" style="margin-top: 8px">
+                  <div class="field">
+                    <label for="map-currency">Currency Column</label>
+                    <select id="map-currency"></select>
+                  </div>
+                  <div class="field">
+                    <label for="map-default-currency">Currency Code</label>
+                    <input type="text" id="map-default-currency" maxlength="6" placeholder="Auto / EUR" />
+                  </div>
+                  <div class="field">
+                    <label for="map-counterparty">Person / Company</label>
+                    <select id="map-counterparty"></select>
+                  </div>
+                  <div class="field">
+                    <label for="map-type">Type / Category</label>
+                    <select id="map-type"></select>
+                  </div>
+                  <div class="field">
+                    <label for="map-description">Description</label>
+                    <select id="map-description"></select>
+                  </div>
+                </div>
+              </details>
             </div>
-            <button type="submit" id="import-btn">Import CSV</button>
           </form>
           <div id="import-info" class="subtitle" style="margin-top: 10px"></div>
         </section>
@@ -1471,8 +1569,8 @@
             <div>
               <p class="stage-eyebrow">Cash outlook</p>
               <h2>Forecast</h2>
-              <div class="stage-subtitle">
-                Complete account balance history and cash forecast ahead based on your regular bills and recent daily activity
+              <div class="stage-subtitle" id="forecast-mode-subtitle">
+                Complete account balance history and cash forecast ahead
               </div>
             </div>
 
@@ -1581,63 +1679,37 @@
               </div>
             </div>
 
-            <div class="chart-legend hidden">
-              <span class="legend-item"><span class="swatch" style="background: #805181"></span>Forecast balance</span>
-              <span class="legend-item"><span class="swatch" style="background: #24664e"></span>With approved credit</span>
+            <div class="chart-legend hidden" id="chart-legend">
+              <span class="legend-item"><span class="swatch" style="background: #0d0d0d"></span>Past</span>
+              <span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected forecast</span>
+              <span class="legend-item"><span class="swatch" style="background: #c96b7c"></span>Pessimistic stress test</span>
             </div>
           </div>
 
-          <!-- GOVERNANCE STAGES -->
+          <!-- GOVERNANCE STAGES (Lorem ipsum placeholders while testing forecast) -->
           <div class="stage-grid">
             <div class="stage-box">
-              <span class="stage-tag">Step A · Analyzed Automatically</span>
-              <p id="agent-analysis-text" style="font-size: 13px; color: var(--body)"></p>
-              <h3>Upcoming Regular Bills Detected</h3>
-              <div style="max-height: 190px; overflow-y: auto">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Expected Date</th>
-                      <th>Who</th>
-                      <th class="right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody id="upcoming-bills-body"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="stage-box">
-              <span class="stage-tag">Step B · Recommended Action</span>
-              <p id="agent-rec-text" style="font-size: 13px; color: var(--body)"></p>
-              <div class="credit-summary-box num">
-                <div><strong>Lowest Expected Balance:</strong> <span id="rec-lowest">€0.00</span></div>
-                <div><strong>Days Below €0:</strong> <span id="rec-days">0 days</span></div>
-                <div style="margin-top: 4px; font-size: 14px">
-                  <strong>Credit Amount Needed from Your Bank:</strong>
-                  <span id="rec-credit" style="font-weight: 700">€0.00</span>
-                </div>
-              </div>
-              <div style="margin-top: auto; padding-top: 6px">
-                <button type="button" id="ai-explain-btn" class="secondary" style="width: 100%; white-space: normal">
-                  Ask Greg (OpenShift AI) to Explain in Simple Words
-                </button>
-              </div>
-            </div>
-
-            <div class="stage-box">
-              <span class="stage-tag">Step C · Your Approval (Simulated)</span>
+              <span class="stage-tag">Step A · Placeholder</span>
+              <h3>Lorem ipsum</h3>
               <p style="font-size: 13px; color: var(--body)">
-                You choose the bank and credit line yourself. Enter the credit amount you want to simulate below to see how it keeps your account balance above €0.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               </p>
-              <form id="credit-form" class="form-row">
-                <div class="field">
-                  <label for="credit-input">Credit Amount to Simulate (€)</label>
-                  <input type="number" id="credit-input" step="100" min="0" value="0" />
-                </div>
-                <button type="submit">Approve Credit Plan</button>
-              </form>
-              <div id="credit-status" style="font-size: 13px"></div>
+            </div>
+
+            <div class="stage-box">
+              <span class="stage-tag">Step B · Placeholder</span>
+              <h3>Dolor sit amet</h3>
+              <p style="font-size: 13px; color: var(--body)">
+                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+              </p>
+            </div>
+
+            <div class="stage-box">
+              <span class="stage-tag">Step C · Placeholder</span>
+              <h3>Consectetur</h3>
+              <p style="font-size: 13px; color: var(--body)">
+                Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+              </p>
             </div>
           </div>
         </section>
@@ -1688,6 +1760,21 @@
       const csvFileInput = document.getElementById("csv-file");
       const openingBalanceInput = document.getElementById("opening-balance");
       const importInfo = document.getElementById("import-info");
+      const csvMappingBox = document.getElementById("csv-mapping-box");
+      const mappingMeta = document.getElementById("mapping-meta");
+      const mapDateSelect = document.getElementById("map-date");
+      const mapAmountModeSelect = document.getElementById("map-amount-mode");
+      const mapAmountWrap = document.getElementById("map-amount-wrap");
+      const mapAmountSelect = document.getElementById("map-amount");
+      const mapIncomeWrap = document.getElementById("map-income-wrap");
+      const mapIncomeSelect = document.getElementById("map-income");
+      const mapExpensesWrap = document.getElementById("map-expenses-wrap");
+      const mapExpensesSelect = document.getElementById("map-expenses");
+      const mapCurrencySelect = document.getElementById("map-currency");
+      const mapDefaultCurrencyInput = document.getElementById("map-default-currency");
+      const mapCounterpartySelect = document.getElementById("map-counterparty");
+      const mapTypeSelect = document.getElementById("map-type");
+      const mapDescriptionSelect = document.getElementById("map-description");
 
       const manualForm = document.getElementById("manual-form");
       const opDateInput = document.getElementById("op-date");
@@ -1697,6 +1784,8 @@
       const opCatInput = document.getElementById("op-cat");
 
       const monthSelect = document.getElementById("month-select");
+      const forecastModeSubtitle = document.getElementById("forecast-mode-subtitle");
+      const chartLegend = document.getElementById("chart-legend");
       const historyPillGroup = document.getElementById("history-pill-group");
       const forecastPillGroup = document.getElementById("forecast-pill-group");
       const dateJumpBar = document.getElementById("date-jump-bar");
@@ -1761,23 +1850,78 @@
       const sendBtn = document.getElementById("send-btn");
 
       let currentState = null;
+      let currentGranularity = null;
       let chartHoverMeta = null;
-      let selectedHistDays = 90; // Default: 3M
-      let selectedForeDays = 30; // Default: +1M
+      let selectedHistDays = 90; // Default: 3M (1Y in monthly seasonal mode)
+      let selectedForeDays = 30; // Default: +1M (+1Y in monthly seasonal mode)
       let selectedFocusDate = "";
       let focusCardExpanded = false;
-      let selectedPeriod = null; // { startDate: "YYYY-MM-DD", endDate: "YYYY-MM-DD" }
-      let periodDrag = null; // { anchorDate: "YYYY-MM-DD" }
+      let selectedPeriod = null; // { startDate: "YYYY-MM-DD" | "YYYY-MM", endDate: "YYYY-MM-DD" | "YYYY-MM" }
+      let periodDrag = null; // { anchorDate: string }
       let chartZoom = { key: null, start: 0, end: 0, custom: false };
       let chartDrag = null;
       let minimapDrag = null;
       const chatHistory = [];
 
+      function getTabSessionId() {
+        const key = "greg_tab_session_id";
+        let sid = sessionStorage.getItem(key);
+        if (!sid) {
+          sid =
+            window.crypto && typeof window.crypto.randomUUID === "function"
+              ? window.crypto.randomUUID()
+              : `s-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          sessionStorage.setItem(key, sid);
+        }
+        return sid;
+      }
+      const SESSION_ID = getTabSessionId();
+
+      function apiFetch(url, options = {}) {
+        const headers = Object.assign(
+          { "X-Greg-Session": SESSION_ID },
+          options.headers || {}
+        );
+        return fetch(url, Object.assign({}, options, { headers }));
+      }
+
       const HIST_PRESET_LABELS = { 1: "1D", 7: "7D", 30: "1M", 90: "3M", 180: "6M", 365: "1Y" };
       const FORE_PRESET_LABELS = { 0: "Off", 1: "+1D", 7: "+7D", 30: "+1M", 90: "+3M", 180: "+6M", 365: "+1Y" };
 
+      function isMonthlyEngine(state = currentState) {
+        return Boolean(state && state.liquidity_agent && state.liquidity_agent.granularity === "month");
+      }
+
+      function daysToMonthUnits(days, allowZero = false) {
+        const d = Math.max(0, Number(days || 0));
+        if (d === 0) return allowZero ? 0 : 1;
+        if (d <= 30) return 1;
+        if (d <= 90) return 3;
+        if (d <= 180) return 6;
+        return 12;
+      }
+
+      function parseDateMs(str) {
+        if (!str) return 0;
+        const clean = str.length === 7 ? `${str}-01` : str.slice(0, 10);
+        return Date.parse(clean);
+      }
+
+      function toDateInputValue(str, isMax = false) {
+        if (!str) return "";
+        if (str.length === 7) return isMax ? `${str}-28` : `${str}-01`;
+        return str.slice(0, 10);
+      }
+
       function getActiveHorizonDays() {
         return Math.max(0, Number(selectedForeDays ?? 30));
+      }
+
+      function getHorizonPayload() {
+        if (currentGranularity === "month") {
+          return { horizon_months: daysToMonthUnits(selectedForeDays, true) };
+        }
+        return { horizon_days: getActiveHorizonDays() };
       }
 
       opDateInput.value = new Date().toISOString().slice(0, 10);
@@ -1817,11 +1961,20 @@
         }
       }
 
-      async function fetchView(horizon = "") {
-        const h = horizon !== "" ? horizon : String(getActiveHorizonDays());
+      async function fetchView(horizonOverride = null) {
         const params = new URLSearchParams();
-        if (h !== "") params.set("horizon", h);
-        const res = await fetch(`/api/view?${params.toString()}`);
+        if (currentGranularity === "month") {
+          const hm =
+            horizonOverride !== null
+              ? daysToMonthUnits(Number(horizonOverride), true)
+              : daysToMonthUnits(selectedForeDays, true);
+          params.set("horizon_months", String(hm));
+        } else {
+          const hd = horizonOverride !== null ? Number(horizonOverride) : getActiveHorizonDays();
+          params.set("horizon", String(hd));
+        }
+        const q = params.toString();
+        const res = await apiFetch(q ? `/api/view?${q}` : "/api/view");
         const data = await res.json();
         renderState(data);
       }
@@ -1865,22 +2018,24 @@
       }
 
       function buildFullDailyTimeline(historySeries, forecastSeries) {
-        const hist = historySeries || [];
-        const fore =
-          (currentState &&
-            currentState.liquidity_agent &&
-            currentState.liquidity_agent.full_forecast_series) ||
-          forecastSeries ||
-          [];
+        const monthlyMode = isMonthlyEngine(currentState);
+        const la = (currentState && currentState.liquidity_agent) || {};
+        const hist = monthlyMode
+          ? (currentState && currentState.monthly_history_series) || []
+          : historySeries || [];
+        const fore = la.full_forecast_series || forecastSeries || [];
         const dailyPoints = [];
         hist.forEach((p, idx) => {
           dailyPoints.push({
             date: p.date,
             fullDate: p.date,
             bal: Number(p.balance || 0),
+            balPess: null,
             balCredit: Number(p.balance || 0),
             income: Number(p.income || 0),
             expenses: Number(p.expenses || 0),
+            expectedIn: null,
+            expectedOut: null,
             kind: "hist",
             dayIdx: idx,
           });
@@ -1891,9 +2046,12 @@
             date: p.date,
             fullDate: p.date,
             bal: Number(p.balance || 0),
-            balCredit: Number(p.balance_with_credit ?? p.balance ?? 0),
+            balPess: p.balance_pessimistic != null ? Number(p.balance_pessimistic) : null,
+            balCredit: p.balance_with_credit != null ? Number(p.balance_with_credit) : Number(p.balance || 0),
             income: Number(p.expected_in ?? p.income ?? 0),
             expenses: Number(p.expected_out ?? p.expenses ?? 0),
+            expectedIn: p.expected_in != null ? Number(p.expected_in) : null,
+            expectedOut: p.expected_out != null ? Number(p.expected_out) : null,
             kind: "fore",
             dayIdx: baseIdx + idx,
           });
@@ -1903,20 +2061,40 @@
           todayDailyIdx: Math.max(0, hist.length - 1),
           histCount: hist.length,
           foreCount: fore.length,
+          isMonthly: monthlyMode,
         };
       }
 
-      function computePresetWindow(todayDailyIdx, totalDaily, histDays, foreDays) {
-        const start = Math.max(0, todayDailyIdx - Math.max(1, Number(histDays || 90)));
-        const end = Math.max(
-          start,
-          Math.min(totalDaily - 1, todayDailyIdx + Math.max(0, Number(foreDays ?? 30)))
-        );
+      function computePresetWindow(todayDailyIdx, totalDaily, histDays, foreDays, monthlyMode = false) {
+        const hUnits = monthlyMode
+          ? daysToMonthUnits(histDays, false)
+          : Math.max(1, Number(histDays || 90));
+        const fUnits = monthlyMode
+          ? daysToMonthUnits(foreDays, true)
+          : Math.max(0, Number(foreDays ?? 30));
+        const start = Math.max(0, todayDailyIdx - hUnits);
+        const end = Math.max(start, Math.min(totalDaily - 1, todayDailyIdx + fUnits));
         return { start, end };
       }
 
-      function buildAutoGranularPoints(dailyPoints, visStartDayIdx, visEndDayIdx, todayDailyIdx) {
+      function buildAutoGranularPoints(dailyPoints, visStartDayIdx, visEndDayIdx, todayDailyIdx, monthlyMode = false) {
         const spanDays = Math.max(1, visEndDayIdx - visStartDayIdx);
+        if (monthlyMode) {
+          const points = dailyPoints.slice(visStartDayIdx, visEndDayIdx + 1).map((p, idx) => ({
+            date: p.date,
+            axisDate: p.date,
+            bal: p.bal,
+            balPess: p.balPess,
+            balCredit: p.balCredit,
+            income: p.income,
+            expenses: p.expenses,
+            expectedIn: p.expectedIn,
+            expectedOut: p.expectedOut,
+            kind: p.kind,
+            isTodayBoundary: visStartDayIdx + idx === todayDailyIdx,
+          }));
+          return { points, granularity: "monthly", spanDays };
+        }
         let granularity = "daily";
         if (spanDays <= 7) {
           granularity = "hourly";
@@ -2031,14 +2209,16 @@
         return { points, granularity, spanDays };
       }
 
-      function syncHorizonPillStates(todayDailyIdx, totalDaily, visStart, visEnd) {
+      function syncHorizonPillStates(todayDailyIdx, totalDaily, visStart, visEnd, monthlyMode = false) {
         const actualHistSpan = Math.max(0, todayDailyIdx - visStart);
         const actualForeSpan = Math.max(0, visEnd - todayDailyIdx);
+        const unit = monthlyMode ? "m" : "d";
 
         let matchedHist = null;
         document.querySelectorAll("#history-pill-group .hist-pill").forEach((btn) => {
           const d = Number(btn.getAttribute("data-hist-days"));
-          const expectedStart = Math.max(0, todayDailyIdx - d);
+          const units = monthlyMode ? daysToMonthUnits(d, false) : d;
+          const expectedStart = Math.max(0, todayDailyIdx - units);
           const isMatch = !chartZoom.custom && d === selectedHistDays && visStart === expectedStart;
           btn.classList.toggle("active", isMatch);
           if (isMatch) matchedHist = HIST_PRESET_LABELS[d] || `${d}D`;
@@ -2047,7 +2227,8 @@
         let matchedFore = null;
         document.querySelectorAll("#forecast-pill-group .fore-pill").forEach((btn) => {
           const d = Number(btn.getAttribute("data-fore-days"));
-          const expectedEnd = Math.min(totalDaily - 1, todayDailyIdx + d);
+          const units = monthlyMode ? daysToMonthUnits(d, true) : d;
+          const expectedEnd = Math.min(totalDaily - 1, todayDailyIdx + units);
           const isMatch = !chartZoom.custom && d === selectedForeDays && visEnd === expectedEnd;
           btn.classList.toggle("active", isMatch);
           if (isMatch) matchedFore = FORE_PRESET_LABELS[d] || `+${d}D`;
@@ -2055,11 +2236,11 @@
 
         if (minimapHorizonSummary) {
           if (selectedFocusDate) {
-            minimapHorizonSummary.textContent = `Pinned Date: ${selectedFocusDate} (${actualHistSpan}d past · +${actualForeSpan}d forecast)`;
+            minimapHorizonSummary.textContent = `Pinned Date: ${selectedFocusDate} (${actualHistSpan}${unit} past · +${actualForeSpan}${unit} forecast)`;
           } else if (matchedHist && matchedFore) {
             minimapHorizonSummary.textContent = `Past: ${matchedHist} · Forecast: ${matchedFore}`;
           } else {
-            minimapHorizonSummary.textContent = `Custom Window (${actualHistSpan}d past · +${actualForeSpan}d forecast)`;
+            minimapHorizonSummary.textContent = `Custom Window (${actualHistSpan}${unit} past · +${actualForeSpan}${unit} forecast)`;
           }
         }
       }
@@ -2175,7 +2356,7 @@
 
       function renderChart(historySeries, forecastSeries, currency) {
         chartTooltip.classList.add("hidden");
-        const { dailyPoints, todayDailyIdx, histCount, foreCount } = buildFullDailyTimeline(
+        const { dailyPoints, todayDailyIdx, histCount, foreCount, isMonthly } = buildFullDailyTimeline(
           historySeries,
           forecastSeries
         );
@@ -2186,17 +2367,19 @@
           forecastChart.innerHTML = "";
           if (minimapSvg) minimapSvg.innerHTML = "";
           chartRangeLabel.textContent = "—";
+          if (chartLegend) chartLegend.classList.add("hidden");
           return;
         }
 
         if (chartFocusDateInput) {
-          chartFocusDateInput.min = dailyPoints[0].date;
-          chartFocusDateInput.max = dailyPoints[totalDaily - 1].date;
+          chartFocusDateInput.min = toDateInputValue(dailyPoints[0].date, false);
+          chartFocusDateInput.max = toDateInputValue(dailyPoints[totalDaily - 1].date, true);
+          const focusInputVal = toDateInputValue(selectedFocusDate, false);
           if (
             document.activeElement !== chartFocusDateInput &&
-            chartFocusDateInput.value !== selectedFocusDate
+            chartFocusDateInput.value !== focusInputVal
           ) {
-            chartFocusDateInput.value = selectedFocusDate;
+            chartFocusDateInput.value = focusInputVal;
           }
         }
         if (dateJumpBar) {
@@ -2211,15 +2394,22 @@
           currentState.approved_credit &&
           Number(currentState.approved_credit.amount) > 0;
 
-        const defaultPreset = computePresetWindow(todayDailyIdx, totalDaily, 90, 30);
+        const defaultPreset = computePresetWindow(
+          todayDailyIdx,
+          totalDaily,
+          isMonthly ? 365 : 90,
+          isMonthly ? 365 : 30,
+          isMonthly
+        );
         const activePreset = computePresetWindow(
           todayDailyIdx,
           totalDaily,
           selectedHistDays,
-          selectedForeDays
+          selectedForeDays,
+          isMonthly
         );
 
-        const zoomKey = `${histCount}:${foreCount}:${totalDaily}`;
+        const zoomKey = `${isMonthly ? "month" : "day"}:${histCount}:${foreCount}:${totalDaily}`;
         if (chartZoom.key !== zoomKey) {
           chartZoom = {
             key: zoomKey,
@@ -2238,11 +2428,14 @@
           dailyPoints,
           visStart,
           visEnd,
-          todayDailyIdx
+          todayDailyIdx,
+          isMonthly
         );
 
         const granLabel =
-          granularity === "hourly"
+          granularity === "monthly"
+            ? `Monthly Seasonal (${spanDays}m span)`
+            : granularity === "hourly"
             ? `Auto: Hourly (${spanDays}d span)`
             : granularity === "weekly"
             ? `Auto: Weekly (${spanDays}d span)`
@@ -2251,7 +2444,7 @@
           chartGranularityBadge.textContent = granLabel;
         }
 
-        syncHorizonPillStates(todayDailyIdx, totalDaily, visStart, visEnd);
+        syncHorizonPillStates(todayDailyIdx, totalDaily, visStart, visEnd, isMonthly);
         renderMiniMap(dailyPoints, todayDailyIdx, visStart, visEnd, hasApprovedCredit);
 
         const firstDate = visPoints[0].axisDate || visPoints[0].date;
@@ -2261,6 +2454,9 @@
         const dataValues = [];
         visPoints.forEach((p) => {
           dataValues.push(p.bal);
+          if (p.kind === "fore" && p.balPess != null) {
+            dataValues.push(p.balPess);
+          }
           if (hasApprovedCredit && p.kind === "fore" && p.balCredit != null) {
             dataValues.push(p.balCredit);
           }
@@ -2305,6 +2501,7 @@
 
         const histCoords = [];
         const foreCoords = [];
+        const pessCoords = [];
         const creditCoords = [];
         visPoints.forEach((p, localIdx) => {
           const xStr = xFor(localIdx).toFixed(1);
@@ -2317,14 +2514,41 @@
               const pxStr = xFor(localIdx - 1).toFixed(1);
               const pyStr = yFor(prev.bal).toFixed(1);
               foreCoords.push(`${pxStr},${pyStr}`);
-              creditCoords.push(`${pxStr},${pyStr}`);
+              if (p.balPess != null) pessCoords.push(`${pxStr},${pyStr}`);
+              if (hasApprovedCredit) creditCoords.push(`${pxStr},${pyStr}`);
             }
             foreCoords.push(`${xStr},${yStr}`);
+            if (p.balPess != null) {
+              pessCoords.push(`${xStr},${yFor(p.balPess).toFixed(1)}`);
+            }
             if (hasApprovedCredit && p.balCredit != null) {
               creditCoords.push(`${xStr},${yFor(p.balCredit).toFixed(1)}`);
             }
           }
         });
+
+        if (chartLegend) {
+          if (isMonthly) {
+            const items = [
+              '<span class="legend-item"><span class="swatch" style="background: #0d0d0d"></span>Past</span>',
+              '<span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected forecast</span>',
+              '<span class="legend-item"><span class="swatch" style="background: #c96b7c"></span>Pessimistic stress test</span>',
+            ];
+            if (hasApprovedCredit) {
+              items.push('<span class="legend-item"><span class="swatch" style="background: #24664e"></span>With approved credit</span>');
+            }
+            chartLegend.innerHTML = items.join("");
+            chartLegend.classList.remove("hidden");
+          } else if (hasApprovedCredit) {
+            chartLegend.innerHTML = [
+              '<span class="legend-item"><span class="swatch" style="background: #805181"></span>Forecast balance</span>',
+              '<span class="legend-item"><span class="swatch" style="background: #24664e"></span>With approved credit</span>',
+            ].join("");
+            chartLegend.classList.remove("hidden");
+          } else {
+            chartLegend.classList.add("hidden");
+          }
+        }
 
         const showMinLabel = Math.abs(minY - maxY) >= 14;
         const showZeroLabel =
@@ -2351,9 +2575,9 @@
             if (selectedFocusDate >= fStart && selectedFocusDate <= fEnd) {
               let bestIdx = 0;
               let bestDiff = Infinity;
-              const targetMs = Date.parse(selectedFocusDate);
+              const targetMs = parseDateMs(selectedFocusDate);
               visPoints.forEach((p, idx) => {
-                const ms = Date.parse(p.axisDate || p.date.slice(0, 10));
+                const ms = parseDateMs(p.axisDate || p.date.slice(0, 10));
                 const diff = Math.abs(ms - targetMs);
                 if (diff < bestDiff) {
                   bestDiff = diff;
@@ -2489,11 +2713,11 @@
                 }
               }
               if (exactIdx >= 0) return exactIdx;
-              const targetMs = Date.parse(targetDate);
+              const targetMs = parseDateMs(targetDate);
               let bestIdx = 0;
               let bestDiff = Infinity;
               visPoints.forEach((p, idx) => {
-                const diff = Math.abs(Date.parse(p.axisDate || p.date.slice(0, 10)) - targetMs);
+                const diff = Math.abs(parseDateMs(p.axisDate || p.date.slice(0, 10)) - targetMs);
                 if (diff < bestDiff) {
                   bestDiff = diff;
                   bestIdx = idx;
@@ -2606,7 +2830,9 @@
             showZeroLabel
               ? `<text x="${leftPad - 8}" y="${clampLabelY(zeroY).toFixed(
                   1
-                )}" text-anchor="end" font-size="11" fill="#6e6e6e">€0</text>`
+                )}" text-anchor="end" font-size="11" fill="#6e6e6e">${escapeHtml(
+                  fmtMoney(0, currency).replace(/\.00$/, "")
+                )}</text>`
               : ""
           }
 
@@ -2626,6 +2852,14 @@
           ${
             histCoords.length > 1
               ? `<polyline fill="none" stroke="#0d0d0d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${histCoords.join(
+                  " "
+                )}" />`
+              : ""
+          }
+
+          ${
+            pessCoords.length > 1
+              ? `<polyline fill="none" stroke="#c96b7c" stroke-width="1.8" stroke-dasharray="3 4" stroke-linecap="round" stroke-linejoin="round" points="${pessCoords.join(
                   " "
                 )}" />`
               : ""
@@ -2658,6 +2892,7 @@
           <line id="chart-crosshair-y" x1="${leftPad}" y1="0" x2="${
           W - rightPad
         }" y2="0" stroke="#8a8a8a" stroke-dasharray="3 3" stroke-width="1" visibility="hidden" />
+          <circle id="chart-hover-pess-dot" cx="0" cy="0" r="4" fill="#c96b7c" stroke="#ffffff" stroke-width="1.5" visibility="hidden" />
           <circle id="chart-hover-dot" cx="0" cy="0" r="5" fill="#0d0d0d" stroke="#ffffff" stroke-width="2" visibility="hidden" />
           <circle id="chart-hover-credit-dot" cx="0" cy="0" r="4.5" fill="#24664e" stroke="#ffffff" stroke-width="2" visibility="hidden" />
 
@@ -2698,10 +2933,12 @@
         const chX = document.getElementById("chart-crosshair");
         const chY = document.getElementById("chart-crosshair-y");
         const dot = document.getElementById("chart-hover-dot");
+        const pDot = document.getElementById("chart-hover-pess-dot");
         const cDot = document.getElementById("chart-hover-credit-dot");
         if (chX) chX.setAttribute("visibility", "hidden");
         if (chY) chY.setAttribute("visibility", "hidden");
         if (dot) dot.setAttribute("visibility", "hidden");
+        if (pDot) pDot.setAttribute("visibility", "hidden");
         if (cDot) cDot.setAttribute("visibility", "hidden");
       }
 
@@ -2743,6 +2980,7 @@
         const chX = document.getElementById("chart-crosshair");
         const chY = document.getElementById("chart-crosshair-y");
         const dot = document.getElementById("chart-hover-dot");
+        const pDot = document.getElementById("chart-hover-pess-dot");
         const cDot = document.getElementById("chart-hover-credit-dot");
 
         if (chX) {
@@ -2761,6 +2999,15 @@
           dot.setAttribute("fill", pt.kind === "hist" ? "#0d0d0d" : "#805181");
           dot.setAttribute("visibility", "visible");
         }
+        if (pDot) {
+          if (pt.kind === "fore" && pt.balPess != null) {
+            pDot.setAttribute("cx", pxSvg.toFixed(1));
+            pDot.setAttribute("cy", m.yFor(pt.balPess).toFixed(1));
+            pDot.setAttribute("visibility", "visible");
+          } else {
+            pDot.setAttribute("visibility", "hidden");
+          }
+        }
         if (cDot) {
           if (m.hasApprovedCredit && pt.kind === "fore" && pt.balCredit != null) {
             cDot.setAttribute("cx", pxSvg.toFixed(1));
@@ -2772,6 +3019,14 @@
         }
 
         const kindLabel = pt.kind === "hist" ? "Past" : "Forecast";
+        const pessHtml =
+          pt.kind === "fore" && pt.balPess != null
+            ? `<div class="tt-pess">Stress test: ${escapeHtml(fmtMoney(pt.balPess, m.currency))}</div>`
+            : "";
+        const flowsHtml =
+          pt.kind === "fore" && pt.expectedIn != null && pt.expectedOut != null
+            ? `<div class="tt-flows">In +${escapeHtml(fmtMoney(pt.expectedIn, m.currency))} · Out -${escapeHtml(fmtMoney(pt.expectedOut, m.currency))}</div>`
+            : "";
         const creditHtml =
           m.hasApprovedCredit && pt.kind === "fore" && pt.balCredit != null
             ? `<div class="tt-credit">With credit: ${escapeHtml(fmtMoney(pt.balCredit, m.currency))}</div>`
@@ -2780,6 +3035,8 @@
         chartTooltip.innerHTML = `
           <div class="tt-date">${escapeHtml(pt.date)} · ${kindLabel}</div>
           <div class="tt-bal">${escapeHtml(fmtMoney(pt.bal, m.currency))}</div>
+          ${pessHtml}
+          ${flowsHtml}
           ${creditHtml}
         `;
         chartTooltip.classList.remove("hidden");
@@ -2813,7 +3070,13 @@
           selectedFocusDate = "";
           const total = chartHoverMeta.allPoints.length;
           const todayIdx = chartHoverMeta.todayDailyIdx;
-          const w = computePresetWindow(todayIdx, total, selectedHistDays, selectedForeDays);
+          const w = computePresetWindow(
+            todayIdx,
+            total,
+            selectedHistDays,
+            selectedForeDays,
+            isMonthlyEngine(currentState)
+          );
           chartZoom.start = w.start;
           chartZoom.end = w.end;
           chartZoom.custom = false;
@@ -2833,7 +3096,13 @@
           selectedFocusDate = "";
           const total = chartHoverMeta.allPoints.length;
           const todayIdx = chartHoverMeta.todayDailyIdx;
-          const w = computePresetWindow(todayIdx, total, selectedHistDays, selectedForeDays);
+          const w = computePresetWindow(
+            todayIdx,
+            total,
+            selectedHistDays,
+            selectedForeDays,
+            isMonthlyEngine(currentState)
+          );
           chartZoom.start = w.start;
           chartZoom.end = w.end;
           chartZoom.custom = false;
@@ -2842,7 +3111,7 @@
             currentState.liquidity_agent.forecast_series,
             currentState.currency || "EUR"
           );
-          await fetchView(String(selectedForeDays));
+          await fetchView(selectedForeDays);
         });
       }
 
@@ -2863,7 +3132,7 @@
         }
 
         // Ignore intermediate keystrokes while the user is still typing a 4-digit year (e.g. 0002, 0020, 0202)
-        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(val);
+        const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(val);
         if (!m) return;
         const yearNum = Number(m[1]);
         if (yearNum < 1990 || yearNum > 2100) return;
@@ -2872,15 +3141,18 @@
         const total = allPts.length;
         if (!total) return;
 
-        let targetIdx = allPts.findIndex((p) => p.date === val);
+        const monthlyMode = isMonthlyEngine(currentState);
+        const lookupVal = monthlyMode ? val.slice(0, 7) : val;
+
+        let targetIdx = allPts.findIndex((p) => p.date === lookupVal);
         if (targetIdx < 0) {
           // While actively typing in the input, don't snap/overwrite out-of-range dates until blur or Enter
           if (!allowClampAndOverwrite) return;
-          const targetMs = Date.parse(val);
+          const targetMs = parseDateMs(lookupVal);
           let bestIdx = 0;
           let bestDiff = Infinity;
           allPts.forEach((p, idx) => {
-            const diff = Math.abs(Date.parse(p.date) - targetMs);
+            const diff = Math.abs(parseDateMs(p.date) - targetMs);
             if (diff < bestDiff) {
               bestDiff = diff;
               bestIdx = idx;
@@ -2891,12 +3163,15 @@
 
         selectedFocusDate = allPts[targetIdx].date;
         selectedPeriod = null;
-        if (allowClampAndOverwrite && chartFocusDateInput && chartFocusDateInput.value !== selectedFocusDate) {
-          chartFocusDateInput.value = selectedFocusDate;
+        if (allowClampAndOverwrite && chartFocusDateInput) {
+          const inputFormatted = toDateInputValue(selectedFocusDate, false);
+          if (chartFocusDateInput.value !== inputFormatted) {
+            chartFocusDateInput.value = inputFormatted;
+          }
         }
 
-        // Auto-zoom onto a focused ±7 day window centered on the selected date
-        const halfWindow = 7;
+        // Auto-zoom onto a focused window centered on the selected date (±7d in daily, ±3m in monthly)
+        const halfWindow = monthlyMode ? 3 : 7;
         chartZoom.start = Math.max(0, targetIdx - halfWindow);
         chartZoom.end = Math.min(total - 1, targetIdx + halfWindow);
         if (chartZoom.end === chartZoom.start && total > 1) {
@@ -2979,7 +3254,13 @@
           if (chartFocusDateInput) chartFocusDateInput.value = "";
           const total = chartHoverMeta.allPoints.length;
           const todayIdx = chartHoverMeta.todayDailyIdx;
-          const w = computePresetWindow(todayIdx, total, selectedHistDays, selectedForeDays);
+          const w = computePresetWindow(
+            todayIdx,
+            total,
+            selectedHistDays,
+            selectedForeDays,
+            isMonthlyEngine(currentState)
+          );
           chartZoom.start = w.start;
           chartZoom.end = w.end;
           chartZoom.custom = false;
@@ -3195,9 +3476,10 @@
         window.dispatchEvent(new CustomEvent("greg:analyze-period", { detail: payload }));
 
         if (chatPeriodContext) {
+          const spanUnit = isMonthlyEngine(currentState) ? "m" : "d";
           chatPeriodModeEl.textContent = payload.modeLabel;
           chatPeriodModeEl.className = `chat-period-mode${payload.mode === "past" ? "" : " " + payload.mode}`;
-          chatPeriodDatesEl.textContent = `${payload.startDate} → ${payload.endDate} (${payload.dayCount}d)`;
+          chatPeriodDatesEl.textContent = `${payload.startDate} → ${payload.endDate} (${payload.dayCount}${spanUnit})`;
           chatPeriodIncEl.textContent = `+${fmtMoney(payload.totalIncome, payload.currency)}`;
           chatPeriodExpEl.textContent = `-${fmtMoney(payload.totalExpenses, payload.currency)}`;
           const netSign = payload.netFlow > 0 ? "+" : "";
@@ -3518,6 +3800,32 @@
           .join("");
 
         const la = state.liquidity_agent;
+        const newGran = la && la.granularity === "month" ? "month" : "day";
+        if (currentGranularity !== newGran) {
+          currentGranularity = newGran;
+          if (newGran === "month") {
+            selectedHistDays = 365;
+            selectedForeDays =
+              la.horizon_months === 0
+                ? 0
+                : la.horizon_months <= 1
+                ? 30
+                : la.horizon_months <= 3
+                ? 90
+                : la.horizon_months <= 6
+                ? 180
+                : 365;
+          }
+        }
+        if (forecastModeSubtitle) {
+          if (la.granularity === "month" && la.planner_meta) {
+            forecastModeSubtitle.textContent = `Monthly seasonal forecast · Auto (Inflow: ${la.planner_meta.inflow_method_label}, Outflow: ${la.planner_meta.outflow_method_label})`;
+          } else {
+            forecastModeSubtitle.textContent =
+              "Daily short-term forecast · Under 12 months of history";
+          }
+        }
+
         if (la.goes_below_zero) {
           agentBanner.className = "alert-box warn";
           agentBanner.innerHTML = `<strong>Cash Shortfall Predicted:</strong> ${escapeHtml(
@@ -3525,112 +3833,363 @@
           )}`;
         } else {
           agentBanner.className = "alert-box safe";
-          agentBanner.innerHTML = `<strong>Account Stays Above €0:</strong> ${escapeHtml(
+          const zeroLabel = fmtMoney(0, cur).replace(/\.00$/, "");
+          agentBanner.innerHTML = `<strong>Account Stays Above ${escapeHtml(zeroLabel)}:</strong> ${escapeHtml(
             la.recommendation_summary
           )}`;
         }
 
-        agentAnalysisText.textContent = la.analysis_summary;
-        agentRecText.textContent = la.recommendation_summary;
-        recLowest.textContent = `${fmtMoney(la.lowest_predicted_balance, cur)} (on ${
-          la.lowest_predicted_date
-        })`;
-        recLowest.className = la.lowest_predicted_balance < 0 ? "neg" : "pos";
-        recDays.textContent = `${la.days_below_zero} day(s)`;
-        recCredit.textContent = fmtMoney(la.recommended_credit_amount, cur);
+        if (agentAnalysisText) agentAnalysisText.textContent = la.analysis_summary;
+        if (agentRecText) agentRecText.textContent = la.recommendation_summary;
+        if (recLowest) {
+          recLowest.textContent = `${fmtMoney(la.lowest_predicted_balance, cur)} (on ${
+            la.lowest_predicted_date
+          })`;
+          recLowest.className = la.lowest_predicted_balance < 0 ? "neg" : "pos";
+        }
+        if (recDays) recDays.textContent = `${la.days_below_zero} day(s)`;
+        if (recCredit) recCredit.textContent = fmtMoney(la.recommended_credit_amount, cur);
 
-        if (
-          !state.approved_credit ||
-          Number(state.approved_credit.amount) === 0
-        ) {
-          creditInput.value = la.recommended_credit_amount;
-          creditStatus.innerHTML = `<span class="subtitle">Status: Waiting for your decision (not approved yet).</span>`;
-        } else {
-          creditInput.value = state.approved_credit.amount;
-          creditStatus.innerHTML = `
-            <span class="pos" style="font-weight: 600">
-              Approved (Simulated): ${fmtMoney(
-                state.approved_credit.amount,
-                cur
-              )} credit cushion applied to forecast chart (green line).
-            </span>
-            <button type="button" class="secondary" id="clear-credit-btn" style="margin-top: 8px; min-height: 30px; padding: 4px 12px; font-size: 12px">
-              Remove Credit
-            </button>`;
-          const clearCreditBtn = document.getElementById("clear-credit-btn");
-          if (clearCreditBtn) {
-            clearCreditBtn.addEventListener("click", () => submitCredit(0));
+        if (creditInput && creditStatus) {
+          if (
+            !state.approved_credit ||
+            Number(state.approved_credit.amount) === 0
+          ) {
+            creditInput.value = la.recommended_credit_amount;
+            creditStatus.innerHTML = `<span class="subtitle">Status: Waiting for your decision (not approved yet).</span>`;
+          } else {
+            creditInput.value = state.approved_credit.amount;
+            creditStatus.innerHTML = `
+              <span class="pos" style="font-weight: 600">
+                Approved (Simulated): ${fmtMoney(
+                  state.approved_credit.amount,
+                  cur
+                )} credit cushion applied to forecast chart (green line).
+              </span>
+              <button type="button" class="secondary" id="clear-credit-btn" style="margin-top: 8px; min-height: 30px; padding: 4px 12px; font-size: 12px">
+                Remove Credit
+              </button>`;
+            const clearCreditBtn = document.getElementById("clear-credit-btn");
+            if (clearCreditBtn) {
+              clearCreditBtn.addEventListener("click", () => submitCredit(0));
+            }
           }
         }
 
-        if (la.upcoming_bills.length === 0) {
-          upcomingBillsBody.innerHTML = `<tr><td colspan="3" class="subtitle">No regular bills detected yet.</td></tr>`;
-        } else {
-          upcomingBillsBody.innerHTML = la.upcoming_bills
-            .map(
-              (b) => `
-            <tr>
-              <td>${escapeHtml(b.date)}</td>
-              <td>${escapeHtml(b.counterparty)}</td>
-              <td class="right neg num">${fmtMoney(b.amount, cur)}</td>
-            </tr>`
-            )
-            .join("");
+        if (upcomingBillsBody) {
+          if (la.upcoming_bills.length === 0) {
+            upcomingBillsBody.innerHTML = `<tr><td colspan="3" class="subtitle">No regular bills detected yet.</td></tr>`;
+          } else {
+            upcomingBillsBody.innerHTML = la.upcoming_bills
+              .map(
+                (b) => `
+              <tr>
+                <td>${escapeHtml(b.date)}</td>
+                <td>${escapeHtml(b.counterparty)}</td>
+                <td class="right neg num">${fmtMoney(b.amount, cur)}</td>
+              </tr>`
+              )
+              .join("");
+          }
         }
 
         renderChart(state.history_series, la.forecast_series, cur);
       }
+
+      function parseCsvHeaderLine(line, delimiter) {
+        const cells = [];
+        let cur = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              cur += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (ch === delimiter && !inQuotes) {
+            cells.push(cur);
+            cur = "";
+          } else {
+            cur += ch;
+          }
+        }
+        cells.push(cur);
+        return cells.map((h) => h.trim()).filter((h) => h.length > 0);
+      }
+
+      function detectCsvHeaders(text) {
+        const cleaned = (text || "").replace(/^\uFEFF/, "").trim();
+        if (!cleaned) return { delimiter: ",", headers: [] };
+        const firstLine = cleaned.split(/\r?\n/, 1)[0] || "";
+        const seps = [";", ",", "\t"];
+        let bestSep = ",";
+        let bestCount = 0;
+        seps.forEach((sep) => {
+          const count = firstLine.split(sep).length - 1;
+          if (count > bestCount) {
+            bestCount = count;
+            bestSep = sep;
+          }
+        });
+        return { delimiter: bestSep, headers: parseCsvHeaderLine(firstLine, bestSep) };
+      }
+
+      function findBestHeader(headers, candidates) {
+        const lowerMap = new Map(headers.map((h) => [h.toLowerCase().trim(), h]));
+        for (const c of candidates) {
+          if (lowerMap.has(c)) return lowerMap.get(c);
+        }
+        for (const h of headers) {
+          const hl = h.toLowerCase().trim();
+          if (candidates.some((c) => hl.includes(c))) return h;
+        }
+        return "";
+      }
+
+      function inferCurrencyFromHeaderNames(names) {
+        const rx = /(?:^|[_\s(\[-])(eur|pln|usd|chf|gbp|czk|sek|nok|dkk|cad|aud|jpy|huf|ron)(?:$|[_\s)\]-])/i;
+        for (const name of names) {
+          if (!name) continue;
+          const m = rx.exec(name);
+          if (m) return m[1].toUpperCase();
+        }
+        return "";
+      }
+
+      function populateHeaderSelect(selectEl, headers, selectedVal, allowNone = false) {
+        if (!selectEl) return;
+        const opts = allowNone ? ['<option value="">— None —</option>'] : [];
+        headers.forEach((h) => {
+          opts.push(`<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`);
+        });
+        selectEl.innerHTML = opts.join("");
+        if (selectedVal && headers.includes(selectedVal)) {
+          selectEl.value = selectedVal;
+        } else if (allowNone) {
+          selectEl.value = "";
+        } else if (headers.length > 0) {
+          selectEl.value = headers[0];
+        }
+      }
+
+      function updateAmountModeVisibility() {
+        const isSplit = mapAmountModeSelect && mapAmountModeSelect.value === "split";
+        if (mapAmountWrap) mapAmountWrap.classList.toggle("hidden", isSplit);
+        if (mapIncomeWrap) mapIncomeWrap.classList.toggle("hidden", !isSplit);
+        if (mapExpensesWrap) mapExpensesWrap.classList.toggle("hidden", !isSplit);
+      }
+
+      function syncDefaultCurrencyPlaceholder() {
+        if (!mapDefaultCurrencyInput) return;
+        const isSplit = mapAmountModeSelect && mapAmountModeSelect.value === "split";
+        const cols = isSplit
+          ? [mapIncomeSelect && mapIncomeSelect.value, mapExpensesSelect && mapExpensesSelect.value]
+          : [mapAmountSelect && mapAmountSelect.value];
+        const inferred = inferCurrencyFromHeaderNames(cols);
+        mapDefaultCurrencyInput.value = inferred || "";
+      }
+
+      function populateCsvMappingUI(text) {
+        if (!csvMappingBox) return;
+        const { delimiter, headers } = detectCsvHeaders(text);
+        if (!headers.length) {
+          csvMappingBox.classList.add("hidden");
+          return;
+        }
+        const sepLabel = delimiter === "\t" ? "TAB" : `'${delimiter}'`;
+        if (mappingMeta) {
+          mappingMeta.textContent = `${headers.length} columns (${sepLabel})`;
+        }
+
+        const guessDate =
+          findBestHeader(headers, [
+            "booking date",
+            "date",
+            "value date",
+            "transaction date",
+            "buchungstag",
+            "datum",
+            "month",
+          ]) || headers[0];
+        const guessAmount = findBestHeader(headers, ["amount", "betrag", "value", "sum"]);
+        const guessIncome = findBestHeader(headers, [
+          "income",
+          "revenue",
+          "inflow",
+          "sales",
+          "credit",
+          "receipts",
+          "money in",
+        ]);
+        const guessExpenses = findBestHeader(headers, [
+          "expenses",
+          "expense",
+          "costs",
+          "cost",
+          "outflow",
+          "spend",
+          "debit",
+          "money out",
+        ]);
+        const guessMode = !guessAmount && (guessIncome || guessExpenses) ? "split" : "single";
+
+        populateHeaderSelect(mapDateSelect, headers, guessDate, false);
+        if (mapAmountModeSelect) mapAmountModeSelect.value = guessMode;
+        populateHeaderSelect(
+          mapAmountSelect,
+          headers,
+          guessAmount || headers[Math.min(1, headers.length - 1)],
+          false
+        );
+        populateHeaderSelect(mapIncomeSelect, headers, guessIncome, true);
+        populateHeaderSelect(mapExpensesSelect, headers, guessExpenses, true);
+        populateHeaderSelect(
+          mapCurrencySelect,
+          headers,
+          findBestHeader(headers, ["currency", "währung", "curr"]),
+          true
+        );
+        populateHeaderSelect(
+          mapCounterpartySelect,
+          headers,
+          findBestHeader(headers, [
+            "beneficiary/payer",
+            "counterparty",
+            "beneficiary",
+            "payer",
+            "payee",
+            "name",
+          ]),
+          true
+        );
+        populateHeaderSelect(
+          mapTypeSelect,
+          headers,
+          findBestHeader(headers, ["transaction type", "type", "category", "art"]),
+          true
+        );
+        populateHeaderSelect(
+          mapDescriptionSelect,
+          headers,
+          findBestHeader(headers, ["payment reference", "reference", "description", "details", "info"]),
+          true
+        );
+
+        updateAmountModeVisibility();
+        syncDefaultCurrencyPlaceholder();
+        csvMappingBox.classList.remove("hidden");
+      }
+
+      function buildColumnMapFromUI() {
+        if (!csvMappingBox || csvMappingBox.classList.contains("hidden")) return null;
+        const mode = (mapAmountModeSelect && mapAmountModeSelect.value) || "single";
+        const map = {
+          date: mapDateSelect ? mapDateSelect.value : "",
+          amount_mode: mode,
+          currency: mapCurrencySelect ? mapCurrencySelect.value : "",
+          default_currency: mapDefaultCurrencyInput
+            ? mapDefaultCurrencyInput.value.trim().toUpperCase()
+            : "",
+          counterparty: mapCounterpartySelect ? mapCounterpartySelect.value : "",
+          type: mapTypeSelect ? mapTypeSelect.value : "",
+          description: mapDescriptionSelect ? mapDescriptionSelect.value : "",
+        };
+        if (mode === "split") {
+          map.income = mapIncomeSelect ? mapIncomeSelect.value : "";
+          map.expenses = mapExpensesSelect ? mapExpensesSelect.value : "";
+        } else {
+          map.amount = mapAmountSelect ? mapAmountSelect.value : "";
+        }
+        return map;
+      }
+
+      if (csvFileInput) {
+        csvFileInput.addEventListener("change", async () => {
+          const file = csvFileInput.files[0];
+          if (!file) {
+            if (csvMappingBox) csvMappingBox.classList.add("hidden");
+            return;
+          }
+          const headText = await file.slice(0, 8192).text();
+          populateCsvMappingUI(headText);
+        });
+      }
+      if (mapAmountModeSelect) {
+        mapAmountModeSelect.addEventListener("change", () => {
+          updateAmountModeVisibility();
+          syncDefaultCurrencyPlaceholder();
+        });
+      }
+      [mapAmountSelect, mapIncomeSelect, mapExpensesSelect].forEach((el) => {
+        if (el) el.addEventListener("change", syncDefaultCurrencyPlaceholder);
+      });
 
       importForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const file = csvFileInput.files[0];
         if (!file) return;
         const text = await file.text();
-        const res = await fetch("/api/import", {
+        currentGranularity = null;
+        selectedFocusDate = "";
+        focusCardExpanded = false;
+        selectedPeriod = null;
+        periodDrag = null;
+        chartZoom = { key: null, start: 0, end: 0, custom: false };
+        const payload = {
+          csv_text: text,
+          filename: file.name,
+          opening_balance: Number(openingBalanceInput.value || 0),
+        };
+        const columnMap = buildColumnMapFromUI();
+        if (columnMap) payload.column_map = columnMap;
+        const res = await apiFetch("/api/import", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            csv_text: text,
-            filename: file.name,
-            opening_balance: Number(openingBalanceInput.value || 0),
-            horizon_days: getActiveHorizonDays(),
-          }),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
         if (!res.ok) {
           alert(data.error || "Failed to import CSV");
           return;
         }
-        chartZoom = { key: null, start: 0, end: 0, custom: false };
         renderState(data);
       });
 
       openingBalanceInput.addEventListener("change", async () => {
         if (!currentState || !currentState.has_data) return;
-        const res = await fetch("/api/opening-balance", {
+        const res = await apiFetch("/api/opening-balance", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            opening_balance: Number(openingBalanceInput.value || 0),
-            horizon_days: getActiveHorizonDays(),
-          }),
+          body: JSON.stringify(
+            Object.assign(
+              { opening_balance: Number(openingBalanceInput.value || 0) },
+              getHorizonPayload()
+            )
+          ),
         });
         if (res.ok) renderState(await res.json());
       });
 
       manualForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const res = await fetch("/api/operations", {
+        const res = await apiFetch("/api/operations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            date: opDateInput.value,
-            kind: opKindInput.value,
-            amount: Number(opAmountInput.value),
-            counterparty: opCpInput.value,
-            category: opCatInput.value,
-            horizon_days: getActiveHorizonDays(),
-          }),
+          body: JSON.stringify(
+            Object.assign(
+              {
+                date: opDateInput.value,
+                kind: opKindInput.value,
+                amount: Number(opAmountInput.value),
+                counterparty: opCpInput.value,
+                category: opCatInput.value,
+              },
+              getHorizonPayload()
+            )
+          ),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -3647,42 +4206,40 @@
         const btn = e.target.closest("[data-del-id]");
         if (!btn) return;
         const id = btn.getAttribute("data-del-id");
-        const res = await fetch("/api/operations/delete", {
+        const res = await apiFetch("/api/operations/delete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id,
-            horizon_days: getActiveHorizonDays(),
-          }),
+          body: JSON.stringify(Object.assign({ id }, getHorizonPayload())),
         });
         if (res.ok) renderState(await res.json());
       });
 
       async function submitCredit(amountVal) {
-        const res = await fetch("/api/approve-credit", {
+        const res = await apiFetch("/api/approve-credit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: Number(amountVal),
-            horizon_days: getActiveHorizonDays(),
-          }),
+          body: JSON.stringify(Object.assign({ amount: Number(amountVal) }, getHorizonPayload())),
         });
         if (res.ok) renderState(await res.json());
       }
 
-      creditForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        submitCredit(creditInput.value || 0);
-      });
+      if (creditForm) {
+        creditForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          submitCredit((creditInput && creditInput.value) || 0);
+        });
+      }
 
       resetBtn.addEventListener("click", async () => {
-        const res = await fetch("/api/reset", {
+        const res = await apiFetch("/api/reset", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: "{}",
         });
         if (res.ok) {
           csvFileInput.value = "";
+          if (csvMappingBox) csvMappingBox.classList.add("hidden");
+          currentGranularity = null;
           selectedHistDays = 90;
           selectedForeDays = 30;
           selectedFocusDate = "";
@@ -3708,31 +4265,31 @@
         return div;
       }
 
-      aiExplainBtn.addEventListener("click", async () => {
-        aiExplainBtn.disabled = true;
-        const pending = appendMessage(
-          "assistant",
-          "Asking Greg on OpenShift AI to explain this month and forecast in simple words…"
-        );
-        try {
-          const res = await fetch("/api/explain", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              horizon_days: getActiveHorizonDays(),
-            }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-          pending.textContent = data.reply;
-          chatHistory.push({ role: "assistant", content: data.reply });
-        } catch (err) {
-          pending.className = "msg error";
-          pending.textContent = `Error: ${err.message}`;
-        } finally {
-          aiExplainBtn.disabled = false;
-        }
-      });
+      if (aiExplainBtn) {
+        aiExplainBtn.addEventListener("click", async () => {
+          aiExplainBtn.disabled = true;
+          const pending = appendMessage(
+            "assistant",
+            "Asking Greg on OpenShift AI to explain this month and forecast in simple words…"
+          );
+          try {
+            const res = await apiFetch("/api/explain", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(getHorizonPayload()),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            pending.textContent = data.reply;
+            chatHistory.push({ role: "assistant", content: data.reply });
+          } catch (err) {
+            pending.className = "msg error";
+            pending.textContent = `Error: ${err.message}`;
+          } finally {
+            aiExplainBtn.disabled = false;
+          }
+        });
+      }
 
       chatForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -3748,13 +4305,10 @@
         const pendingEl = appendMessage("assistant", "Thinking…");
 
         try {
-          const res = await fetch("/api/chat", {
+          const res = await apiFetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              messages: chatHistory,
-              horizon_days: getActiveHorizonDays(),
-            }),
+            body: JSON.stringify(Object.assign({ messages: chatHistory }, getHorizonPayload())),
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
