@@ -1,4 +1,9 @@
 html { scroll-behavior: smooth; scroll-padding-top: 100px; }
+html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--stage-header, 69px); }
+.staged-scroll #balance-overview, .staged-scroll #dashboard { scroll-snap-align: start; scroll-snap-stop: always; scroll-margin-top: 0; }
+.staged-scroll #balance-overview { height: calc(100dvh - var(--stage-header, 69px)); min-height: calc(100dvh - var(--stage-header, 69px)); box-sizing: border-box; }
+.staged-scroll #dashboard { min-height: calc(100dvh - var(--stage-header, 69px)); }
+.staged-scroll #dashboard .forecast-stage { min-height: calc(100dvh - var(--stage-header, 69px) - 36px); box-sizing: border-box; }
 .container { padding-top: 0; gap: 0; }
 .entry-stage, .balance-stage { min-height: calc(100svh - 69px); padding: clamp(36px, 6vh, 72px) 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .entry-heading { text-align: center; }
@@ -22,7 +27,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 100px; }
 .demo-actions { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; }
 .balance-stage { text-align: center; position: relative; gap: clamp(36px, 7vh, 75px); padding-bottom: 85px; }
 .balance-stage h1 { font-size: 16px; font-weight: 400; color: var(--muted); margin: 34px 0 12px; }
-.balance-number { font-size: clamp(48px, 9vw, 128px); font-weight: 350; letter-spacing: -.075em; line-height: 1.1; }
+.balance-number { font-size: clamp(32px, 8vw, 128px); font-weight: 350; letter-spacing: -.075em; line-height: 1.1; white-space: nowrap; }
+.overview-metrics > div:first-child span, #overview-income { color: #237547; }
+.overview-metrics > div:nth-child(2) span, #overview-expenses { color: #bd3636; }
+.overview-metrics strong { white-space: nowrap; }
 .overview-month { color: var(--muted); font-size: 14px; margin-top: 20px; }
 .overview-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(100%, 660px); }
 .overview-metrics > div { padding: 0 24px; }
@@ -49,7 +57,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 100px; }
   .entry-stage { padding: 35px 0; }
   .entry-footnote { max-width: 300px; }
   .overview-metrics > div { padding: 0 10px; }
-  .balance-number { font-size: clamp(42px, 12vw, 82px); }
+  .balance-number { font-size: clamp(30px, 9vw, 64px); }
+  .overview-metrics strong { font-size: clamp(13px, 3.7vw, 24px); }
   .demo-form { gap: 16px; padding: 20px; }
   #data-tools { padding: 14px; }
 }

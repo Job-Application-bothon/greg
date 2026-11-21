@@ -44,6 +44,7 @@ main.append(dashboard);
 dashboard.append(tools);
 tools.append(inputGrid);
 dashboard.append($("empty-view"), $("workspace-view"));
+dashboard.append(tools);
 const note = document.createElement("p");
 note.className = "card hidden";
 note.textContent = "Manual demo preview only. No bank is connected. No forecast is generated from these totals. Import a CSV to explore your real dashboard; any existing dashboard below still uses your saved data.";
@@ -63,16 +64,22 @@ reducedMotion.addEventListener("change", () => {
   }
 });
 function show(el, visible) { el.classList.toggle("hidden", !visible); }
+const headerResize = new ResizeObserver(() => {
+  document.documentElement.style.setProperty('--stage-header', `${document.querySelector('.site-head').getBoundingClientRect().height}px`);
+});
+headerResize.observe(document.querySelector('.site-head'));
 function top() { window.scrollTo({ top: 0, behavior: "instant" }); }
 function enter(el) {
   if (!reducedMotion.matches) el.animate([{opacity: 0, transform: "translateY(14px)"}, {opacity: 1, transform: "translateY(0)"}], {duration: 550, easing: "cubic-bezier(.2,.7,.2,1)"});
 }
 function choose() {
+  document.documentElement.classList.remove('staged-scroll');
   show(chooser, true); show(bank, false); show(overview, false); show(dashboard, false);
   show($("cancel-source"), !!(preview || savedState?.has_data));
   top(); enter(chooser);
 }
 function summary(data, isPreview = false) {
+  document.documentElement.classList.add('staged-scroll');
   show(chooser, false); show(bank, false); show(overview, true); show(dashboard, true); show(change, true);
   show(note, isPreview); show($("empty-view"), false);
   const ms = data.month_summary;
@@ -112,6 +119,7 @@ $("bank-demo-form").addEventListener("submit", (event) => {
   summary(preview, true); top();
 });
 function reviewFile() {
+  document.documentElement.classList.remove('staged-scroll');
   if (!$("csv-file").files.length) return;
   show(chooser, false); show(bank, false); show(overview, false); show(dashboard, true);
   show(note, false); show($("empty-view"), false); show(change, true);
