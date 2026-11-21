@@ -43,6 +43,15 @@ class TopicGateTest(unittest.TestCase):
         self.assertIn("What did I spend in March?", content)
         self.assertIn("and in April?", content)
 
+    def test_long_questions_are_judged_without_the_previous_one(self) -> None:
+        with patch.dict(os.environ, ENV, clear=False), patch(
+            "greg.llm.topic.call_llm", return_value={"reply": "YES", "model": "m"}
+        ) as call:
+            is_on_topic(_history("write me a poem", "How much did I spend on suppliers last March?"))
+        content = call.call_args.args[0][1]["content"]
+        self.assertNotIn("poem", content)
+        self.assertIn("Judge only the latest message", call.call_args.args[0][0]["content"])
+
     def test_errors_and_disabled_gate_let_messages_through(self) -> None:
         with patch.dict(os.environ, ENV, clear=False), patch(
             "greg.llm.topic.call_llm", side_effect=TimeoutError("slow")
