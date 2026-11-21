@@ -14,7 +14,7 @@ from greg.api.server import create_server
 from greg.domain.sessions import SESSIONS
 from greg.llm.guardrails import GuardrailUnavailable, GuardrailVerdict
 from greg.llm.prompts import build_context_system_prompt
-from tests.helpers import build_synthetic_csv
+from tests.helpers import build_synthetic_csv, synthetic_ledger
 
 
 class HTTPServerIntegrationTest(unittest.TestCase):
@@ -313,6 +313,27 @@ class HTTPServerIntegrationTest(unittest.TestCase):
         ) as call_llm:
             self._post_status("/api/chat", {"message": "How much did I earn?"})
         self.assertIn("Never make up amounts", call_llm.call_args.args[0][0]["content"])
+
+    def test_chat_adds_app_guide_and_date_lookup(self) -> None:
+        store = SESSIONS.get("tab-chat")
+        store.transactions = synthetic_ledger(date(2025, 1, 1), date(2025, 12, 31))
+        store.opening_balance = 5000.0
+        with patch(
+            "greg.api.routes.call_llm", return_value={"reply": "ok", "model": "m"}
+        ) as call_llm:
+            self._post_status("/api/chat", {"message": "What did I pay on 14 March 2025?"})
+        system = call_llm.call_args.args[0][0]["content"]
+        self.assertIn("HOW TO USE GREG", system)
+        self.assertIn("DATE LOOKUP (exact", system)
+        self.assertIn("2025-03-14 (Friday, 14 March 2025)", system)
+
+        with patch(
+            "greg.api.routes.call_llm", return_value={"reply": "ok", "model": "m"}
+        ) as call_llm:
+            self._post_status("/api/chat", {"message": "How do I add an expense?"})
+        system = call_llm.call_args.args[0][0]["content"]
+        self.assertIn("HOW TO USE GREG", system)
+        self.assertNotIn("DATE LOOKUP (exact", system)
 
     def test_chat_guardrails_unavailable_returns_503(self) -> None:
         with patch(

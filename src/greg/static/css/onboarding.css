@@ -25,6 +25,7 @@ html.source-screen { overflow: hidden; }
   .source-screen #source-chooser .source-or { padding: 0; }
 }
 html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--stage-header, 69px); }
+html.staged-scroll.free-scroll { scroll-snap-type: none; }
 .staged-scroll #balance-overview, .staged-scroll #dashboard { scroll-snap-align: start; scroll-snap-stop: always; scroll-margin-top: 0; }
 .staged-scroll #balance-overview { height: calc(100dvh - var(--stage-header, 69px)); min-height: calc(100dvh - var(--stage-header, 69px)); box-sizing: border-box; }
 .staged-scroll #dashboard { min-height: calc(100dvh - var(--stage-header, 69px)); }
@@ -54,8 +55,8 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
   #source-chooser .source-icon { width: 42px; height: 42px; margin-bottom: 22px; }
 }
 /* Quiet sculpted ribbons give the chooser depth without competing with its two actions. */
-.source-screen body { background: #f5f5f6; }
-.source-screen body::before { content: ""; position: fixed; pointer-events: none; inset: 0; background: radial-gradient(ellipse at 15% 100%, #e3e3e780, transparent 55%), radial-gradient(ellipse at 85% 5%, #fff, transparent 60%); }
+body, .source-screen body { background: #fff; }
+.source-screen body::before { content: none; }
 .source-screen .site-head, .source-screen main { position: relative; }
 #source-chooser .source-options { gap: 0; }
 #source-chooser .source-card { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(145deg, #fff 12%, #fafafa 70%, #f1f1f3); border-color: #fff; box-shadow: 0 2px 4px #00000003, 0 20px 60px #17172508, inset 0 0 0 1px #00000004; }
@@ -112,6 +113,28 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
 .scroll-cue { position: absolute; bottom: 26px; font-size: 11px; color: var(--muted); display: flex; gap: 20px; align-items: center; padding: 10px; }
 .scroll-cue span { font-size: 20px; }
 #dashboard { display: flex; flex-direction: column; gap: 24px; padding-top: 36px; border-top: 1px solid var(--line); scroll-margin-top: 80px; }
+#graph-actions { display:grid; grid-template-columns:minmax(0, max-content) auto; justify-content:start; align-items:start; gap:16px; padding:0 0 28px; }
+#graph-actions.hidden, #graph-actions .hidden { display:none; }
+#manual-entry > summary { display:flex; align-items:center; gap:10px; width:fit-content; box-sizing:border-box; min-height:38px; padding:9px 14px; border:1px solid var(--line); border-radius:10px; font-size:12px; cursor:pointer; list-style:none; background:#fff; }
+#manual-entry > summary::-webkit-details-marker { display:none; }
+#manual-entry > summary:hover { background:#f5f5f5; }
+#manual-entry > summary:focus-visible { outline:2px solid var(--ink); outline-offset:3px; }
+.manual-chevron { margin-left:12px; transition:transform .2s; }
+#manual-entry[open] .manual-chevron { transform:rotate(180deg); }
+.manual-entry-panel { margin-top:16px; padding:24px; border:1px solid var(--line); border-radius:14px; background:#fff; }
+.manual-entry-panel h2 { margin:0 0 8px; font-size:17px; }
+.manual-entry-panel > p { margin:0 0 24px; }
+#manual-form { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px; }
+#manual-form .field { min-width:0; }
+#manual-form #add-op-btn { align-self:end; min-height:40px; }
+#connect-bank-demo { display:flex; align-items:center; gap:12px; min-height:38px; padding:9px 14px; border-radius:10px; font-size:12px; }
+.demo-tag { font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+#bank-demo-hint { max-width:210px; margin:10px 0 0; font-size:11px; line-height:1.5; }
+@media(max-width:720px) {
+  #graph-actions { grid-template-columns:minmax(0, 1fr); gap:12px; }
+  .manual-entry-panel { padding:18px; }
+  #manual-form { grid-template-columns:minmax(0, 1fr); }
+}
 #data-tools { border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
 #data-tools > summary { color: var(--muted); font-size: 13px; }
 #data-tools[open] > summary { margin-bottom: 20px; }
@@ -140,10 +163,14 @@ html.staged-scroll { scroll-snap-type: y mandatory; scroll-padding-top: var(--st
 #floating-chat-launcher { position:fixed; right:24px; bottom:24px; width:60px; height:60px; border-radius:50%; display:grid; place-items:center; padding:0; background:var(--ink); color:#fff; z-index:1001; box-shadow:0 8px 28px #0002; }
 #floating-chat-launcher[hidden] { display:none; }
 @media(max-width:480px) { #floating-chat-launcher { right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); } }
-.assistant-stage { min-height:calc(100dvh - var(--stage-header, 69px)); box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:48px 16px; border-top:1px solid var(--line); scroll-snap-align:start; scroll-snap-stop:always; }
+.assistant-stage { min-height:calc(100dvh - var(--stage-header, 69px)); box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:48px 16px; border-top:1px solid var(--line); }
 .assistant-stage h2 { font-size:clamp(38px, 6vw, 80px); line-height:1.08; letter-spacing:-.06em; font-weight:400; margin:0; }
 .assistant-stage-copy { color:var(--muted); font-size:clamp(14px, 1.4vw, 18px); line-height:1.7; margin:24px 0 36px; }
-#assistant-stage #chat-launcher { position:static; width:auto; height:auto; min-height:64px; min-width:260px; padding:18px 28px; border-radius:14px; display:flex; justify-content:space-between; gap:48px; font-size:17px; box-shadow:none; }
+#assistant-stage #chat-launcher { position:static; width:fit-content; max-width:100%; height:auto; min-height:60px; min-width:0; padding:18px 24px; border-radius:14px; display:inline-flex; align-items:center; justify-content:center; gap:12px; font-size:17px; line-height:24px; font-weight:500; white-space:nowrap; box-shadow:0 4px 12px #00000012; transition:background-color .18s ease, box-shadow .18s ease; }
+#assistant-stage #chat-launcher svg { flex:none; width:20px; height:20px; }
+@media (hover:hover) { #assistant-stage #chat-launcher:hover { background:#30302e; box-shadow:0 6px 16px #00000020; } }
+#assistant-stage #chat-launcher:active { background:#101010; box-shadow:none; }
+@media (prefers-reduced-motion:reduce) { #assistant-stage #chat-launcher { transition:none; } }
 #assistant-stage #chat-launcher[hidden] { display:none; }
 
 /* Same sculpted ribbon as CSV, mirrored; its viewport ends above the bank title. */

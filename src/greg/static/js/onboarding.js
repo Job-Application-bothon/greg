@@ -34,7 +34,8 @@ const bank = $("bank-entry");
 const overview = $("balance-overview");
 const tools = document.createElement("details");
 tools.id = "data-tools";
-tools.innerHTML = '<summary>Manage data &amp; add operations</summary>';
+tools.innerHTML = '<summary class="hidden">CSV import</summary>';
+tools.className = 'hidden';
 const inputGrid = main.querySelector(".grid-2");
 const dashboard = document.createElement("section");
 dashboard.id = "dashboard";
@@ -44,6 +45,21 @@ dashboard.append(tools);
 tools.append(inputGrid);
 dashboard.append($("empty-view"), $("workspace-view"));
 dashboard.append(tools);
+const graphActions = document.createElement('div');
+graphActions.id = 'graph-actions';
+graphActions.className = 'hidden';
+graphActions.innerHTML = '<details id="manual-entry"><summary><span aria-hidden="true">＋</span> Add manually <span class="manual-chevron" aria-hidden="true">⌄</span></summary><div class="manual-entry-panel"><h2>Add a transaction</h2><p class="subtitle">Record an income or expense that isn’t in your statement.</p></div></details><div class="bank-demo-action"><button type="button" class="secondary" id="connect-bank-demo" aria-expanded="false" aria-controls="bank-demo-hint">Connect to bank <span class="demo-tag">Demo</span></button><p id="bank-demo-hint" class="subtitle hidden" role="status">Bank connection preview only. No bank is connected.</p></div>';
+const manualSection = $('manual-form').closest('section');
+graphActions.querySelector('.manual-entry-panel').append($('manual-form'));
+manualSection.remove();
+graphActions.querySelector('#add-op-btn').textContent = 'Add transaction';
+dashboard.append(graphActions);
+graphActions.querySelector('#connect-bank-demo').addEventListener('click', event => {
+  const button = event.currentTarget;
+  const expanded = button.getAttribute('aria-expanded') !== 'true';
+  button.setAttribute('aria-expanded', String(expanded));
+  show($('bank-demo-hint'), expanded);
+});
 const assistantStage = document.createElement('section');
 assistantStage.id = 'assistant-stage';
 assistantStage.className = 'assistant-stage hidden';
@@ -100,7 +116,36 @@ const headerResize = new ResizeObserver(() => {
   document.documentElement.style.setProperty('--stage-header', `${document.querySelector('.site-head').getBoundingClientRect().height}px`);
 });
 headerResize.observe(document.querySelector('.site-head'));
-function top() { window.scrollTo({ top: 0, behavior: "instant" }); }
+function graphScrollBoundary() {
+  return dashboard.getBoundingClientRect().top + window.scrollY - document.querySelector('.site-head').getBoundingClientRect().height;
+}
+function updateScrollMode(delta) {
+  const root = document.documentElement;
+  if (!root.classList.contains('staged-scroll') || !delta) return;
+  root.classList.toggle('free-scroll', window.scrollY > graphScrollBoundary() + 2 || (delta > 0 && window.scrollY >= graphScrollBoundary() - 2));
+}
+window.addEventListener('wheel', event => {
+  if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+  const wasFree = document.documentElement.classList.contains('free-scroll');
+  updateScrollMode(event.deltaY);
+  if (!wasFree && document.documentElement.classList.contains('free-scroll')) {
+    event.preventDefault();
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
+    window.scrollBy({ top: event.deltaY * unit, behavior: 'instant' });
+  } else if (wasFree && !document.documentElement.classList.contains('free-scroll')) {
+    event.preventDefault();
+    window.scrollTo({ top: overview.getBoundingClientRect().top + window.scrollY - document.querySelector('.site-head').getBoundingClientRect().height, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+  }
+}, { passive: false });
+let touchY = null;
+window.addEventListener('touchstart', event => { touchY = event.touches[0]?.clientY ?? null; }, { passive: true });
+window.addEventListener('touchmove', event => {
+  if (touchY !== null && event.touches[0]) updateScrollMode(touchY - event.touches[0].clientY);
+}, { passive: true });
+window.addEventListener('scroll', () => {
+  if (document.documentElement.classList.contains('staged-scroll') && window.scrollY < graphScrollBoundary() - 2) document.documentElement.classList.remove('free-scroll');
+}, { passive: true });
+function top() { document.documentElement.classList.remove('free-scroll'); window.scrollTo({ top: 0, behavior: "instant" }); }
 function enter(el) {
   if (!reducedMotion.matches) el.animate([{opacity: 0, transform: "translateY(14px)"}, {opacity: 1, transform: "translateY(0)"}], {duration: 550, easing: "cubic-bezier(.2,.7,.2,1)"});
 }
@@ -113,6 +158,11 @@ function choose() {
 }
 function summary(data, isPreview = false) {
   tools.classList.remove('csv-review');
+  show(tools, false);
+  show(graphActions, true);
+  show(graphActions.querySelector('.bank-demo-action'), !isPreview);
+  $('connect-bank-demo').setAttribute('aria-expanded', 'false');
+  show($('bank-demo-hint'), false);
   document.documentElement.classList.add('staged-scroll');
   show(chooser, false); show(bank, false); show(overview, true); show(dashboard, true); show(change, true);
   show(note, isPreview); show($("empty-view"), false);
@@ -158,6 +208,8 @@ function reviewFile() {
   show(chooser, false); show(bank, false); show(overview, false); show(dashboard, true);
   show(note, false); show($("empty-view"), false); show(change, true);
   tools.open = true;
+  show(tools, true);
+  show(graphActions, false);
   tools.classList.add('csv-review');
   tools.scrollIntoView({block: "start", behavior: reducedMotion.matches ? "instant" : "smooth"});
 }

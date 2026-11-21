@@ -48,7 +48,9 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             self.assertIn('/static/css/base.css', html)
             self.assertIn('/static/js/app.js', html)
 
-        for css_name in ("base.css", "forecast.css", "messenger.css"):
+        for css_name in (
+            "base.css", "forecast.css", "messenger.css", "onboarding.css", "ufo-artwork.css"
+        ):
             with urllib.request.urlopen(
                 f"http://127.0.0.1:{self.port}/static/css/{css_name}", timeout=5
             ) as resp:
@@ -64,6 +66,8 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             "csv-mapping.js",
             "chart.js",
             "controls.js",
+            "onboarding.js",
+            "ufo-artwork.js",
             "chat.js",
             "whatif.js",
             "loan.js",
@@ -77,6 +81,26 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
                 )
                 self.assertEqual(resp.headers.get("Cache-Control"), "no-store")
                 resp.read()
+
+    def test_ufo_asset_and_removed_forecast_diagnostics(self) -> None:
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{self.port}/static/art/chrome-ufo.svg", timeout=5
+        ) as resp:
+            self.assertEqual(resp.status, 200)
+            self.assertIn("image/svg+xml", resp.headers.get("Content-Type", ""))
+            self.assertIn(b"<svg", resp.read())
+        html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+        self.assertIn('/static/css/ufo-artwork.css', html)
+        self.assertIn('<title>UFO — Ultimate Financial Officer</title>', html)
+        self.assertIn('aria-label="UFO home"', html)
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{self.port}/static/images/ufo-logo.png", timeout=5
+        ) as resp:
+            self.assertEqual(resp.status, 200)
+            self.assertEqual(resp.headers.get("Content-Type"), "image/png")
+            self.assertTrue(resp.read().startswith(b"\x89PNG\r\n\x1a\n"))
+        for removed in ('id="forecast-mode-subtitle"', 'id="forecast-method-bar"'):
+            self.assertNotIn(removed, html)
 
     def test_frontend_labels_design_features_and_loan_request(self) -> None:
         html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
@@ -138,8 +162,6 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             'id="chart-scroll"',
             'id="chart-range-label"',
             'class="chart-legend hidden"',
-            'id="forecast-mode-subtitle"',
-            'id="forecast-method-bar"',
             "Method Chosen",
             "Own Model (Neural Network)",
             "StatsForecast",

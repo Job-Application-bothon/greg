@@ -88,6 +88,10 @@ export function createWhatIfController(els, { onChange }) {
     const pct = (v) => `${Number(v) > 0 ? "+" : ""}${v}%`;
     incomeOut.textContent = pct(incomeInput.value);
     expenseOut.textContent = pct(expenseInput.value);
+    els.panel.querySelectorAll('[data-whatif-preset]').forEach(button => {
+      const [lever, value] = button.dataset.whatifPreset.split(':');
+      button.setAttribute('aria-pressed', String(Number(els[PRESET_LEVERS[lever]].value) === Number(value)));
+    });
   }
 
   function changed() {
@@ -111,12 +115,18 @@ export function createWhatIfController(els, { onChange }) {
     reset();
     onChange();
   });
+  const tuneToggle = els.panel.querySelector('#whatif-tune-toggle');
+  tuneToggle.addEventListener('click', () => {
+    const expanded = tuneToggle.getAttribute('aria-expanded') !== 'true';
+    tuneToggle.setAttribute('aria-expanded', String(expanded));
+    els.panel.querySelector('#whatif-tuning').classList.toggle('hidden', !expanded);
+  });
   els.panel.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-whatif-preset]");
     if (!btn) return;
     const [lever, value] = btn.getAttribute("data-whatif-preset").split(":");
     const input = els[PRESET_LEVERS[lever]];
-    if (input) input.value = value;
+    if (input) input.value = Number(input.value) === Number(value) ? '0' : value;
     changed();
   });
   syncOutputs();

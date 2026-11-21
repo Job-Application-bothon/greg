@@ -106,7 +106,6 @@ export function createChartController(
     const creditTip = loan ? "With loan" : "With credit";
 
     const whatIf = getWhatIf(state);
-    const hasWhatIf = !!whatIf;
     const allPoints = buildChartPoints(state, whatIf, loan);
     const total = allPoints.length;
     const defaultWindow = interval === "month" ? 24 : 60;
@@ -165,7 +164,7 @@ export function createChartController(
     const H = 260;
     forecastChart.setAttribute("viewBox", `0 0 ${W} ${H}`);
     const leftPad = 94;
-    const rightPad = 24;
+    const rightPad = visPoints.some(p => p.kind === "fore") ? 158 : 24;
     const topPad = 24;
     const bottomPad = 34;
     const plotW = W - leftPad - rightPad;
@@ -222,38 +221,32 @@ export function createChartController(
       }
     });
 
-    const whatIfLegend = `<span class="legend-item"><span class="swatch" style="background: ${WHATIF_COLOR}"></span>What-if scenario</span>`;
     if (chartLegend) {
-      if (interval === "month") {
-        const items = [
-          '<span class="legend-item"><span class="swatch" style="background: #0d0d0d"></span>Past</span>',
-          '<span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected forecast</span>',
-          '<span class="legend-item"><span class="swatch" style="background: #c96b7c"></span>Pessimistic stress test</span>',
-        ];
-        if (hasApprovedCredit) {
-          items.push(
-            `<span class="legend-item"><span class="swatch" style="background: #24664e"></span>${creditLabel}</span>`
-          );
-        }
-        if (hasWhatIf) items.push(whatIfLegend);
-        chartLegend.innerHTML = items.join("");
-        chartLegend.classList.remove("hidden");
-      } else if (hasApprovedCredit || hasWhatIf) {
-        const items = [
-          '<span class="legend-item"><span class="swatch" style="background: #805181"></span>Forecast balance</span>',
-        ];
-        if (hasApprovedCredit) {
-          items.push(
-            `<span class="legend-item"><span class="swatch" style="background: #24664e"></span>${creditLabel}</span>`
-          );
-        }
-        if (hasWhatIf) items.push(whatIfLegend);
-        chartLegend.innerHTML = items.join("");
-        chartLegend.classList.remove("hidden");
-      } else {
-        chartLegend.classList.add("hidden");
-      }
+      chartLegend.innerHTML = "";
+      chartLegend.classList.add("hidden");
     }
+    const endLabels = [
+      {coords: foreCoords, text: interval === "month" ? "Expected forecast" : "Forecast balance", color: "#805181"},
+      {coords: pessCoords, text: "Pessimistic stress test", color: "#c96b7c"},
+      {coords: creditCoords, text: creditLabel, color: "#24664e"},
+      {coords: whatIfCoords, text: "What-if scenario", color: WHATIF_COLOR},
+    ].filter(label => label.coords.length > 1).map(label => {
+      const [x, y] = label.coords.at(-1).split(",").map(Number);
+      return {...label, x, y, labelY: Math.max(topPad + 8, Math.min(H - bottomPad - 8, y))};
+    }).sort((a, b) => a.y - b.y);
+    // Keep close endpoints readable without moving their actual line tips.
+    for (let i = 1; i < endLabels.length; i++) {
+      endLabels[i].labelY = Math.max(endLabels[i].labelY, endLabels[i - 1].labelY + 18);
+    }
+    for (let i = endLabels.length - 1; i >= 0; i--) {
+      endLabels[i].labelY = Math.min(endLabels[i].labelY, i === endLabels.length - 1 ? H - bottomPad - 8 : endLabels[i + 1].labelY - 18);
+    }
+    const endpointMarkup = endLabels.map(label => `
+      <g class="forecast-end-label" data-color="${label.color}" data-x="${label.x}" data-y="${label.y}" data-label-y="${label.labelY}" pointer-events="none">
+        <path d="M ${label.x} ${label.y} L ${label.x + 6} ${label.labelY} H ${label.x + 10}" fill="none" stroke="${label.color}" stroke-width="1" />
+        <circle cx="${label.x}" cy="${label.y}" r="2.5" fill="${label.color}" />
+        <text x="${label.x + 14}" y="${label.labelY}" dominant-baseline="middle" font-size="11" font-weight="500" fill="${label.color}" stroke="white" stroke-width="3" stroke-linejoin="round" paint-order="stroke">${escapeHtml(label.text)}</text>
+      </g>`).join("");
 
     const showMinLabel = Math.abs(minY - maxY) >= 14;
     const showZeroLabel =
@@ -333,6 +326,9 @@ export function createChartController(
           : ""
       }
 
+
+
+      ${endpointMarkup}
       <line id="chart-crosshair" x1="0" y1="${topPad}" x2="0" y2="${H - bottomPad}" stroke="#8a8a8a" stroke-dasharray="3 3" stroke-width="1" visibility="hidden" />
       <line id="chart-crosshair-y" x1="${leftPad}" y1="0" x2="${W - rightPad}" y2="0" stroke="#8a8a8a" stroke-dasharray="3 3" stroke-width="1" visibility="hidden" />
       <circle id="chart-hover-pess-dot" cx="0" cy="0" r="4" fill="#c96b7c" stroke="#ffffff" stroke-width="1.5" visibility="hidden" />

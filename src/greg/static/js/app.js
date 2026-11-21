@@ -9,6 +9,9 @@ import { escapeHtml, fmtMoney, fmtZero } from "./format.js";
 import { createLoanController } from "./loan.js";
 import { createWhatIfController } from "./whatif.js";
 
+import { initUfoArtwork } from "./ufo-artwork.js";
+
+initUfoArtwork();
 initNumberSteppers();
 initForecastDotHover();
 
