@@ -95,7 +95,7 @@ def _check_remote(text: str) -> GuardrailVerdict:
     )
     context = _ssl_context() if req.full_url.startswith("https://") else None
     try:
-        with urllib.request.urlopen(req, timeout=10, context=context) as resp:
+        with urllib.request.urlopen(req, timeout=settings.guardrails_timeout, context=context) as resp:
             body = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         raise GuardrailUnavailable(f"Guardrails check failed: {_http_error_detail(exc)}") from exc
