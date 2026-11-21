@@ -1,6 +1,7 @@
 """Grounded plain-language system and explanation prompts built from ledger views."""
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import date
 from typing import Any
 
@@ -11,6 +12,9 @@ SYSTEM_PROMPT = (
     "You are Greg, a friendly, plain-language financial assistant for small business owners. "
     "Use simple everyday words without technical or financial jargon so anyone can understand. "
     "Always answer using the exact numbers provided in the account summary below. "
+    "When a SELECTED CHART PERIOD section is present, prioritize its exact figures, transaction "
+    "drivers, and projected forecast entries to explain what happened or what is expected during "
+    "that highlighted period. "
     "When the user asks about a full year (such as 2025) or the entire dataset, use the "
     "FULL DATASET & YEARLY TOTALS section. When the user asks about a specific month, use that "
     "month's numbers from ALL MONTHS SUMMARY or CURRENTLY SELECTED MONTH. Never confuse a single "
@@ -88,11 +92,114 @@ def _currency_prefix(currency: str) -> str:
     return "€" if currency == "EUR" else f"{currency} "
 
 
+def _date_in_period(tx_date: str, start_date: str, end_date: str) -> bool:
+    """Match ISO YYYY-MM-DD transaction dates against either YYYY-MM or YYYY-MM-DD period bounds."""
+    s_bound = f"{start_date}-01" if len(start_date) == 7 else start_date[:10]
+    e_bound = f"{end_date}-31" if len(end_date) == 7 else end_date[:10]
+    return s_bound <= tx_date <= e_bound
+
+
+def _build_selected_period_section(
+    selected_period: dict[str, Any] | None,
+    active_store: LedgerStore,
+    view: dict[str, Any],
+    sym: str,
+) -> str:
+    if not isinstance(selected_period, dict):
+        return ""
+    start_date = str(selected_period.get("startDate") or "").strip()
+    end_date = str(selected_period.get("endDate") or "").strip()
+    if not start_date or not end_date:
+        return ""
+
+    mode_label = str(selected_period.get("modeLabel") or selected_period.get("mode") or "Selected")
+    lines = [
+        f"\n\nSELECTED CHART PERIOD ({start_date} to {end_date} · {mode_label}):",
+    ]
+    if selected_period.get("startBalance") is not None and selected_period.get("endBalance") is not None:
+        lines.append(
+            f"- Balance movement: {sym}{float(selected_period['startBalance']):,.2f} -> "
+            f"{sym}{float(selected_period['endBalance']):,.2f}"
+        )
+    if selected_period.get("totalIncome") is not None and selected_period.get("totalExpenses") is not None:
+        inc = float(selected_period["totalIncome"])
+        exp = float(selected_period["totalExpenses"])
+        net = float(selected_period.get("netFlow", inc - exp))
+        lines.append(
+            f"- Period flows: Income +{sym}{inc:,.2f} | Expenses -{sym}{exp:,.2f} | "
+            f"Net {'+' if net > 0 else ''}{sym}{net:,.2f}"
+        )
+    if selected_period.get("lowestBalance") is not None:
+        lines.append(
+            f"- Lowest balance in period: {sym}{float(selected_period['lowestBalance']):,.2f} "
+            f"(on {selected_period.get('lowestDate', '?')})"
+        )
+
+    # Ground actual historical transactions inside the selected period
+    period_txs = [
+        t for t in active_store.transactions if _date_in_period(t["date"], start_date, end_date)
+    ]
+    if period_txs:
+        exp_by_cat: dict[str, float] = defaultdict(float)
+        exp_by_cp: dict[str, float] = defaultdict(float)
+        inc_by_cp: dict[str, float] = defaultdict(float)
+        for t in period_txs:
+            amt = float(t["amount"])
+            if amt < 0:
+                exp_by_cat[t["category"]] += abs(amt)
+                exp_by_cp[t["counterparty"]] += abs(amt)
+            elif amt > 0:
+                inc_by_cp[t["counterparty"]] += amt
+
+        cat_summary = ", ".join(
+            f"{cat}: {sym}{val:,.2f}"
+            for cat, val in sorted(exp_by_cat.items(), key=lambda kv: kv[1], reverse=True)
+        )
+        top_exp = ", ".join(
+            f"{cp}: {sym}{val:,.2f}"
+            for cp, val in sorted(exp_by_cp.items(), key=lambda kv: kv[1], reverse=True)[:6]
+        )
+        top_inc = ", ".join(
+            f"{cp}: {sym}{val:,.2f}"
+            for cp, val in sorted(inc_by_cp.items(), key=lambda kv: kv[1], reverse=True)[:5]
+        )
+        lines.append(f"- Recorded actual transactions in period: {len(period_txs)}")
+        if cat_summary:
+            lines.append(f"- Actual expenses by category in period: {cat_summary}")
+        if top_exp:
+            lines.append(f"- Top expense counterparties in period: {top_exp}")
+        if top_inc:
+            lines.append(f"- Top income sources in period: {top_inc}")
+
+    # Ground projected forecast points overlapping the selected period
+    la = view.get("liquidity_agent") or {}
+    full_fore = la.get("full_forecast_series") or la.get("forecast_series") or []
+    fore_in_period = [p for p in full_fore if start_date <= str(p.get("date", "")) <= end_date]
+    if fore_in_period:
+        lines.append(f"- Projected forecast entries in period ({len(fore_in_period)} points):")
+        for pt in fore_in_period[:12]:
+            pess_str = (
+                f" | Stress-test {sym}{float(pt['balance_pessimistic']):,.2f}"
+                if pt.get("balance_pessimistic") is not None
+                else ""
+            )
+            lines.append(
+                f"  - {pt['date']}: Expected In +{sym}{float(pt.get('expected_in', 0)):,.2f} | "
+                f"Expected Out -{sym}{float(pt.get('expected_out', 0)):,.2f} | "
+                f"Projected Balance {sym}{float(pt.get('balance', 0)):,.2f}{pess_str}"
+            )
+        if len(fore_in_period) > 12:
+            lines.append(f"  - (... {len(fore_in_period) - 12} more projected entries in period)")
+
+    return "\n".join(lines) + "\n"
+
+
 def build_context_system_prompt(
     selected_month: str | None = None,
     horizon_days: int = 30,
     horizon_months: int | None = None,
     store: LedgerStore | None = None,
+    selected_period: dict[str, Any] | None = None,
 ) -> str:
     """Build a complete factual system prompt from the active ledger store view."""
     active_store = store if store is not None else STORE
@@ -180,6 +287,8 @@ def build_context_system_prompt(
             f"- Upcoming regular bills in forecast window: {bills_preview}\n"
         )
 
+    period_section = _build_selected_period_section(selected_period, active_store, view, sym)
+
     return (
         f"{SYSTEM_PROMPT}\n\n"
         f"DATES: Today is {date.today().isoformat()}. The bank data covers {ds['first_date']} "
@@ -201,6 +310,7 @@ def build_context_system_prompt(
         f"- Expenses by category in {view['selected_month_label']}:\n"
         + ("\n".join(cat_lines) if cat_lines else "  - None")
         + forecast_section
+        + period_section
     )
 
 

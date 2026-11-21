@@ -33,17 +33,34 @@ def resolve_model(base_url: str, configured_model: str) -> str:
 def call_llm(
     messages: list[dict[str, str]], max_tokens: int = 512, temperature: float = 0.3
 ) -> dict[str, str]:
-    """Forward chat messages to the configured OpenAI-compatible LLM endpoint."""
+    """Forward chat messages to an OpenAI-compatible LLM endpoint (or OpenShift /api/chat relay)."""
     settings = load_settings()
     base_url = settings.llm_base_url
     if not base_url:
         raise RuntimeError("LLM_BASE_URL is not configured")
 
-    model = resolve_model(base_url, settings.llm_model)
     full_messages = list(messages)
     if not full_messages or full_messages[0].get("role") != "system":
         full_messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
 
+    if base_url.endswith("/api/chat"):
+        payload = json.dumps({"messages": full_messages}).encode("utf-8")
+        req = urllib.request.Request(
+            base_url,
+            data=payload,
+            headers=llm_headers(),
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+        if "reply" not in body:
+            raise ValueError("Missing reply from OpenShift /api/chat relay")
+        return {
+            "reply": str(body["reply"]),
+            "model": str(body.get("model") or settings.llm_model or "llama-32-3b-instruct"),
+        }
+
+    model = resolve_model(base_url, settings.llm_model)
     payload = json.dumps(
         {
             "model": model,

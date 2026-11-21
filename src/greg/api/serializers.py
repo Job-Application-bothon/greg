@@ -15,6 +15,12 @@ def parse_optional_int(value: Any) -> int | None:
         return None
 
 
+def parse_int_or_default(value: Any, default: int = 30) -> int:
+    """Parse an integer parameter preserving zero, falling back to `default` only when absent."""
+    parsed = parse_optional_int(value)
+    return default if parsed is None else parsed
+
+
 def read_json_body(rfile: Any, content_length_header: str) -> dict[str, Any]:
     """Read and decode a JSON object request body."""
     length = int(content_length_header or "0")

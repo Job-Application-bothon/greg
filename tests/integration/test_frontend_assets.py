@@ -91,7 +91,7 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             self.assertIn(b"<svg", resp.read())
         html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
         self.assertIn('/static/css/ufo-artwork.css', html)
-        self.assertIn('<title>UFO — Ultimate Financial Officer</title>', html)
+        self.assertIn('<title>UFO - Ultimate Financial Officer</title>', html)
         self.assertIn('aria-label="UFO home"', html)
         with urllib.request.urlopen(
             f"http://127.0.0.1:{self.port}/static/images/ufo-logo.png", timeout=5
@@ -102,7 +102,7 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
         for removed in ('id="forecast-mode-subtitle"', 'id="forecast-method-bar"'):
             self.assertNotIn(removed, html)
 
-    def test_frontend_labels_design_features_and_loan_request(self) -> None:
+    def test_frontend_labels_design_features_and_step_c_noop(self) -> None:
         html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
         css_all = "\n".join(
             p.read_text(encoding="utf-8") for p in sorted((STATIC_DIR / "css").glob("*.css"))
@@ -155,11 +155,12 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             'id="chart-crosshair"',
             'id="chart-hover-dot"',
             'id="chart-plot-area"',
-            'id="btn-zoom-in"',
-            'id="btn-zoom-out"',
-            'id="btn-zoom-reset"',
             'id="interval-select"',
-            'id="chart-scroll"',
+            'id="minimap-track"',
+            'id="chart-focus-card"',
+            'id="period-action-bar-wrap"',
+            'id="btn-analyze-period"',
+            '/api/bank/connect',
             'id="chart-range-label"',
             'class="chart-legend hidden"',
             "Method Chosen",

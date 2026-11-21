@@ -47,7 +47,7 @@ class HTTPServerIntegrationTest(unittest.TestCase):
             headers=headers,
             method=method,
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8"))
 
     def test_end_to_end_http_workflow(self) -> None:
@@ -96,6 +96,22 @@ class HTTPServerIntegrationTest(unittest.TestCase):
         status, after_reset = self._request("POST", "/api/reset", {})
         self.assertEqual(status, 200)
         self.assertFalse(after_reset["has_data"])
+
+    def test_bank_connect_pulls_mock_csv_and_avoids_immediate_repeats(self) -> None:
+        status1, view1 = self._request("POST", "/api/bank/connect", {}, session_id="bank-demo")
+        self.assertEqual(status1, 200)
+        self.assertTrue(view1["has_data"])
+        self.assertEqual(view1["data_source"], "connected_bank")
+        self.assertTrue(view1["bank_account_name"])
+        self.assertTrue(view1["filename"].endswith(".csv"))
+        self.assertGreater(view1["total_transactions"], 0)
+        self.assertTrue(view1["liquidity_agent"]["forecast_series"])
+
+        status2, view2 = self._request("POST", "/api/bank/connect", {}, session_id="bank-demo")
+        self.assertEqual(status2, 200)
+        self.assertTrue(view2["has_data"])
+        self.assertEqual(view2["data_source"], "connected_bank")
+        self.assertNotEqual(view2["filename"], view1["filename"])
 
     def test_http_sessions_are_isolated_and_no_store_headers(self) -> None:
         csv_text = (

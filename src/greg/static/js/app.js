@@ -1,5 +1,5 @@
 /** Main Greg application orchestrator connecting API, chart, CSV mapping, and chat modules. */
-import { syncOnboarding } from "./onboarding.js";
+import { bindBankConnect, syncOnboarding } from "./onboarding.js";
 import { fetchHealth, fetchViewData, postJson } from "./api.js";
 import { createChartController } from "./chart.js";
 import { createChatController } from "./chat.js";
@@ -83,17 +83,29 @@ const chart = createChartController(
     forecastPanel: document.getElementById("forecast-panel"),
     forecastChart: document.getElementById("forecast-chart"),
     chartTooltip: document.getElementById("chart-tooltip"),
+    chartFocusCard: document.getElementById("chart-focus-card"),
     btnZoomIn: document.getElementById("btn-zoom-in"),
     btnZoomOut: document.getElementById("btn-zoom-out"),
     btnZoomReset: document.getElementById("btn-zoom-reset"),
-    chartScroll: document.getElementById("chart-scroll"),
     chartRangeLabel: document.getElementById("chart-range-label"),
     chartLegend: document.getElementById("chart-legend"),
+    minimapTrack: document.getElementById("minimap-track"),
+    minimapSvg: document.getElementById("minimap-svg"),
+    minimapMaskLeft: document.getElementById("minimap-mask-left"),
+    minimapMaskRight: document.getElementById("minimap-mask-right"),
+    minimapWindow: document.getElementById("minimap-window"),
+    minimapHandleLeft: document.getElementById("minimap-handle-left"),
+    minimapHandleRight: document.getElementById("minimap-handle-right"),
+    periodActionBarWrap: document.getElementById("period-action-bar-wrap"),
+    periodRangeDatesEl: document.getElementById("period-range-dates"),
+    btnAnalyzePeriod: document.getElementById("btn-analyze-period"),
+    btnClearPeriod: document.getElementById("btn-clear-period"),
   },
   {
     getCurrentState: () => currentState,
     getWhatIf: (state) => whatIf.compute(state),
     getLoan: (state) => loan.compute(state),
+    onAnalyzePeriod: (payload) => chat.receivePeriodAnalysis(payload),
   }
 );
 
@@ -420,13 +432,32 @@ function renderState(state) {
   chart.render(state);
 }
 
+bindBankConnect(async () => {
+  currentGranularity = null;
+  chart.resetAll();
+  chat.resetConversation();
+  if (chat.isOpen()) chat.setOpen(false);
+  whatIf.reset();
+  loan.reset();
+  const res = await postJson("/api/bank/connect", {});
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to retrieve bank statement");
+  }
+  renderState(data);
+});
+
 importForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const file = csvFileInput.files[0];
   if (!file) return;
   const text = await file.text();
   currentGranularity = null;
-  chart.resetZoom();
+  chart.resetAll();
+  chat.resetConversation();
+  if (chat.isOpen()) chat.setOpen(false);
+  whatIf.reset();
+  loan.reset();
   const payload = {
     csv_text: text,
     filename: file.name,
@@ -503,7 +534,8 @@ resetBtn.addEventListener("click", async () => {
   if (res.ok) {
     csvMapping.reset();
     currentGranularity = null;
-    chart.resetZoom();
+    chart.resetAll();
+    chat.resetConversation();
     if (chat.isOpen()) chat.setOpen(false);
     whatIf.reset();
     loan.reset();

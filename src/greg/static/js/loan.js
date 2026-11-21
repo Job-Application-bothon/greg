@@ -35,7 +35,7 @@ export function createLoanController(els, { onChange }) {
 
     const balances = compute(state);
     if (!balances) {
-      status.innerHTML = `<span class="subtitle">Enter an amount and request the loan to see it on the forecast chart. Demo only — nothing is sent to ${LOAN_BANK}.</span>`;
+      status.innerHTML = `<span class="subtitle">Enter an amount and request the loan to see it on the forecast chart. Demo only.</span>`;
       return;
     }
     const cur = state.currency || "EUR";
@@ -50,9 +50,9 @@ export function createLoanController(els, { onChange }) {
         ? `<strong class="neg">Still goes below ${escapeHtml(fmtZero(cur))} on ${escapeHtml(fore[firstNeg].date)}.</strong>`
         : `<strong class="pos">Stays above ${escapeHtml(fmtZero(cur))}.</strong>`;
     status.innerHTML =
-      `Loan of <span class="num">${fmtMoney(requested, cur)}</span> requested from ${LOAN_BANK} — shown in green on the chart. ` +
+      `Loan of <span class="num">${fmtMoney(requested, cur)}</span> requested from ${LOAN_BANK} - shown in green on the chart. ` +
       `${outcome} Lowest: <span class="num">${fmtMoney(balances[low], cur)}</span> (${escapeHtml(fore[low].date)}). ` +
-      `<span class="subtitle">Demo only: nothing is sent to the bank, repayments are not included.</span>`;
+      `<span class="subtitle">Demo only.</span>`;
   }
 
   function reset() {

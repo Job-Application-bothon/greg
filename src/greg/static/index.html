@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UFO — Ultimate Financial Officer</title>
+  <title>UFO - Ultimate Financial Officer</title>
   <link rel="icon" type="image/png" href="/static/images/ufo-logo.png" />
   <link rel="preload" href="/static/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/static/css/base.css" />
@@ -106,7 +106,7 @@
               </div>
             </details>
           </div>
-          <div class="csv-confirm-row"><p class="subtitle">Ready? Confirm to see your financial overview.</p><button type="submit" id="import-btn">Confirm</button></div>
+          <div class="csv-confirm-row"><button type="submit" id="import-btn">Confirm</button></div>
         </form>
         <div id="import-info" class="subtitle" style="margin-top: 10px"></div>
       </section>
@@ -245,7 +245,7 @@
               </select>
             </div>
             <div class="field" style="min-width: 170px">
-              <label for="horizon-select">Forecast Ahead</label>
+              <label for="horizon-select">Forecast</label>
               <select id="horizon-select">
                 <option value="30" selected>Next 30 days</option>
                 <option value="60">Next 60 days</option>
@@ -264,33 +264,54 @@
         <!-- SVG FORECAST CHART -->
         <div class="forecast-panel" id="forecast-panel">
           <div class="chart-toolbar">
-
-            <div class="chart-zoom-controls" role="group" aria-label="Chart zoom">
-              <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-in" title="Zoom in">+</button>
-              <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-out" title="Zoom out">−</button>
-              <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-reset"
-                title="Reset view">Reset</button>
-            </div>
+            <span class="subtitle" id="chart-zoom-hint">Drag chart to scroll, wheel to zoom, click a point for details, Ctrl and drag to select a period</span>
           </div>
           <div id="chart-tooltip" class="chart-tooltip hidden" role="status" aria-live="polite"></div>
           <div class="chart-wrap">
             <svg id="forecast-chart" viewBox="0 0 900 260" style="width: 100%; height: 260px; display: block"></svg>
+            <div id="chart-focus-card" class="chart-focus-card hidden" role="button" tabindex="0" aria-expanded="false"></div>
           </div>
-          <div class="chart-scroll-row">
-            <span class="chart-range-label" id="chart-range-label">—</span>
-            <input type="range" id="chart-scroll" min="0" max="0" value="0" aria-label="Scroll history window" />
+          <div id="period-action-bar-wrap" class="period-action-bar-wrap">
+            <div class="period-action-bar-inner">
+              <div class="period-action-bar">
+                <span class="period-range-text">
+                  <span class="period-range-dot"></span>
+                  <span id="period-range-dates"></span>
+                </span>
+                <button type="button" id="btn-analyze-period" class="period-analyze-btn">Analyze</button>
+                <button type="button" id="btn-clear-period" class="period-clear-btn" title="Clear selection" aria-label="Clear selected period">✕</button>
+              </div>
+            </div>
+          </div>
+          <div class="minimap-container" id="minimap-container">
+            <div class="minimap-track" id="minimap-track" role="region" aria-label="Chart timeline navigator">
+              <svg id="minimap-svg" viewBox="0 0 900 42" preserveAspectRatio="none"></svg>
+              <div class="minimap-mask" id="minimap-mask-left" style="left: 0; width: 0%"></div>
+              <div class="minimap-mask" id="minimap-mask-right" style="right: 0; width: 0%"></div>
+              <div class="minimap-window" id="minimap-window" style="left: 0%; width: 100%">
+                <div class="minimap-handle left" id="minimap-handle-left" title="Drag to adjust start">
+                  <span class="minimap-handle-grip"></span>
+                </div>
+                <div class="minimap-handle right" id="minimap-handle-right" title="Drag to adjust end">
+                  <span class="minimap-handle-grip"></span>
+                </div>
+              </div>
+            </div>
+            <div class="minimap-meta-row">
+              <span class="chart-range-label" id="chart-range-label">—</span>
+            </div>
           </div>
           <div class="chart-legend hidden" id="chart-legend">
             <span class="legend-item"><span class="swatch" style="background: #0d0d0d"></span>Past</span>
-            <span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected forecast</span>
-            <span class="legend-item"><span class="swatch" style="background: #c96b7c"></span>Pessimistic stress test</span>
+            <span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected</span>
+            <span class="legend-item"><span class="swatch" style="background: #c96b7c"></span>Pessimistic</span>
           </div>
 
           <!-- WHAT-IF SCENARIO -->
           <div class="whatif" id="whatif-panel">
             <div class="whatif-head">
               <strong>What if…?</strong>
-              <span class="subtitle">Try a scenario — the blue dotted line shows your balance under it.</span>
+              <span class="subtitle">Try a scenario - the blue dotted line shows your balance under it.</span>
               <button type="button" class="secondary chart-zoom-btn" id="whatif-reset">Clear</button>
             </div>
             <div class="whatif-presets">
@@ -325,8 +346,11 @@
           </div>
         </div>
 
-        <!-- LOAN RECOMMENDATION -->
-        <button type="button" id="loan-toggle" class="secondary" aria-expanded="false" aria-controls="loan-panel">Explore a loan</button>
+        <!-- LOAN RECOMMENDATION & EXPLAIN ACTIONS -->
+        <div class="forecast-action-row">
+          <button type="button" id="loan-toggle" class="secondary" aria-expanded="false" aria-controls="loan-panel">Explore a loan</button>
+          <button type="button" id="ai-explain-btn" class="secondary">Ask Greg to Explain in Simple Words</button>
+        </div>
         <section class="stage-box" id="loan-panel" aria-labelledby="loan-title" hidden>
           <h3 id="loan-title">Recommended Action</h3>
           <p id="agent-rec-text" style="font-size: 13px; color: var(--body)"></p>
@@ -346,9 +370,6 @@
             <button type="button" id="loan-request-btn" aria-pressed="false">Request a loan from Commerzbank</button>
           </div>
           <div id="loan-status" role="status" aria-live="polite"></div>
-          <button type="button" id="ai-explain-btn" class="secondary" style="width: 100%; white-space: normal">
-            Ask Greg (OpenShift AI) to Explain in Simple Words
-          </button>
         </section>
       </section>
 

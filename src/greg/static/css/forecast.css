@@ -70,7 +70,7 @@
 .chart-wrap {
   position: relative;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chart-wrap svg {
@@ -83,6 +83,10 @@
 
 .chart-wrap svg.panning {
   cursor: grabbing;
+}
+
+.chart-wrap svg.period-selecting {
+  cursor: cell;
 }
 
 .chart-toolbar {
@@ -286,8 +290,16 @@
   color: var(--body);
 }
 
-#loan-toggle {
+.forecast-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   margin-top: 16px;
+}
+
+#loan-toggle,
+#ai-explain-btn {
   border-radius: 8px;
 }
 
@@ -405,4 +417,452 @@
   padding: 8px 11px;
   border-radius: 10px;
   background: #eef3ff;
+}
+
+/* Interactive Mini-Map Range Navigator */
+.minimap-container {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  user-select: none;
+}
+
+.minimap-track {
+  position: relative;
+  width: 100%;
+  height: 42px;
+  background: #f7f7f8;
+  border: 1px solid #dedede;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.minimap-track svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.minimap-mask {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(240, 240, 244, 0.68);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.minimap-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-top: 2px solid #0d0d0d;
+  border-bottom: 2px solid #805181;
+  background: rgba(128, 81, 129, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(13, 13, 13, 0.12);
+  z-index: 3;
+  cursor: grab;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.minimap-window.dragging {
+  cursor: grabbing;
+}
+
+.minimap-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: ew-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+
+.minimap-handle.left {
+  left: -6px;
+}
+
+.minimap-handle.right {
+  right: -6px;
+}
+
+.minimap-handle-grip {
+  width: 5px;
+  height: 20px;
+  border-radius: 4px;
+  background: #0d0d0d;
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.minimap-handle.right .minimap-handle-grip {
+  background: #805181;
+}
+
+.minimap-handle:hover .minimap-handle-grip {
+  transform: scale(1.12);
+}
+
+.minimap-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Interactive Animated Pinned Date Panel (Income in Green / Expenses in Red / Total) */
+.chart-focus-card {
+  position: absolute;
+  z-index: 8;
+  min-width: 176px;
+  max-width: 232px;
+  background: #18181b;
+  color: #ffffff;
+  border: 1.5px solid var(--pink);
+  border-radius: 11px;
+  padding: 7px 11px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34), 0 0 0 3px rgba(255, 201, 255, 0.18);
+  cursor: pointer;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  transform: translate(-50%, -100%);
+  transition:
+    box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease,
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: focusCardPopIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chart-focus-card.below-dot {
+  transform: translate(-50%, 0%);
+}
+
+.chart-focus-card:hover {
+  border-color: #ffe0ff;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.42), 0 0 0 4px rgba(255, 201, 255, 0.28);
+}
+
+@keyframes focusCardPopIn {
+  0% {
+    opacity: 0;
+    scale: 0.9;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+.focus-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.focus-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.focus-card-date {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--pink);
+  letter-spacing: 0.01em;
+}
+
+.focus-card-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 201, 255, 0.16);
+  color: var(--pink);
+  font-size: 10px;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease;
+}
+
+.chart-focus-card:hover .focus-card-chevron {
+  background: rgba(255, 201, 255, 0.28);
+}
+
+.chart-focus-card.expanded .focus-card-chevron {
+  transform: rotate(180deg);
+  background: var(--scenario);
+  color: #ffffff;
+}
+
+.focus-card-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #d4d4d8;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+button.focus-card-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.focus-card-bal-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.focus-card-bal {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.focus-card-hint {
+  font-size: 9.5px;
+  color: #a1a1aa;
+  font-weight: 500;
+}
+
+.focus-card-drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    grid-template-rows 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.26s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    margin-top 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chart-focus-card.expanded .focus-card-drawer {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+  margin-top: 8px;
+}
+
+.focus-card-drawer-inner {
+  overflow: hidden;
+}
+
+.focus-card-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin-bottom: 7px;
+}
+
+.focus-flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11.5px;
+  padding: 2px 0;
+}
+
+.focus-flow-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #d4d4d8;
+  font-weight: 500;
+}
+
+.focus-dot-inc {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.65);
+}
+
+.focus-dot-exp {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.65);
+}
+
+.focus-val-income {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.focus-val-expense {
+  color: #f87171;
+  font-weight: 700;
+}
+
+.focus-flow-meter {
+  display: flex;
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-top: 6px;
+  gap: 2px;
+}
+
+.focus-meter-inc {
+  height: 100%;
+  background: linear-gradient(90deg, #16a34a, #4ade80);
+  border-radius: 999px;
+  width: 0%;
+  transition: width 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.focus-meter-exp {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444, #f87171);
+  border-radius: 999px;
+  width: 0%;
+  transition: width 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.focus-card-divider-bottom {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 8px 0 5px;
+}
+
+.focus-total-row {
+  font-size: 12px;
+  font-weight: 700;
+  padding-top: 1px;
+}
+
+.focus-total-label {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Ctrl + LMB Period Selection & Centered Analyze Bar */
+.period-action-bar-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    grid-template-rows 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.22s ease,
+    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+    margin-top 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.period-action-bar-wrap.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+  margin-top: 8px;
+}
+
+.period-action-bar-inner {
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  padding: 2px 0;
+}
+
+.period-action-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px 5px 14px;
+  border-radius: 100px;
+  background: var(--tint);
+  border: 1px solid #e6b8e8;
+  box-shadow: 0 4px 14px rgba(128, 81, 129, 0.16);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.period-range-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  color: #623761;
+}
+
+.period-range-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--scenario);
+  box-shadow: 0 0 0 3px rgba(255, 201, 255, 0.55);
+  display: inline-block;
+}
+
+.period-analyze-btn {
+  min-height: 28px;
+  padding: 4px 14px;
+  border-radius: 100px;
+  background: var(--scenario);
+  color: #ffffff;
+  border: 1px solid var(--scenario);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.16s ease, transform 0.14s ease, box-shadow 0.16s ease;
+}
+
+button.period-analyze-btn:hover:not(:disabled) {
+  background: #623761;
+  border-color: #623761;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(128, 81, 129, 0.28);
+}
+
+.period-clear-btn {
+  min-height: 26px;
+  width: 26px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #623761;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+button.period-clear-btn:hover:not(:disabled) {
+  background: #f5dcf7;
+  border-color: transparent;
+  color: #4a2649;
 }

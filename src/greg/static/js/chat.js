@@ -1,4 +1,4 @@
-/** Floating Greg messenger UI, keyboard close, explain trigger, and chat streaming. */
+/** Floating Greg messenger UI, keyboard close, explain trigger, period analysis handoff, and chat streaming. */
 import { postJson } from "./api.js";
 
 export function createChatController(els, { getHorizonPayload }) {
@@ -14,14 +14,16 @@ export function createChatController(els, { getHorizonPayload }) {
   } = els;
 
   const chatHistory = [];
+  const initialMessagesHtml = messagesEl ? messagesEl.innerHTML : "";
+  let activeSelectedPeriod = null;
 
   function setOpen(open) {
     messenger.hidden = !open;
     chatLauncher.hidden = open;
-    const floatingLauncher = document.getElementById('floating-chat-launcher');
+    const floatingLauncher = document.getElementById("floating-chat-launcher");
     if (floatingLauncher) {
       floatingLauncher.hidden = open;
-      floatingLauncher.setAttribute('aria-expanded', String(open));
+      floatingLauncher.setAttribute("aria-expanded", String(open));
     }
     chatLauncher.setAttribute("aria-expanded", String(open));
     chatLauncher.setAttribute("aria-label", open ? "Close chat with Greg" : "Open chat with Greg");
@@ -45,6 +47,30 @@ export function createChatController(els, { getHorizonPayload }) {
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return div;
+  }
+
+  function receivePeriodAnalysis(payload) {
+    if (!payload) return;
+    activeSelectedPeriod = payload;
+    setOpen(true);
+    if (promptEl && payload.suggestedPrompt) {
+      promptEl.value = payload.suggestedPrompt;
+      promptEl.focus();
+      if (typeof promptEl.setSelectionRange === "function") {
+        const len = promptEl.value.length;
+        promptEl.setSelectionRange(len, len);
+      }
+    }
+  }
+
+  function resetConversation() {
+    chatHistory.length = 0;
+    activeSelectedPeriod = null;
+    if (promptEl) promptEl.value = "";
+    if (messagesEl) {
+      messagesEl.innerHTML = initialMessagesHtml;
+      messagesEl.scrollTop = 0;
+    }
   }
 
   chatLauncher.addEventListener("click", () => setOpen(messenger.hidden));
@@ -94,10 +120,11 @@ export function createChatController(els, { getHorizonPayload }) {
     const pendingEl = appendMessage("assistant", "Thinking…");
 
     try {
-      const res = await postJson(
-        "/api/chat",
-        Object.assign({ messages: chatHistory }, getHorizonPayload())
-      );
+      const reqBody = Object.assign({ messages: chatHistory }, getHorizonPayload());
+      if (activeSelectedPeriod) {
+        reqBody.selected_period = activeSelectedPeriod;
+      }
+      const res = await postJson("/api/chat", reqBody);
       const data = await res.json();
       if (data.blocked) {
         // Guardrails refused the message: show Greg's refusal, keep it out of history.
@@ -119,5 +146,5 @@ export function createChatController(els, { getHorizonPayload }) {
     }
   });
 
-  return { setOpen, isOpen, appendMessage };
+  return { setOpen, isOpen, appendMessage, receivePeriodAnalysis, resetConversation };
 }

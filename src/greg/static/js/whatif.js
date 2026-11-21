@@ -64,8 +64,10 @@ export function createWhatIfController(els, { onChange }) {
     els.panel.classList.toggle("active", !!balances);
     if (!balances) {
       els.summary.textContent = "";
+      els.summary.classList.add("hidden");
       return;
     }
+    els.summary.classList.remove("hidden");
     const cur = state.currency || "EUR";
     const dates = fore.map((p) => p.date);
     const low = lowestPoint(dates, balances);
