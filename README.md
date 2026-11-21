@@ -1,78 +1,114 @@
-# Greg — Autonomous CFO for Pizzeria Amalfi (Red Hat OpenShift AI)
+# Greg — Autonomous CFO (Red Hat OpenShift AI & Commerzbank Collabothon 2026)
 
-**Greg** is a calm, plain-language **Autonomous CFO** assistant built for small business owners (*"Innovations for all generations"*). It pairs a **deterministic `Decimal` financial engine** with a **single Red Hat OpenShift AI LLM endpoint** (`vLLM` / `llama-32-3b-instruct`), pre-loaded with the **Pizzeria Amalfi 2025 Bank Statement (1,125 bookings)** and supporting custom bank CSV uploads.
+**Greg** is a plain-language **Autonomous CFO** assistant for small and medium-sized businesses (*"Innovations for all generations"*). It starts empty per browser tab, accepts arbitrary bank CSVs with interactive column mapping, automatically selects between a **12-month seasonal hybrid ML/statistical planner** (`>= 12` full months) and a **daily statistical liquidity fallback** (`< 12` months), and pairs deterministic figures with an OpenAI-compatible Red Hat OpenShift AI LLM endpoint.
 
-> **Core Principle:** *Analyze → Explain Clearly → Simulate What-Ifs → Prepare Bank Actions (Nothing Happens Without Owner Approval).*
-
----
-
-## Architecture Overview
-
-1. **Deterministic Financial Engine (`src/greg/engine.py`)**
-   - Parses German MT940-style semicolon bank CSVs (`DD.MM.YY`, comma decimals, `@ rate EUR/CHF`) and standard comma CSVs with exact `Decimal` math.
-   - Computes historical daily balances (identifying Pizzeria Amalfi's **July 3, 2025 lowest balance of `-€22,097.60`** during the 3-week June shutdown and **`+€33,266.35` year-end closing balance**), a **13-Week Cash Forecast**, interactive **What-If Simulations**, **Commerzbank Action Cards** (Operating Credit Line, EUR/CHF Rate Lock, 60-Day *Festgeld*, Automatic Tax Pot, and Suspicious Invoice Check), and **German Tax & Grant Tips**.
-2. **Single OpenShift AI LLM Integration (`src/greg/__init__.py`)**
-   - Connects over internal OpenShift Service DNS (`LLM_BASE_URL` & `LLM_MODEL` from [`deploy/configmap.yaml`](deploy/configmap.yaml)) to a single OpenAI-compatible `/v1/chat/completions` predictor.
-   - Falls back gracefully to deterministic plain-language summaries when running offline outside the OpenShift cluster.
-3. **Intuitive Web Interface (`src/greg/static/index.html`)**
-   - Designed for business owners of all technical skill levels: clear labels matching chart callouts (`Lowest Balance`, `Current Bank Balance`, `Lowest Expected Balance`), interactive SVG cash charts, plain-English explanations, formatted Markdown AI answers, and one-click human approval receipts.
+> **Core Principle:** *Import Statement -> Analyze Automatically -> Inspect Monthly/Daily Cash Outlook -> Explain in Everyday Language.*
 
 ---
 
-## Privacy, PII & IBAN Anonymization Before OpenShift AI Inference
-
-Before any financial context or chat question leaves the `greg` pod toward the OpenShift AI LLM endpoint, `anonymize_text()` and `build_anonymized_context_prompt()` in [`src/greg/engine.py`](src/greg/engine.py) automatically mask IBANs and personal/counterparty names into deterministic reference tokens—and restore them only on the authorized response inside the pod.
-
-### Tokenization Mapping
-
-| Sensitive Field | Original Value | Token Sent to OpenShift AI LLM |
-| :--- | :--- | :--- |
-| Business IBAN | `DE89370400440532013000` | `IBAN_TOK_3000` |
-| Partner IBAN | `CH9300700110001234567` | `IBAN_TOK_4567` |
-| Owner Name | `Vincenzo Amalfi` | `OWNER_REF_001` |
-| Business Name | `Pizzeria Amalfi` | `SME_ENTITY_001` |
-| Partner / Beneficiary | `Luigi Amalfi` / `Luigi's Ristorante Zurich` | `PARTNER_REF_002` / `PARTNER_BIZ_002` |
-| Suppliers | `Asimex Wholesale Ltd`, `Fattoria La Vino GmbH` | `VENDOR_REF_001`, `VENDOR_REF_002` |
-| Staff Names | `Yusuf Akcit`, `Rosa Pavese`, `Vanessa Paradi` | `STAFF_REF_001`..`STAFF_REF_003` |
-
-### Example Anonymized System Prompt Sent to OpenShift AI
+## Project Architecture
 
 ```text
-You are Greg, a clear, friendly Autonomous CFO assistant powered by Red Hat OpenShift AI for a small business owner.
-Use plain, everyday language without accounting jargon. All Euro amounts below are verified by the deterministic engine — never invent numbers.
+src/greg/
+├── __init__.py                 # Public entrypoint facade (exports `main`)
+├── __main__.py                 # `python -m greg` launcher
+├── config.py                   # Dynamic env settings loader (`load_settings()`)
+├── api/
+│   ├── __init__.py
+│   ├── routes.py               # REST routes, session headers, hardened `/static/` server
+│   ├── serializers.py          # JSON request/response parsing & encoding helpers
+│   └── server.py               # ThreadingHTTPServer factory & CLI `--check` entrypoint
+├── domain/
+│   ├── __init__.py
+│   ├── categories.py           # Deterministic keyword classifier + social-security guardrail
+│   ├── csv_import.py           # CSV delimiter/date/amount parsing, column map, FX conversion
+│   ├── ledger.py               # In-memory `LedgerStore` & monthly/daily view aggregation
+│   └── sessions.py             # Thread-safe per-tab `SessionManager` (TTL + LRU cap)
+├── forecasting/
+│   ├── __init__.py
+│   ├── models/                 # `planner.keras`, `planner_config.json`, model notes
+│   ├── lstm_numpy.py           # Pure-NumPy Keras 3 `.keras` Seq2Seq-BiLSTM inference engine
+│   ├── seasonal.py             # `SeasonalPlanner`: classic + BiLSTM + StatsForecast backtester
+│   ├── daily.py                # Daily recurring-bill + weekday-average fallback forecaster
+│   └── orchestrator.py         # Snapshot-cached forecast router (`>= 12m` vs `< 12m`)
+├── llm/
+│   ├── __init__.py
+│   ├── client.py               # OpenAI-compatible HTTP client (`call_llm`, `/models` discovery)
+│   ├── classifier.py           # Optional LLM signature classifier (`Salaries`/`Taxes`/`Other`)
+│   └── prompts.py              # Grounded system & explain prompt builders
+└── static/
+    ├── index.html              # Semantic UI shell
+    ├── fonts/                  # Variable `Inter` webfont & license
+    ├── css/
+    │   ├── base.css            # Layout, typography, forms, number steppers, custom selects
+    │   ├── forecast.css        # Dark forecast stage, interactive SVG chart, method bar, carousel
+    │   └── messenger.css       # Floating Greg chat launcher & messenger dialog
+    └── js/
+        ├── app.js              # State coordination & event bindings
+        ├── api.js              # Per-tab `X-Greg-Session` client
+        ├── chart.js            # Interactive zoom/pan/crosshair SVG chart
+        ├── chat.js             # Floating messenger & `/api/explain` controller
+        ├── controls.js         # Carousel navigation, number steppers, dot-grid hover
+        ├── csv-mapping.js      # Header detection, currency inference, column mapping UI
+        └── format.js           # Currency & HTML escaping helpers
 
-ACTIVE DATA: Pizzeria Amalfi 2025 Bank Statement (1,125 Transactions)
-BUSINESS PROFILE: SME_ENTITY_001 (Sole Proprietorship (Einzelunternehmen)), Location: Frankfurt am Main, Hessen, DE, Industry: Gastronomy & Hospitality (NACE 56.10), Staff: 4, IBAN: IBAN_TOK_3000
-CONTEXT NOTES: 4 staff payroll (€8,600/mo on 28th) + Techniker Krankenkasse (€2,650/mo on 27th) + Rent (€3,800/mo on 1st). 3-week June vacation closure pushed 2025 balance to -€22,097.60 before Q3/Q4 recovery to +€33,266.35. Monthly -4,166.67 CHF silent partnership transfer to PARTNER_BIZ_002 (50,000 CHF total).
-SAFETY RESERVE TARGET: €12,000.00
-
-VERIFIED FINANCIAL NUMBERS:
-- Current Bank Balance: €33,266.35
-- Lowest Balance in History: €-22,097.60 on 2025-07-03
-- Lowest Expected Balance (Next 13 Weeks): €-8,420.00 (Week 7)
-- Lowest Balance With Commerzbank Actions: €14,500.00 (Week 6)
-- Foreign Currency Transfers: 4,166.67 CHF / month to Zurich (€26,184.45)
-- Business Health Score: 66/100 (Watch) | Clean Data Score: 99.2%
+tests/
+├── helpers.py                  # Shared synthetic ledger builders & HTTP mock helpers
+├── unit/                       # Domain, NumPy BiLSTM, seasonal planner, LLM, session tests
+└── integration/                # HTTP workflow, routing, traversal hardening, static asset tests
 ```
 
-All approvals also generate a simulated Commerzbank confirmation receipt (`CBK-EXEC-...`) backed by a chained SHA-256 audit log (`create_audit_entry()`).
+---
+
+## Key Capabilities
+
+1. **Flexible CSV Import & Column Mapping**
+   - Supports `;`, `,`, and tab delimiters, EU/US number formats, ISO/`DD.MM.YY`/`YYYY-MM` dates, single signed `Amount` columns, or split Income/Expenses columns (e.g. `date,revenue_pln,expenses_pln`), automatic currency suffix inference, and inline `@ <rate> EUR/<CURR>` FX conversion.
+   - Categorizes transactions into strictly **`Salaries`**, **`Taxes`**, or **`Other`**, keeping social-security and health-insurance funds out of `Taxes`.
+
+2. **Two-Tier Adaptive Forecasting**
+   - **Seasonal Monthly Planner (`>= 12` full months)**: Evaluates **Classic (Seller Method)**, **Own Model (Seq2Seq BiLSTM via pure NumPy)**, and **StatsForecast** (`AutoETS`, `AutoARIMA`, `AutoTheta`, and `Combo`) via walk-forward backtesting on up to the last 3 years, displaying the chosen method and selection notes in the UI alongside a pessimistic stress-test trajectory.
+   - **Daily Fallback (`< 12` full months)**: Detects monthly/quarterly recurring bills, computes weekday non-recurring averages, overlays future manual operations, and projects 30/60/90-day daily balances.
+
+3. **Tab-Isolated Stateful Sessions & Zero-Leakage Headers**
+   - Every browser tab maintains an isolated in-memory ledger via `X-Greg-Session` backed by TTL/LRU eviction, and HTML/JSON/JS/CSS responses enforce `Cache-Control: no-store`.
 
 ---
 
 ## Local Development & Verification
 
 ```bash
-# Run CLI health smoke check
+# Install runtime + dev dependencies (pandas, numpy, h5py, statsforecast, ruff)
+uv sync
+
+# Lint source & tests with Ruff
+uv run ruff check src tests
+
+# CLI health smoke check
 uv run greg --check
 
-# Run unit & HTTP API integration tests
+# Run unit & integration tests
 uv run python -m unittest discover -s tests -v
 
 # Start local server on http://127.0.0.1:8000
 uv run greg
 ```
 
-### OpenShift Deployment
+### Environment Variables
 
-Manifests are in [`deploy/`](deploy/) and built automatically via [`Containerfile`](Containerfile) and [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml).
-Set `LLM_BASE_URL`, `LLM_MODEL`, and optional `LLM_API_KEY` via [`deploy/configmap.yaml`](deploy/configmap.yaml) / `greg-llm-secret`.
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `HOST` | `0.0.0.0` | HTTP bind host |
+| `PORT` | `8000` | HTTP bind port |
+| `LLM_BASE_URL` | `""` | OpenAI-compatible `/v1` base URL (e.g. OpenShift AI vLLM service) |
+| `LLM_MODEL` | `""` | Model ID (auto-discovered via `/models` when omitted) |
+| `LLM_API_KEY` | `""` | Optional bearer token for the LLM endpoint |
+| `GREG_PLANNER_DIR` | package `forecasting/models` | Override directory containing `planner.keras` & `planner_config.json` |
+| `GREG_SESSION_MAX` | `50` | Maximum concurrent tab sessions cached in memory |
+| `GREG_SESSION_TTL` | `7200` | Session idle expiry in seconds |
+
+---
+
+## Container & OpenShift Deployment
+
+Build and deployment manifests live in [`deploy/`](deploy/), built cleanly with [`Containerfile`](Containerfile) (`uv sync --frozen --no-dev --extra planner`) and automated on `main` via [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml).

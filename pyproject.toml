@@ -1,7 +1,7 @@
 [project]
 name = "greg"
 version = "0.1.0"
-description = "Add your description here"
+description = "Greg - AI-powered Autonomous CFO for SMEs"
 readme = "README.md"
 authors = [
     { name = "Fenix085", email = "vladimirhurtovyi@gmail.com" }
@@ -9,8 +9,29 @@ authors = [
 requires-python = ">=3.13"
 dependencies = []
 
+[project.optional-dependencies]
+planner = [
+    "numpy>=2",
+    "pandas>=2.2,<3",
+    "h5py>=3.12",
+    "statsforecast>=2.1",
+]
+
+[dependency-groups]
+dev = [
+    "greg[planner]",
+    "ruff>=0.8",
+]
+
 [project.scripts]
 greg = "greg:main"
+
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]
