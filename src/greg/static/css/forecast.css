@@ -15,28 +15,21 @@
   z-index: -1;
   border-radius: inherit;
   background: radial-gradient(circle, #ffffff31 0.7px, transparent 0.9px) 0 0 / 16px 16px;
-  mask-image: radial-gradient(ellipse at 86% 12%, black, transparent 48%);
+
   pointer-events: none;
 }
 
-@media (any-hover: hover) and (prefers-reduced-motion: no-preference) {
-  .forecast-stage::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    pointer-events: none;
-    background: radial-gradient(circle, #ffffffba 1.25px, transparent 1.65px) 0 0 / 16px 16px;
-    mask-image: radial-gradient(circle 140px at var(--dot-x, 0px) var(--dot-y, 0px), black, transparent);
-    opacity: 0;
-    transition: opacity 180ms ease-out;
-  }
+.forecast-halftone {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
 
-  .forecast-stage[data-dot-hover]::after {
-    opacity: 1;
-  }
 }
+.forecast-stage:has(.forecast-halftone)::before { content: none; }
 
 .forecast-stage h2 {
   font-size: clamp(28px, 3vw, 40px);

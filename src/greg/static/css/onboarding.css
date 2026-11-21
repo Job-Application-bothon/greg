@@ -55,8 +55,8 @@ html.staged-scroll.free-scroll { scroll-snap-type: none; }
   #source-chooser .source-icon { width: 42px; height: 42px; margin-bottom: 22px; }
 }
 /* Quiet sculpted ribbons give the chooser depth without competing with its two actions. */
-.source-screen body { background: #f5f5f6; }
-.source-screen body::before { content: ""; position: fixed; pointer-events: none; inset: 0; background: radial-gradient(ellipse at 15% 100%, #e3e3e780, transparent 55%), radial-gradient(ellipse at 85% 5%, #fff, transparent 60%); }
+body, .source-screen body { background: #fff; }
+.source-screen body::before { content: none; }
 .source-screen .site-head, .source-screen main { position: relative; }
 #source-chooser .source-options { gap: 0; }
 #source-chooser .source-card { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(145deg, #fff 12%, #fafafa 70%, #f1f1f3); border-color: #fff; box-shadow: 0 2px 4px #00000003, 0 20px 60px #17172508, inset 0 0 0 1px #00000004; }
@@ -166,7 +166,11 @@ html.staged-scroll.free-scroll { scroll-snap-type: none; }
 .assistant-stage { min-height:calc(100dvh - var(--stage-header, 69px)); box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:48px 16px; border-top:1px solid var(--line); }
 .assistant-stage h2 { font-size:clamp(38px, 6vw, 80px); line-height:1.08; letter-spacing:-.06em; font-weight:400; margin:0; }
 .assistant-stage-copy { color:var(--muted); font-size:clamp(14px, 1.4vw, 18px); line-height:1.7; margin:24px 0 36px; }
-#assistant-stage #chat-launcher { position:static; width:auto; height:auto; min-height:64px; min-width:260px; padding:18px 28px; border-radius:14px; display:flex; justify-content:space-between; gap:48px; font-size:17px; box-shadow:none; }
+#assistant-stage #chat-launcher { position:static; width:fit-content; max-width:100%; height:auto; min-height:60px; min-width:0; padding:18px 24px; border-radius:14px; display:inline-flex; align-items:center; justify-content:center; gap:12px; font-size:17px; line-height:24px; font-weight:500; white-space:nowrap; box-shadow:0 4px 12px #00000012; transition:background-color .18s ease, box-shadow .18s ease; }
+#assistant-stage #chat-launcher svg { flex:none; width:20px; height:20px; }
+@media (hover:hover) { #assistant-stage #chat-launcher:hover { background:#30302e; box-shadow:0 6px 16px #00000020; } }
+#assistant-stage #chat-launcher:active { background:#101010; box-shadow:none; }
+@media (prefers-reduced-motion:reduce) { #assistant-stage #chat-launcher { transition:none; } }
 #assistant-stage #chat-launcher[hidden] { display:none; }
 
 /* Same sculpted ribbon as CSV, mirrored; its viewport ends above the bank title. */

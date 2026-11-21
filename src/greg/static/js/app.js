@@ -8,6 +8,9 @@ import { createCsvMappingController } from "./csv-mapping.js";
 import { escapeHtml, fmtMoney, fmtZero } from "./format.js";
 import { createWhatIfController } from "./whatif.js";
 
+import { initUfoArtwork } from "./ufo-artwork.js";
+
+initUfoArtwork();
 initStepCarousel();
 initNumberSteppers();
 initForecastDotHover();
