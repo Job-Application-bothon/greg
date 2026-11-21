@@ -290,6 +290,43 @@
             <span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected forecast</span>
             <span class="legend-item"><span class="swatch" style="background: #c96b7c"></span>Pessimistic stress test</span>
           </div>
+
+          <!-- WHAT-IF SCENARIO -->
+          <div class="whatif" id="whatif-panel">
+            <div class="whatif-head">
+              <strong>What if…?</strong>
+              <span class="subtitle">Try a scenario — the blue dotted line shows your balance under it.</span>
+              <button type="button" class="secondary chart-zoom-btn" id="whatif-reset">Clear</button>
+            </div>
+            <div class="whatif-presets">
+              <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="income:-20">Lose 20% of income</button>
+              <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="expense:10">Costs rise 10%</button>
+              <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="monthly:-3000">Hire someone (−3,000 / month)</button>
+            </div>
+            <div class="whatif-grid">
+              <div class="field">
+                <label for="whatif-income">Income change <output id="whatif-income-out">0%</output></label>
+                <input type="range" id="whatif-income" min="-50" max="50" step="5" value="0" />
+              </div>
+              <div class="field">
+                <label for="whatif-expense">Expenses change <output id="whatif-expense-out">0%</output></label>
+                <input type="range" id="whatif-expense" min="-50" max="50" step="5" value="0" />
+              </div>
+              <div class="field">
+                <label for="whatif-monthly">Every month (+ in / − out)</label>
+                <input type="number" id="whatif-monthly" step="100" value="0" />
+              </div>
+              <div class="field">
+                <label for="whatif-oneoff">One-off amount (+ / −)</label>
+                <input type="number" id="whatif-oneoff" step="100" value="0" />
+              </div>
+              <div class="field">
+                <label for="whatif-oneoff-date">One-off on</label>
+                <input type="date" id="whatif-oneoff-date" />
+              </div>
+            </div>
+            <div class="whatif-summary" id="whatif-summary" role="status" aria-live="polite"></div>
+          </div>
         </div>
 
         <!-- GOVERNANCE STAGES -->

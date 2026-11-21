@@ -526,3 +526,60 @@ SOFTWARE.
   display: grid;
   gap: 4px;
 }
+
+/* What-if scenario panel (below the chart legend) */
+.chart-tooltip .tt-whatif {
+  font-size: 11px;
+  color: #a9c6ff;
+  margin-top: 2px;
+}
+
+.whatif {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+}
+
+.whatif-head,
+.whatif-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.whatif-head #whatif-reset {
+  margin-left: auto;
+}
+
+.whatif-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 14px;
+  align-items: end;
+}
+
+.whatif-grid input[type='range'] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: #2f6fdf;
+}
+
+.whatif-grid output {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.whatif-summary {
+  font-size: 13px;
+  color: var(--body);
+}
+
+.whatif.active .whatif-summary {
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: #eef3ff;
+}
