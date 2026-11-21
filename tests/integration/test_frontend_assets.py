@@ -153,8 +153,7 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             "Step C · Your Approval (Simulated)",
             "Monthly seasonal forecast",
             ">Today<",
-            "X-Greg-Session",
-            "sessionStorage",
+            'credentials: "same-origin"',
         ):
             self.assertIn(required, combined, msg=f"Missing required UI text: {required}")
 

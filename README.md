@@ -1,6 +1,6 @@
 # Greg — Autonomous CFO (Red Hat OpenShift AI & Commerzbank Collabothon 2026)
 
-**Greg** is a plain-language **Autonomous CFO** assistant for small and medium-sized businesses (*"Innovations for all generations"*). It starts empty per browser tab, accepts arbitrary bank CSVs with interactive column mapping, automatically selects between a **12-month seasonal hybrid ML/statistical planner** (`>= 12` full months) and a **daily statistical liquidity fallback** (`< 12` months), and pairs deterministic figures with an OpenAI-compatible Red Hat OpenShift AI LLM endpoint.
+**Greg** is a plain-language **Autonomous CFO** assistant for small and medium-sized businesses (*"Innovations for all generations"*). It starts empty for every visitor (one private session per browser), accepts arbitrary bank CSVs with interactive column mapping, automatically selects between a **12-month seasonal hybrid ML/statistical planner** (`>= 12` full months) and a **daily statistical liquidity fallback** (`< 12` months), and pairs deterministic figures with an OpenAI-compatible Red Hat OpenShift AI LLM endpoint.
 
 > **Core Principle:** *Import Statement -> Analyze Automatically -> Inspect Monthly/Daily Cash Outlook -> Explain in Everyday Language.*
 
@@ -15,7 +15,7 @@ src/greg/
 ├── config.py                   # Dynamic env settings loader (`load_settings()`)
 ├── api/
 │   ├── __init__.py
-│   ├── routes.py               # REST routes, session headers, hardened `/static/` server
+│   ├── routes.py               # REST routes, session cookie, hardened `/static/` server
 │   ├── serializers.py          # JSON request/response parsing & encoding helpers
 │   └── server.py               # ThreadingHTTPServer factory & CLI `--check` entrypoint
 ├── domain/
@@ -23,7 +23,7 @@ src/greg/
 │   ├── categories.py           # Deterministic keyword classifier + social-security guardrail
 │   ├── csv_import.py           # CSV delimiter/date/amount parsing, column map, FX conversion
 │   ├── ledger.py               # In-memory `LedgerStore` & monthly/daily view aggregation
-│   └── sessions.py             # Thread-safe per-tab `SessionManager` (TTL + LRU cap)
+│   └── sessions.py             # Thread-safe per-browser `SessionManager` (TTL + LRU cap)
 ├── forecasting/
 │   ├── __init__.py
 │   ├── models/                 # `planner.keras`, `planner_config.json`, model notes
@@ -45,7 +45,7 @@ src/greg/
     │   └── messenger.css       # Floating Greg chat launcher & messenger dialog
     └── js/
         ├── app.js              # State coordination & event bindings
-        ├── api.js              # Per-tab `X-Greg-Session` client
+        ├── api.js              # Same-origin API client (session rides on cookie)
         ├── chart.js            # Interactive zoom/pan/crosshair SVG chart
         ├── chat.js             # Floating messenger & `/api/explain` controller
         ├── controls.js         # Carousel navigation, number steppers, dot-grid hover
@@ -70,8 +70,8 @@ tests/
    - **Seasonal Monthly Planner (`>= 12` full months)**: Evaluates **Classic (Seller Method)**, **Own Model (Seq2Seq BiLSTM via pure NumPy)**, and **StatsForecast** (`AutoETS`, `AutoARIMA`, `AutoTheta`, and `Combo`) via walk-forward backtesting on up to the last 3 years, displaying the chosen method and selection notes in the UI alongside a pessimistic stress-test trajectory.
    - **Daily Fallback (`< 12` full months)**: Detects monthly/quarterly recurring bills, computes weekday non-recurring averages, overlays future manual operations, and projects 30/60/90-day daily balances.
 
-3. **Tab-Isolated Stateful Sessions & Zero-Leakage Headers**
-   - Every browser tab maintains an isolated in-memory ledger via `X-Greg-Session` backed by TTL/LRU eviction, and HTML/JSON/JS/CSS responses enforce `Cache-Control: no-store`.
+3. **Per-Browser Isolated Sessions & Zero-Leakage Headers**
+   - Every visitor gets an isolated in-memory ledger keyed by a server-issued `greg_session` cookie (HttpOnly, SameSite=Lax, Secure behind HTTPS) with TTL/LRU eviction; there is no shared fallback ledger. API clients may pass an explicit `X-Greg-Session` header instead, and HTML/JSON/JS/CSS responses enforce `Cache-Control: no-store`.
 
 ---
 
@@ -104,7 +104,7 @@ uv run greg
 | `LLM_MODEL` | `""` | Model ID (auto-discovered via `/models` when omitted) |
 | `LLM_API_KEY` | `""` | Optional bearer token for the LLM endpoint |
 | `GREG_PLANNER_DIR` | package `forecasting/models` | Override directory containing `planner.keras` & `planner_config.json` |
-| `GREG_SESSION_MAX` | `50` | Maximum concurrent tab sessions cached in memory |
+| `GREG_SESSION_MAX` | `200` | Maximum concurrent sessions kept in memory (~2 MB each for 3 years of daily data) |
 | `GREG_SESSION_TTL` | `7200` | Session idle expiry in seconds |
 
 ---

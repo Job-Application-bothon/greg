@@ -1,9 +1,12 @@
 """HTTP request handler serving the REST API, health check, and hardened static frontend."""
 from __future__ import annotations
 
+import re
+import secrets
 import socket
 import sys
 import urllib.error
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
@@ -30,6 +33,10 @@ STATIC_MIME_TYPES: dict[str, str] = {
 
 _NO_STORE_SUFFIXES = {".html", ".css", ".js", ".mjs", ".json"}
 
+SESSION_COOKIE = "greg_session"
+SESSION_HEADER = "X-Greg-Session"
+_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
+
 
 def health_payload() -> dict[str, object]:
     """Build the runtime health and LLM readiness status payload."""
@@ -46,9 +53,48 @@ def health_payload() -> dict[str, object]:
 class GregRequestHandler(BaseHTTPRequestHandler):
     """HTTP handler serving the modular static UI, ledger/liquidity endpoints, and LLM proxy."""
 
+    _issued_session_id: str | None = None
+
+    def _cookie_session_id(self) -> str | None:
+        raw = self.headers.get("Cookie")
+        if not raw:
+            return None
+        try:
+            morsel = SimpleCookie(raw).get(SESSION_COOKIE)
+        except CookieError:
+            return None
+        if morsel is None or not _SESSION_ID_RE.match(morsel.value):
+            return None
+        return morsel.value
+
+    def _session_id(self) -> str:
+        """Resolve the caller's session: explicit API header, then browser cookie, else a new one.
+
+        A newly generated ID is sent back as an HttpOnly cookie, so every browser gets its
+        own ledger and requests never fall back to a store shared between visitors.
+        """
+        header_sid = self.headers.get(SESSION_HEADER, "").strip()
+        if header_sid:
+            return header_sid
+        if self._issued_session_id:
+            return self._issued_session_id
+        cookie_sid = self._cookie_session_id()
+        if cookie_sid:
+            return cookie_sid
+        self._issued_session_id = secrets.token_urlsafe(24)
+        return self._issued_session_id
+
     def _get_store(self) -> LedgerStore:
-        sid = self.headers.get("X-Greg-Session", "").strip()
-        return SESSIONS.get(sid or None)
+        return SESSIONS.get(self._session_id())
+
+    def end_headers(self) -> None:
+        if self._issued_session_id:
+            cookie = f"{SESSION_COOKIE}={self._issued_session_id}; Path=/; HttpOnly; SameSite=Lax"
+            if self.headers.get("X-Forwarded-Proto", "").lower() == "https":
+                cookie += "; Secure"
+            self.send_header("Set-Cookie", cookie)
+            self._issued_session_id = None
+        super().end_headers()
 
     def _send_json(self, status: int, payload: Any) -> None:
         body = encode_json(payload)
@@ -118,6 +164,9 @@ class GregRequestHandler(BaseHTTPRequestHandler):
         if path in ("/", "/index.html"):
             index_path = STATIC_DIR / "index.html"
             if index_path.is_file():
+                # Issue the session cookie with the page itself, so the app's first
+                # parallel API calls all carry the same ID instead of racing for new ones.
+                self._session_id()
                 self._serve_static_file(index_path)
                 return
 

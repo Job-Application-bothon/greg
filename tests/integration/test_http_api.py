@@ -49,7 +49,8 @@ class HTTPServerIntegrationTest(unittest.TestCase):
             return resp.status, json.loads(resp.read().decode("utf-8"))
 
     def test_end_to_end_http_workflow(self) -> None:
-        status, view = self._request("GET", "/api/view")
+        sid = "e2e-session"
+        status, view = self._request("GET", "/api/view", session_id=sid)
         self.assertEqual(status, 200)
         self.assertFalse(view["has_data"])
 
@@ -64,6 +65,7 @@ class HTTPServerIntegrationTest(unittest.TestCase):
             "POST",
             "/api/import",
             {"csv_text": csv_text, "filename": "test.csv", "opening_balance": 500.0},
+            session_id=sid,
         )
         self.assertEqual(status, 200)
         self.assertTrue(imported["has_data"])
@@ -79,6 +81,7 @@ class HTTPServerIntegrationTest(unittest.TestCase):
                 "counterparty": "Bonus Customer",
                 "category": "Other",
             },
+            session_id=sid,
         )
         self.assertEqual(status, 200)
         self.assertEqual(after_op["month_summary"]["total_income"], 1400.0)
@@ -87,11 +90,12 @@ class HTTPServerIntegrationTest(unittest.TestCase):
             "POST",
             "/api/approve-credit",
             {"amount": 2000.0, "selected_month": "2025-02", "horizon_days": 30},
+            session_id=sid,
         )
         self.assertEqual(status, 200)
         self.assertEqual(after_credit["approved_credit"]["amount"], 2000.0)
 
-        status, after_reset = self._request("POST", "/api/reset", {})
+        status, after_reset = self._request("POST", "/api/reset", {}, session_id=sid)
         self.assertEqual(status, 200)
         self.assertFalse(after_reset["has_data"])
 
@@ -127,6 +131,54 @@ class HTTPServerIntegrationTest(unittest.TestCase):
         self.assertEqual(st_a2, 200)
         self.assertTrue(view_a2["has_data"])
         self.assertEqual(view_a2["filename"], "tab_a.csv")
+
+    def _raw(
+        self, method: str, path: str, body: dict | None = None, cookie: str | None = None
+    ) -> tuple[int, dict | None, str | None]:
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+        headers = {"Content-Type": "application/json"} if body is not None else {}
+        if cookie:
+            headers["Cookie"] = cookie
+        conn.request(method, path, body=json.dumps(body) if body is not None else None, headers=headers)
+        resp = conn.getresponse()
+        raw = resp.read()
+        set_cookie = resp.getheader("Set-Cookie")
+        conn.close()
+        is_json = (resp.getheader("Content-Type") or "").startswith("application/json")
+        return resp.status, json.loads(raw) if is_json else None, set_cookie
+
+    def test_http_cookie_sessions_are_per_browser_and_never_shared(self) -> None:
+        # The page itself issues an HttpOnly session cookie.
+        status, _, set_cookie = self._raw("GET", "/")
+        self.assertEqual(status, 200)
+        self.assertIsNotNone(set_cookie)
+        self.assertIn("HttpOnly", set_cookie)
+        self.assertIn("SameSite=Lax", set_cookie)
+        cookie_a = set_cookie.split(";", 1)[0]
+        self.assertTrue(cookie_a.startswith("greg_session="))
+
+        op = {"date": "2026-01-10", "kind": "income", "amount": 500.0, "counterparty": "Client A"}
+        st, view_a, again = self._raw("POST", "/api/operations", op, cookie=cookie_a)
+        self.assertEqual(st, 200)
+        self.assertTrue(view_a["has_data"])
+        self.assertIsNone(again)  # an existing valid cookie is not reissued
+
+        # Another browser (different cookie) and cookieless callers never see that data.
+        _, _, set_cookie_b = self._raw("GET", "/")
+        cookie_b = set_cookie_b.split(";", 1)[0]
+        self.assertNotEqual(cookie_a, cookie_b)
+        _, view_b, _ = self._raw("GET", "/api/view", cookie=cookie_b)
+        self.assertFalse(view_b["has_data"])
+        _, view_anon, anon_cookie = self._raw("GET", "/api/view")
+        self.assertFalse(view_anon["has_data"])
+        self.assertIsNotNone(anon_cookie)
+        _, view_bad, bad_cookie = self._raw("GET", "/api/view", cookie="greg_session=x;")
+        self.assertFalse(view_bad["has_data"])
+        self.assertIsNotNone(bad_cookie)  # malformed IDs are replaced, not trusted
+
+        # Same cookie keeps the same ledger across requests (e.g. reloads, other tabs).
+        _, view_a2, _ = self._raw("GET", "/api/view", cookie=cookie_a)
+        self.assertTrue(view_a2["has_data"])
 
     def test_http_planner_monthly_vs_daily_fallback_routing(self) -> None:
         csv_15m = build_synthetic_csv(date(2024, 1, 1), date(2025, 3, 31))

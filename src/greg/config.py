@@ -34,7 +34,7 @@ def load_settings() -> Settings:
     llm_api_key = os.environ.get("LLM_API_KEY", "").strip()
     planner_dir_raw = os.environ.get("GREG_PLANNER_DIR", "").strip()
     planner_model_dir = Path(planner_dir_raw) if planner_dir_raw else DEFAULT_PLANNER_MODEL_DIR
-    session_max = max(1, int(os.environ.get("GREG_SESSION_MAX", "50").strip() or "50"))
+    session_max = max(1, int(os.environ.get("GREG_SESSION_MAX", "200").strip() or "200"))
     session_ttl = max(1, int(os.environ.get("GREG_SESSION_TTL", "7200").strip() or "7200"))
     return Settings(
         host=host,
