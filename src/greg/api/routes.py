@@ -16,7 +16,13 @@ from greg.domain.sessions import SESSIONS
 from greg.llm.classifier import classify_signatures_with_llm
 from greg.llm.client import call_llm
 from greg.llm.guardrails import GuardrailUnavailable, check_text, guardrails_enabled
-from greg.llm.prompts import SYSTEM_PROMPT, build_context_system_prompt, build_explain_prompt
+from greg.llm.prompts import (
+    NO_DATA_NOTE,
+    SYSTEM_PROMPT,
+    build_context_system_prompt,
+    build_explain_prompt,
+)
+from greg.llm.topic import is_on_topic
 
 CHAT_MAX_MESSAGES = 12
 CHAT_MAX_CHARS = 4000
@@ -371,6 +377,10 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             self._send_json(503, {"error": str(exc)})
             return
 
+        if not is_on_topic(history):
+            self._send_json(422, {"error": GUARDRAIL_REFUSAL, "blocked": True, "rails": ["topic"]})
+            return
+
         month = data.get("selected_month")
         horizon = parse_optional_int(data.get("horizon_days")) or 30
         horizon_months = parse_optional_int(data.get("horizon_months"))
@@ -382,7 +392,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
                 store=store,
             )
             if store.transactions
-            else SYSTEM_PROMPT
+            else f"{SYSTEM_PROMPT}\n\n{NO_DATA_NOTE}"
         )
         call_messages = [{"role": "system", "content": system_prompt}, *history]
 

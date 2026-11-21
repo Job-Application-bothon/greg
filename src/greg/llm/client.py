@@ -30,7 +30,9 @@ def resolve_model(base_url: str, configured_model: str) -> str:
     return str(models[0]["id"])
 
 
-def call_llm(messages: list[dict[str, str]]) -> dict[str, str]:
+def call_llm(
+    messages: list[dict[str, str]], max_tokens: int = 512, temperature: float = 0.3
+) -> dict[str, str]:
     """Forward chat messages to the configured OpenAI-compatible LLM endpoint."""
     settings = load_settings()
     base_url = settings.llm_base_url
@@ -46,8 +48,8 @@ def call_llm(messages: list[dict[str, str]]) -> dict[str, str]:
         {
             "model": model,
             "messages": full_messages,
-            "max_tokens": 512,
-            "temperature": 0.3,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
         }
     ).encode("utf-8")
 
