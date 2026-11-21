@@ -28,6 +28,7 @@ class Settings:
     guardrails_fail_open: bool = False
     guardrails_ca_file: str = ""
     guardrails_timeout: float = 30.0
+    topic_guard: bool = True
 
 
 def load_settings() -> Settings:
@@ -56,5 +57,6 @@ def load_settings() -> Settings:
         guardrails_fail_open=os.environ.get("GUARDRAILS_FAIL_OPEN", "").strip().lower()
         in {"1", "true", "yes"},
         guardrails_ca_file=os.environ.get("GUARDRAILS_CA_FILE", "").strip(),
+        topic_guard=os.environ.get("GREG_TOPIC_GUARD", "").strip().lower() not in {"0", "false", "no"},
         guardrails_timeout=max(1.0, float(os.environ.get("GUARDRAILS_TIMEOUT", "").strip() or "30")),
     )

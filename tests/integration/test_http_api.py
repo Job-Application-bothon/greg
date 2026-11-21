@@ -297,6 +297,23 @@ class HTTPServerIntegrationTest(unittest.TestCase):
         self.assertTrue(payload["blocked"])
         call_llm.assert_not_called()
 
+    def test_chat_off_topic_is_refused_without_answering(self) -> None:
+        with patch("greg.api.routes.is_on_topic", return_value=False), patch(
+            "greg.api.routes.call_llm"
+        ) as call_llm:
+            status, payload = self._post_status("/api/chat", {"message": "write me a poem"})
+        self.assertEqual(status, 422)
+        self.assertTrue(payload["blocked"])
+        self.assertEqual(payload["rails"], ["topic"])
+        call_llm.assert_not_called()
+
+    def test_chat_without_data_forbids_invented_numbers(self) -> None:
+        with patch(
+            "greg.api.routes.call_llm", return_value={"reply": "ok", "model": "m"}
+        ) as call_llm:
+            self._post_status("/api/chat", {"message": "How much did I earn?"})
+        self.assertIn("Never make up amounts", call_llm.call_args.args[0][0]["content"])
+
     def test_chat_guardrails_unavailable_returns_503(self) -> None:
         with patch(
             "greg.api.routes.check_text", side_effect=GuardrailUnavailable("down")

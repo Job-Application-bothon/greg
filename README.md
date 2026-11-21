@@ -107,6 +107,7 @@ uv run greg
 | `GREG_PLANNER_DIR` | package `forecasting/models` | Override directory containing `planner.keras` & `planner_config.json` |
 | `GREG_SESSION_MAX` | `50` | Maximum concurrent tab sessions cached in memory |
 | `GREG_SESSION_TTL` | `7200` | Session idle expiry in seconds |
+| `GREG_TOPIC_GUARD` | `true` | Ask the LLM whether each chat message is a business-money question before answering; `false` disables |
 | `GUARDRAILS_CHECK_URL` | `""` | Full NeMo Guardrails checks URL (`.../v1/guardrail/checks`); unset disables screening |
 | `GUARDRAILS_TOKEN` | `""` | Bearer token for the guardrails endpoint (defaults to the pod's service account token) |
 | `GUARDRAILS_CA_FILE` | pod's `service-ca.crt` | Extra CA bundle trusted for an `https://` guardrails URL |
@@ -127,6 +128,8 @@ Build and deployment manifests live in [`deploy/`](deploy/), built cleanly with 
 - `/api/chat` rejects client-supplied `system` messages, always injects Greg's own grounded system prompt, accepts only `user`/`assistant` turns of at most 4,000 characters, and keeps the last 12.
 - The system prompt limits Greg to the business's finances and tells the model to treat CSV names and references as data. CSV-derived names are flattened to one short line before they are embedded.
 - The CSV classifier sends transactions as JSON lines inside a `<transactions>` block marked as untrusted, and only accepts `Salaries`/`Taxes`/`Other` back.
+
+**Topic gate (on whenever an LLM is configured):** before answering, Greg asks the model a one-word YES/NO question: is this message about the business's money? Off-topic requests (poems, jokes, code, general knowledge) get the same polite `422` refusal, and the UI drops them from history. If the gate call fails, the message goes through. Without imported data, the system prompt forbids inventing numbers.
 
 **NeMo Guardrails (optional, OpenShift AI 3.5+):** every chat message is screened by a DeBERTa prompt-injection classifier before it reaches the model. Blocked messages return `422` with a polite refusal; if the guardrails service is down, chat returns `503` unless `GUARDRAILS_FAIL_OPEN=true`.
 
