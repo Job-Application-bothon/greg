@@ -245,8 +245,54 @@
       max-width: 100%;
     }
 
+    .number-stepper { position: relative; min-width: 0; }
+    .number-stepper input { width: 100%; padding-inline-end: 38px; appearance: textfield; }
+    .number-stepper input::-webkit-inner-spin-button { appearance: none; }
+    .stepper-buttons {
+      position: absolute;
+      inset: 3px 4px 3px auto;
+      display: grid;
+      grid-template-rows: repeat(2, 1fr);
+      width: 28px;
+    }
+    .stepper-buttons button {
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 8px 8px 0 0;
+      background: var(--line);
+      color: var(--ink);
+      font-size: 11px;
+      line-height: 1;
+    }
+    .stepper-buttons button + button { border-top: 1px solid white; border-radius: 0 0 8px 8px; }
+    .stepper-buttons button:hover:not(:disabled) { background: #d4d4d4; }
+
+    select {
+      appearance: none;
+      padding-inline-end: 36px;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='8' fill='%23e7e7e7'/%3E%3Cpath d='m8 10 4 4 4-4' fill='none' stroke='%233d3d3d' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 6px center / 24px no-repeat;
+    }
+    @media (forced-colors: active) { select { appearance: auto; background-image: none; } }
+
     input[type='file'] {
       padding: 6px 8px;
+    }
+
+    #csv-file::file-selector-button {
+      margin-inline-end: 8px;
+      padding: 5px 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: var(--line);
+      color: var(--ink);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    #csv-file::file-selector-button:hover {
+      background: #d4d4d4;
     }
 
     .mapping-box {
@@ -278,6 +324,10 @@
       min-height: 36px;
       padding: 5px 9px;
       font-size: 12px;
+    }
+
+    .mapping-grid select {
+      padding-inline-end: 34px;
     }
 
     button {
@@ -502,6 +552,23 @@
       background: radial-gradient(circle, #ffffff31 0.7px, transparent 0.9px) 0 0 / 16px 16px;
       mask-image: radial-gradient(ellipse at 86% 12%, black, transparent 48%);
       pointer-events: none;
+    }
+
+    @media (any-hover: hover) and (prefers-reduced-motion: no-preference) {
+      .forecast-stage::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: inherit;
+        pointer-events: none;
+        background: radial-gradient(circle, #ffffffba 1.25px, transparent 1.65px) 0 0 / 16px 16px;
+        mask-image: radial-gradient(circle 140px at var(--dot-x, 0px) var(--dot-y, 0px), black, transparent);
+        opacity: 0;
+        transition: opacity 180ms ease-out;
+      }
+
+      .forecast-stage[data-dot-hover]::after { opacity: 1; }
     }
 
     .forecast-stage h2 {
@@ -745,12 +812,57 @@
       border-color: #a8c9b7;
     }
 
-    .stage-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 16px;
-    }
+    /* SL UI Library: matte-carousel-navigation / carousel-navigation
+MIT License
+
+Copyright (c) 2026 SLtowl
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+    */
+    .menu-glyph{display:inline-flex;flex:none;align-items:center;justify-content:center;width:24px;height:24px;pointer-events:none;vertical-align:middle}
+    .menu-glyph>svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+    .nav-demo .arrow-left{transform:rotate(90deg)}
+    .nav-demo .arrow-right{transform:rotate(-90deg)}
+    .nav-next .sr-only{position:absolute;width:1px;height:1px;clip-path:inset(50%);overflow:hidden;white-space:nowrap}
+    .collection-window{overflow:hidden;touch-action:pan-y;cursor:grab;outline-offset:-4px}
+    .collection-track{display:flex;transform:translateX(calc(var(--slide,0)*-100%));transition:transform 320ms var(--nav-ease);will-change:transform}
+    .collection-slide{flex:0 0 100%;min-width:0;padding:24px 23px 20px;min-height:236px;user-select:none}
+    .slide-emblem{display:grid;place-items:center;width:48px;height:48px;border:1px solid #cdcdcd2a;border-radius:14px;margin-bottom:25px;color:#d3d3d3}
+    .slide-emblem .menu-glyph{width:28px;height:28px}
+    .collection-controls{display:flex;align-items:center;justify-content:space-between;padding:0 16px 14px}
+    .collection-controls>button{display:grid;place-items:center;width:36px;height:36px;border:1px solid #cdcdcd24;border-radius:50%}
+    .collection-controls .menu-glyph{width:18px;height:18px}
+    .collection-dots{display:flex;gap:0;align-items:center}
+    .collection-dots button{width:30px;height:34px;display:grid;place-items:center;padding:0}
+    .collection-dots span{width:5px;height:5px;border-radius:6px;background:#727272;transition:width 220ms var(--nav-ease),background-color 220ms ease}
+    .collection-dots [aria-current] span{width:18px;background:#dedede}
+    #steps-toggle { margin-top: 16px; border-radius: 8px; }
+    #forecast-steps { margin-top: 10px; --nav-ease: cubic-bezier(.22,.61,.36,1); }
+    #forecast-steps[hidden] { display: none; }
+    #forecast-steps .collection-window { border-radius: 14px; cursor: auto; }
+    #forecast-steps .collection-slide { user-select: auto; }
+    #forecast-steps .slide-emblem { color: var(--body); border-color: var(--line); margin-bottom: 0; width: 32px; height: 32px; }
+    #forecast-steps .slide-emblem .menu-glyph { width: 22px; height: 22px; }
+    #forecast-steps .collection-controls { padding: 8px 0 0; }
+    #forecast-steps .collection-controls > button { background: var(--line); color: var(--ink); border: 0; border-radius: 8px; padding: 0; }
+    #forecast-steps .collection-dots button { background: transparent; border: 0; }
+    @media (prefers-reduced-motion: reduce) { #forecast-steps * { transition: none !important; } }
 
     .stage-box {
       background: #ffffff;
@@ -840,10 +952,6 @@
       .kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-
-      .stage-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
     }
 
     @media (max-width: 720px) {
@@ -871,6 +979,22 @@
         transition: none !important;
       }
     }
+
+    #chat-launcher { position:fixed; right:24px; bottom:24px; width:60px; height:60px; border-radius:50%; display:grid; place-items:center; padding:0; background:var(--ink); color:#fff; z-index:1001; box-shadow:0 8px 28px #0002; }
+    .greg-messenger[hidden] { display:none; }
+    .greg-messenger { position:fixed; right:24px; bottom:24px; width:min(390px, calc(100vw - 32px)); height:min(520px, calc(100dvh - 48px)); z-index:1000; display:flex; flex-direction:column; padding:0; overflow:hidden; background:#fff; border:1px solid #dededb; border-radius:16px; box-shadow:0 16px 60px #0002; }
+    .greg-chat-header { display:flex; align-items:center; justify-content:space-between; padding:20px; border-bottom:1px solid #e9e9e6; }
+    .greg-chat-header h2 { margin:0 0 4px; font-size:20px; }
+    #chat-launcher[hidden] { display:none; }
+    #chat-close { width:32px; height:32px; min-height:0; flex:0 0 32px; display:grid; place-items:center; padding:0; line-height:1; background:#f1f1ee; color:var(--ink); border:0; border-radius:8px; }
+    .greg-messenger .chat-log { flex:1; min-height:0; max-height:none; overflow-y:auto; margin:0; padding:20px; background:#fafaf8; }
+    .greg-messenger .msg { flex-shrink:0; max-width:92%; padding:8px 12px; border-radius:12px; line-height:1.45; font-size:14px; overflow-wrap:anywhere; }
+    .greg-messenger .msg.assistant { background:#eeeEEa; color:var(--ink); border:0; }
+    .greg-messenger .msg.user { margin-left:auto; background:var(--ink); color:white; }
+    .greg-messenger #chat-form { display:flex; gap:8px; padding:14px; margin:0; border-top:1px solid #e9e9e6; }
+    .greg-messenger #prompt { min-width:0; width:0; border-radius:8px; font-size:14px; }
+    .greg-messenger #send-btn { border-radius:8px; padding:10px 14px; white-space:nowrap; }
+    @media(max-width:480px) { #chat-launcher { right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); } .greg-messenger { right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); height:min(520px, calc(100dvh - 32px - env(safe-area-inset-bottom))); } }
   </style>
 </head>
 
@@ -983,8 +1107,8 @@
           <div class="field">
             <label for="op-kind">Type</label>
             <select id="op-kind">
-              <option value="expense">Expense</option>
               <option value="income">Income</option>
+              <option value="expense">Expense</option>
             </select>
           </div>
           <div class="field">
@@ -1152,47 +1276,63 @@
           </div>
         </div>
 
-        <!-- GOVERNANCE STAGES (Lorem ipsum placeholders while testing forecast) -->
-        <div class="stage-grid">
-          <div class="stage-box">
-            <span class="stage-tag">Step A · Placeholder</span>
-            <h3>Lorem ipsum</h3>
+        <!-- GOVERNANCE STAGES -->
+        <button type="button" id="steps-toggle" class="secondary" aria-expanded="false" aria-controls="forecast-steps">Explore the steps</button>
+        <div class="nav-demo nav-next" id="forecast-steps" data-navigation="carousel" hidden><div class="nav-surface collection-surface"><div class="collection-window" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Forecast steps"><div class="collection-track"><section class="collection-slide stage-box" role="group" aria-roledescription="slide" aria-label="1 of 3"><span class="slide-emblem"><i class="menu-glyph" data-icon="folder" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="M4.5 9a2 2 0 0 1 2-2h5l2.5 3h7.5a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2Z"/></svg></i></span><h3 class="sr-only">Analysis</h3>
+            <span class="stage-tag">Step A · Analyzed Automatically</span>
+            <p id="agent-analysis-text" style="font-size: 13px; color: var(--body)"></p>
+            <h3>Upcoming Regular Bills Detected</h3>
+            <div style="max-height: 190px; overflow-y: auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Expected Date</th>
+                    <th>Who</th>
+                    <th class="right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="upcoming-bills-body"></tbody>
+              </table>
+            </div>
+</section><section class="collection-slide stage-box" role="group" aria-roledescription="slide" aria-label="2 of 3" inert aria-hidden="true"><span class="slide-emblem"><i class="menu-glyph" data-icon="file" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="M7 4h10l6 6v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm10 0v6h6"/></svg></i></span><h3 class="sr-only">Recommendation</h3>
+            <span class="stage-tag">Step B · Recommended Action</span>
+            <p id="agent-rec-text" style="font-size: 13px; color: var(--body)"></p>
+            <div class="credit-summary-box num">
+              <div><strong>Lowest Expected Balance:</strong> <span id="rec-lowest">€0.00</span></div>
+              <div><strong id="rec-below-label">Days Below €0:</strong> <span id="rec-days">0 days</span></div>
+              <div style="margin-top: 4px; font-size: 14px">
+                <strong>Credit Amount Needed from Your Bank:</strong>
+                <span id="rec-credit" style="font-weight: 700">€0.00</span>
+              </div>
+            </div>
+            <div style="margin-top: auto; padding-top: 6px">
+              <button type="button" id="ai-explain-btn" class="secondary" style="width: 100%; white-space: normal">
+                Ask Greg (OpenShift AI) to Explain in Simple Words
+              </button>
+            </div>
+</section><section class="collection-slide stage-box" role="group" aria-roledescription="slide" aria-label="3 of 3" inert aria-hidden="true"><span class="slide-emblem"><i class="menu-glyph" data-icon="edit" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="m5 23 1.5-5.5L19 5a2.8 2.8 0 0 1 4 4L10.5 21.5 5 23ZM16.5 7.5l4 4M6.5 17.5l4 4"/></svg></i></span><h3 class="sr-only">Approval</h3>
+            <span class="stage-tag">Step C · Your Approval (Simulated)</span>
             <p style="font-size: 13px; color: var(--body)">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-              dolore magna aliqua.
+              You choose the bank and credit line yourself. Enter the credit amount you want to simulate below to see
+              how it keeps your account balance above €0.
             </p>
-          </div>
-
-          <div class="stage-box">
-            <span class="stage-tag">Step B · Placeholder</span>
-            <h3>Dolor sit amet</h3>
-            <p style="font-size: 13px; color: var(--body)">
-              Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-              consequat.
-            </p>
-          </div>
-
-          <div class="stage-box">
-            <span class="stage-tag">Step C · Placeholder</span>
-            <h3>Consectetur</h3>
-            <p style="font-size: 13px; color: var(--body)">
-              Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-            </p>
-          </div>
-        </div>
+            <form id="credit-form" class="form-row">
+              <div class="field">
+                <label for="credit-input">Credit Amount to Simulate (€)</label>
+                <input type="number" id="credit-input" step="100" min="0" value="0" />
+              </div>
+              <button type="submit">Approve Credit Plan</button>
+            </form>
+            <div id="credit-status" style="font-size: 13px"></div>
+</section></div></div><div class="collection-controls"><button type="button" data-prev-slide aria-label="Previous step"><i class="menu-glyph arrow-left" data-icon="chevron" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="m8 11 6 6 6-6"/></svg></i></button><nav class="collection-dots" aria-label="Choose step"><button type="button" data-slide="0" aria-label="Analysis" aria-current="true"><span></span></button><button type="button" data-slide="1" aria-label="Recommendation"><span></span></button><button type="button" data-slide="2" aria-label="Approval"><span></span></button></nav><button type="button" data-next-slide aria-label="Next step"><i class="menu-glyph arrow-right" data-icon="chevron" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="m8 11 6 6 6-6"/></svg></i></button></div><p class="sr-only" data-slide-status role="status">Analysis, 1 of 3</p></div></div>
       </section>
 
-      <!-- SIMPLE AI CHAT WITH GREG -->
-      <section class="card">
-        <h2>Ask Greg a Question (OpenShift AI)</h2>
-        <div class="subtitle" style="margin-bottom: 12px">
-          Greg knows your selected month's income, expenses, and cash forecast, and answers in plain everyday words.
-        </div>
+      <!-- Floating Greg support messenger -->
+      <button type="button" id="chat-launcher" aria-label="Open chat with Greg" aria-controls="greg-messenger" aria-expanded="false"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-8 8H4l-2 2v-10a9 9 0 0 1 18 0Z"/><path d="M7 9h8M7 13h5"/></svg></button>
+      <section id="greg-messenger" class="card greg-messenger" role="dialog" aria-labelledby="greg-chat-title" hidden>
+        <header class="greg-chat-header"><div><h2 id="greg-chat-title">Greg</h2><div class="subtitle">Your AI finance assistant</div></div><button type="button" id="chat-close" aria-label="Close chat">✕</button></header>
         <div class="chat-log" id="messages" role="log" aria-live="polite">
-          <div class="msg assistant" id="empty-state">
-            Ask me anything about your monthly expenses, employee salaries, taxes, or why your balance changes in the
-            next few weeks.
-          </div>
+          <div class="msg assistant" id="empty-state">Hi, I’m Greg. Ask me about your monthly expenses, salaries, taxes, or cash flow. I’ll help you make sense of your numbers.</div>
         </div>
         <form id="chat-form" class="form-row">
           <input type="text" id="prompt"
@@ -1205,6 +1345,96 @@
   </main>
 
   <script>
+    {
+      const root = document.getElementById('forecast-steps');
+      const toggle = document.getElementById('steps-toggle');
+      const signal = new AbortController().signal;
+      function current(buttons, index, token) {
+        buttons.forEach((b, i) => {
+          if (i === index) b.setAttribute('aria-current', token);
+          else b.removeAttribute('aria-current');
+        });
+      }
+      const buttons = [...root.querySelectorAll('[data-slide]')];
+      const slides = [...root.querySelectorAll('.collection-slide')];
+      const win = root.querySelector('.collection-window');
+      const prev = root.querySelector('[data-prev-slide]');
+      const next = root.querySelector('[data-next-slide]');
+      let slide = 0, start = null;
+      function select(i) {
+        slide = (i + slides.length) % slides.length;
+        root.style.setProperty('--slide', slide);
+        current(buttons, slide, 'true');
+        slides.forEach((s, j) => {
+          s.inert = j !== slide;
+          s.setAttribute('aria-hidden', String(j !== slide));
+        });
+        root.querySelector('[data-slide-status]').textContent =
+          slides[slide].querySelector('h3').textContent + ', ' + (slide + 1) + ' of 3';
+      }
+      buttons.forEach((b, i) => b.addEventListener('click', () => select(i), { signal }));
+      prev.addEventListener('click', () => select(slide - 1), { signal });
+      next.addEventListener('click', () => select(slide + 1), { signal });
+      win.addEventListener('keydown', (e) => {
+        if (e.target !== win || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+        e.preventDefault();
+        select(e.key === 'Home' ? 0 : e.key === 'End' ? 2 : slide + (e.key === 'ArrowRight' ? 1 : -1));
+      }, { signal });
+      win.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'touch' || !e.isPrimary || e.button !== 0 || e.target.closest('button,input,select,textarea,a')) return;
+        start = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      }, { signal });
+      win.addEventListener('pointerup', (e) => {
+        if (!start || start.id !== e.pointerId) return;
+        const dx = e.clientX - start.x, dy = e.clientY - start.y;
+        start = null;
+        if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy) * 1.25) select(slide + (dx < 0 ? 1 : -1));
+      }, { signal });
+      win.addEventListener('pointercancel', () => { start = null; }, { signal });
+      win.addEventListener('lostpointercapture', () => { start = null; }, { signal });
+      select(0);
+
+      toggle.addEventListener('click', () => {
+        root.hidden = !root.hidden;
+        toggle.setAttribute('aria-expanded', String(!root.hidden));
+        if (!root.hidden) select(0);
+      });
+    }
+
+    for (const input of document.querySelectorAll('input[type="number"]')) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'number-stepper';
+      const buttons = document.createElement('div');
+      buttons.className = 'stepper-buttons';
+      input.before(wrapper);
+      wrapper.append(input, buttons);
+      const lblText = (input.labels && input.labels[0]) ? input.labels[0].textContent : 'Value';
+      for (const [label, glyph, method] of [['Increase', '▴', 'stepUp'], ['Decrease', '▾', 'stepDown']]) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = glyph;
+        button.setAttribute('aria-label', `${label}: ${lblText}`);
+        button.addEventListener('mousedown', (event) => event.preventDefault());
+        button.addEventListener('click', () => {
+          input[method]();
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        buttons.append(button);
+      }
+    }
+
+    const forecastStage = document.querySelector('.forecast-stage');
+    const dotMotion = matchMedia('(any-hover: hover) and (prefers-reduced-motion: no-preference)');
+    forecastStage.addEventListener('pointermove', (event) => {
+      if (!dotMotion.matches || event.pointerType !== 'mouse') return;
+      const bounds = forecastStage.getBoundingClientRect();
+      forecastStage.style.setProperty('--dot-x', `${event.clientX - bounds.left}px`);
+      forecastStage.style.setProperty('--dot-y', `${event.clientY - bounds.top}px`);
+      forecastStage.setAttribute('data-dot-hover', '');
+    });
+    forecastStage.addEventListener('pointerleave', () => forecastStage.removeAttribute('data-dot-hover'));
+    dotMotion.addEventListener('change', () => forecastStage.removeAttribute('data-dot-hover'));
+
     const statusEl = document.getElementById("status");
     const llmDot = document.getElementById("llm-dot");
     const resetBtn = document.getElementById("reset-btn");
@@ -1270,6 +1500,7 @@
     const agentRecText = document.getElementById("agent-rec-text");
     const upcomingBillsBody = document.getElementById("upcoming-bills-body");
     const recLowest = document.getElementById("rec-lowest");
+    const recBelowLabel = document.getElementById("rec-below-label");
     const recDays = document.getElementById("rec-days");
     const recCredit = document.getElementById("rec-credit");
     const aiExplainBtn = document.getElementById("ai-explain-btn");
@@ -2150,38 +2381,32 @@
         recLowest.textContent = `${fmtMoney(la.lowest_predicted_balance, cur)} (on ${la.lowest_predicted_date})`;
         recLowest.className = la.lowest_predicted_balance < 0 ? "neg" : "pos";
       }
-      if (recDays) recDays.textContent = `${la.days_below_zero} day(s)`;
+      if (recBelowLabel) {
+        const zeroText = fmtMoney(0, cur).replace(/\.00$/, "");
+        recBelowLabel.textContent =
+          la.granularity === "month" ? `Months Below ${zeroText}:` : `Days Below ${zeroText}:`;
+      }
+      if (recDays) {
+        recDays.textContent =
+          la.granularity === "month"
+            ? `${la.months_below_zero || 0} month(s)`
+            : `${la.days_below_zero || 0} day(s)`;
+      }
       if (recCredit) recCredit.textContent = fmtMoney(la.recommended_credit_amount, cur);
 
       if (creditInput && creditStatus) {
-        if (
-          !state.approved_credit ||
-          Number(state.approved_credit.amount) === 0
-        ) {
-          creditInput.value = la.recommended_credit_amount;
-          creditStatus.innerHTML = `<span class="subtitle">Status: Waiting for your decision (not approved yet).</span>`;
-        } else {
-          creditInput.value = state.approved_credit.amount;
-          creditStatus.innerHTML = `
-              <span class="pos" style="font-weight: 600">
-                Approved (Simulated): ${fmtMoney(
-            state.approved_credit.amount,
-            cur
-          )} credit cushion applied to forecast chart (green line).
-              </span>
-              <button type="button" class="secondary" id="clear-credit-btn" style="margin-top: 8px; min-height: 30px; padding: 4px 12px; font-size: 12px">
-                Remove Credit
-              </button>`;
-          const clearCreditBtn = document.getElementById("clear-credit-btn");
-          if (clearCreditBtn) {
-            clearCreditBtn.addEventListener("click", () => submitCredit(0));
-          }
-        }
+        creditInput.value = la.recommended_credit_amount;
+        creditStatus.innerHTML =
+          `<span class="subtitle">Preview only — credit approval simulation does not modify the model or chart.</span>`;
       }
 
       if (upcomingBillsBody) {
         if (la.upcoming_bills.length === 0) {
-          upcomingBillsBody.innerHTML = `<tr><td colspan="3" class="subtitle">No regular bills detected yet.</td></tr>`;
+          const emptyMsg =
+            la.engine === "greg_planner"
+              ? "Monthly seasonal planner active — individual regular bill dates are shown in daily mode (&lt; 12 months)."
+              : "No regular bills detected yet.";
+          upcomingBillsBody.innerHTML = `<tr><td colspan="3" class="subtitle">${emptyMsg}</td></tr>`;
         } else {
           upcomingBillsBody.innerHTML = la.upcoming_bills
             .map(
@@ -2470,7 +2695,6 @@
     if (creditForm) {
       creditForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        submitCredit((creditInput && creditInput.value) || 0);
       });
     }
 
@@ -2486,11 +2710,36 @@
         currentGranularity = null;
         chartZoom = { key: null, start: 0, end: 0 };
         chartDrag = null;
+        if (!messenger.hidden) setChatOpen(false);
         renderState(await res.json());
       }
     });
 
+    const chatLauncher = document.getElementById('chat-launcher');
+    const messenger = document.getElementById('greg-messenger');
+    function setChatOpen(open) {
+      messenger.hidden = !open;
+      chatLauncher.hidden = open;
+      chatLauncher.setAttribute('aria-expanded', String(open));
+      chatLauncher.setAttribute('aria-label', open ? 'Close chat with Greg' : 'Open chat with Greg');
+      if (open) {
+        if (!promptEl.disabled) promptEl.focus();
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      } else {
+        chatLauncher.focus();
+      }
+    }
+    chatLauncher.addEventListener('click', () => setChatOpen(messenger.hidden));
+    document.getElementById('chat-close').addEventListener('click', () => setChatOpen(false));
+    messenger.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setChatOpen(false);
+      }
+    });
+
     function appendMessage(role, text) {
+      setChatOpen(true);
       const div = document.createElement("div");
       div.className = `msg ${role}`;
       div.textContent = text;
