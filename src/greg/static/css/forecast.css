@@ -279,213 +279,6 @@
   border-color: #a8c9b7;
 }
 
-/* SL UI Library: matte-carousel-navigation / carousel-navigation
-MIT License
-
-Copyright (c) 2026 SLtowl
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-.menu-glyph {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  pointer-events: none;
-  vertical-align: middle;
-}
-
-.menu-glyph > svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.nav-demo .arrow-left {
-  transform: rotate(90deg);
-}
-
-.nav-demo .arrow-right {
-  transform: rotate(-90deg);
-}
-
-.nav-next .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  clip-path: inset(50%);
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.collection-window {
-  overflow: hidden;
-  touch-action: pan-y;
-  cursor: grab;
-  outline-offset: -4px;
-}
-
-.collection-track {
-  display: flex;
-  transform: translateX(calc(var(--slide, 0) * -100%));
-  transition: transform 320ms var(--nav-ease);
-  will-change: transform;
-}
-
-.collection-slide {
-  flex: 0 0 100%;
-  min-width: 0;
-  padding: 24px 23px 20px;
-  min-height: 236px;
-  user-select: none;
-}
-
-.slide-emblem {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border: 1px solid #cdcdcd2a;
-  border-radius: 14px;
-  margin-bottom: 25px;
-  color: #d3d3d3;
-}
-
-.slide-emblem .menu-glyph {
-  width: 28px;
-  height: 28px;
-}
-
-.collection-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px 14px;
-}
-
-.collection-controls > button {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid #cdcdcd24;
-  border-radius: 50%;
-}
-
-.collection-controls .menu-glyph {
-  width: 18px;
-  height: 18px;
-}
-
-.collection-dots {
-  display: flex;
-  gap: 0;
-  align-items: center;
-}
-
-.collection-dots button {
-  width: 30px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-}
-
-.collection-dots span {
-  width: 5px;
-  height: 5px;
-  border-radius: 6px;
-  background: #727272;
-  transition: width 220ms var(--nav-ease), background-color 220ms ease;
-}
-
-.collection-dots [aria-current] span {
-  width: 18px;
-  background: #dedede;
-}
-
-#steps-toggle {
-  margin-top: 16px;
-  border-radius: 8px;
-}
-
-#forecast-steps {
-  margin-top: 10px;
-  --nav-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
-#forecast-steps[hidden] {
-  display: none;
-}
-
-#forecast-steps .collection-window {
-  border-radius: 14px;
-  cursor: auto;
-}
-
-#forecast-steps .collection-slide {
-  user-select: auto;
-}
-
-#forecast-steps .slide-emblem {
-  color: var(--body);
-  border-color: var(--line);
-  margin-bottom: 0;
-  width: 32px;
-  height: 32px;
-}
-
-#forecast-steps .slide-emblem .menu-glyph {
-  width: 22px;
-  height: 22px;
-}
-
-#forecast-steps .collection-controls {
-  padding: 8px 0 0;
-}
-
-#forecast-steps .collection-controls > button {
-  background: var(--line);
-  color: var(--ink);
-  border: 0;
-  border-radius: 8px;
-  padding: 0;
-}
-
-#forecast-steps .collection-dots button {
-  background: transparent;
-  border: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #forecast-steps * {
-    transition: none !important;
-  }
-}
-
 .stage-box {
   background: #ffffff;
   color: var(--ink);
@@ -500,15 +293,37 @@ SOFTWARE.
   color: var(--body);
 }
 
-.stage-tag {
-  display: inline-block;
-  width: fit-content;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 100px;
-  background: var(--tint);
-  color: #623761;
+#loan-toggle {
+  margin-top: 16px;
+  border-radius: 8px;
+}
+
+#loan-panel {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+}
+
+#loan-panel[hidden] {
+  display: none;
+}
+
+.loan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.loan-actions .field {
+  flex: 1 1 180px;
+}
+
+.loan-actions button {
+  white-space: normal;
+}
+
+#loan-status {
+  font-size: 13px;
 }
 
 .stage-box h3 {

@@ -329,77 +329,31 @@
           </div>
         </div>
 
-        <!-- GOVERNANCE STAGES -->
-        <button type="button" id="steps-toggle" class="secondary" aria-expanded="false" aria-controls="forecast-steps">Explore the steps</button>
-        <div class="nav-demo nav-next" id="forecast-steps" data-navigation="carousel" hidden>
-          <div class="nav-surface collection-surface">
-            <div class="collection-window" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Forecast steps">
-              <div class="collection-track">
-                <section class="collection-slide stage-box" role="group" aria-roledescription="slide" aria-label="1 of 3">
-                  <span class="slide-emblem"><i class="menu-glyph" data-icon="folder" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="M4.5 9a2 2 0 0 1 2-2h5l2.5 3h7.5a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2Z"/></svg></i></span>
-                  <h3 class="sr-only">Analysis</h3>
-                  <span class="stage-tag">Step A · Analyzed Automatically</span>
-                  <p id="agent-analysis-text" style="font-size: 13px; color: var(--body)"></p>
-                  <h3>Upcoming Regular Bills Detected</h3>
-                  <div style="max-height: 190px; overflow-y: auto">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Expected Date</th>
-                          <th>Who</th>
-                          <th class="right">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody id="upcoming-bills-body"></tbody>
-                    </table>
-                  </div>
-                </section>
-                <section class="collection-slide stage-box" role="group" aria-roledescription="slide" aria-label="2 of 3" inert aria-hidden="true">
-                  <span class="slide-emblem"><i class="menu-glyph" data-icon="file" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="M7 4h10l6 6v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm10 0v6h6"/></svg></i></span>
-                  <h3 class="sr-only">Recommendation</h3>
-                  <span class="stage-tag">Step B · Recommended Action</span>
-                  <p id="agent-rec-text" style="font-size: 13px; color: var(--body)"></p>
-                  <div class="credit-summary-box num">
-                    <div><strong>Lowest Expected Balance:</strong> <span id="rec-lowest">€0.00</span></div>
-                    <div><strong id="rec-below-label">Days Below €0:</strong> <span id="rec-days">0 days</span></div>
-                    <div style="margin-top: 4px; font-size: 14px">
-                      <strong>Credit Amount Needed from Your Bank:</strong>
-                      <span id="rec-credit" style="font-weight: 700">€0.00</span>
-                    </div>
-                  </div>
-                  <div style="margin-top: auto; padding-top: 6px">
-                    <button type="button" id="ai-explain-btn" class="secondary" style="width: 100%; white-space: normal">
-                      Ask Greg (OpenShift AI) to Explain in Simple Words
-                    </button>
-                  </div>
-                </section>
-                <section class="collection-slide stage-box" role="group" aria-roledescription="slide" aria-label="3 of 3" inert aria-hidden="true">
-                  <span class="slide-emblem"><i class="menu-glyph" data-icon="edit" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="m5 23 1.5-5.5L19 5a2.8 2.8 0 0 1 4 4L10.5 21.5 5 23ZM16.5 7.5l4 4M6.5 17.5l4 4"/></svg></i></span>
-                  <h3 class="sr-only">Approval</h3>
-                  <span class="stage-tag">Step C · Your Approval (Simulated)</span>
-                  <p style="font-size: 13px; color: var(--body)">
-                    You choose the bank and credit line yourself. Enter the credit amount you want to simulate below to see
-                    how it keeps your account balance above €0.
-                  </p>
-                  <form id="credit-form" class="form-row">
-                    <div class="field">
-                      <label for="credit-input">Credit Amount to Simulate (€)</label>
-                      <input type="number" id="credit-input" step="100" min="0" value="0" />
-                    </div>
-                    <button type="submit">Approve Credit Plan</button>
-                  </form>
-                  <div id="credit-status" style="font-size: 13px"></div>
-                </section>
-              </div>
+        <!-- LOAN RECOMMENDATION -->
+        <button type="button" id="loan-toggle" class="secondary" aria-expanded="false" aria-controls="loan-panel">Explore a loan</button>
+        <section class="stage-box" id="loan-panel" aria-labelledby="loan-title" hidden>
+          <h3 id="loan-title">Recommended Action</h3>
+          <p id="agent-rec-text" style="font-size: 13px; color: var(--body)"></p>
+          <div class="credit-summary-box num">
+            <div><strong>Lowest Expected Balance:</strong> <span id="rec-lowest">€0.00</span></div>
+            <div><strong id="rec-below-label">Days Below €0:</strong> <span id="rec-days">0 days</span></div>
+            <div style="margin-top: 4px; font-size: 14px">
+              <strong>Credit Amount Needed from Your Bank:</strong>
+              <span id="rec-credit" style="font-weight: 700">€0.00</span>
             </div>
-            <div class="collection-controls">
-              <button type="button" data-prev-slide aria-label="Previous step"><i class="menu-glyph arrow-left" data-icon="chevron" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="m8 11 6 6 6-6"/></svg></i></button>
-              <nav class="collection-dots" aria-label="Choose step"><button type="button" data-slide="0" aria-label="Analysis" aria-current="true"><span></span></button><button type="button" data-slide="1" aria-label="Recommendation"><span></span></button><button type="button" data-slide="2" aria-label="Approval"><span></span></button></nav>
-              <button type="button" data-next-slide aria-label="Next step"><i class="menu-glyph arrow-right" data-icon="chevron" aria-hidden="true"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="m8 11 6 6 6-6"/></svg></i></button>
-            </div>
-            <p class="sr-only" data-slide-status role="status">Analysis, 1 of 3</p>
           </div>
-        </div>
+          <div class="loan-actions">
+            <div class="field">
+              <label for="loan-amount">Loan amount</label>
+              <input type="number" id="loan-amount" step="100" min="0" value="0" />
+            </div>
+            <button type="button" id="loan-request-btn" aria-pressed="false">Request a loan from Commerzbank</button>
+          </div>
+          <div id="loan-status" role="status" aria-live="polite"></div>
+          <button type="button" id="ai-explain-btn" class="secondary" style="width: 100%; white-space: normal">
+            Ask Greg (OpenShift AI) to Explain in Simple Words
+          </button>
+        </section>
       </section>
 
       <!-- Floating Greg support messenger -->

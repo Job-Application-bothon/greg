@@ -3,7 +3,7 @@ import { escapeHtml, fmtMoney, fmtZero } from "./format.js";
 
 const WHATIF_COLOR = "#2f6fdf";
 
-export function buildChartPoints(state, whatIf = null) {
+export function buildChartPoints(state, whatIf = null, loan = null) {
   const la = (state && state.liquidity_agent) || {};
   const gran = la.granularity === "month" ? "month" : "day";
   const fore = la.forecast_series || [];
@@ -22,7 +22,7 @@ export function buildChartPoints(state, whatIf = null) {
         fullDate: p.date,
         bal: Number(p.balance),
         balPess: p.balance_pessimistic != null ? Number(p.balance_pessimistic) : null,
-        balCredit: p.balance_with_credit != null ? Number(p.balance_with_credit) : null,
+        balCredit: loan ? loan[i] : p.balance_with_credit != null ? Number(p.balance_with_credit) : null,
         balWhatIf: whatIf ? whatIf[i] : null,
         expectedIn: p.expected_in != null ? Number(p.expected_in) : null,
         expectedOut: p.expected_out != null ? Number(p.expected_out) : null,
@@ -43,7 +43,7 @@ export function buildChartPoints(state, whatIf = null) {
       date: p.date,
       fullDate: p.date,
       bal: Number(p.balance),
-      balCredit: p.balance_with_credit != null ? Number(p.balance_with_credit) : null,
+      balCredit: loan ? loan[i] : p.balance_with_credit != null ? Number(p.balance_with_credit) : null,
       balWhatIf: whatIf ? whatIf[i] : null,
       expectedIn: p.expected_in != null ? Number(p.expected_in) : null,
       expectedOut: p.expected_out != null ? Number(p.expected_out) : null,
@@ -52,7 +52,10 @@ export function buildChartPoints(state, whatIf = null) {
   ];
 }
 
-export function createChartController(els, { getCurrentState, getWhatIf = () => null }) {
+export function createChartController(
+  els,
+  { getCurrentState, getWhatIf = () => null, getLoan = () => null }
+) {
   const {
     forecastPanel,
     forecastChart,
@@ -96,12 +99,15 @@ export function createChartController(els, { getCurrentState, getWhatIf = () => 
       return;
     }
 
+    const loan = getLoan(state);
     const hasApprovedCredit =
-      state && state.approved_credit && Number(state.approved_credit.amount) > 0;
+      !!loan || !!(state && state.approved_credit && Number(state.approved_credit.amount) > 0);
+    const creditLabel = loan ? "With Commerzbank loan" : "With approved credit";
+    const creditTip = loan ? "With loan" : "With credit";
 
     const whatIf = getWhatIf(state);
     const hasWhatIf = !!whatIf;
-    const allPoints = buildChartPoints(state, whatIf);
+    const allPoints = buildChartPoints(state, whatIf, loan);
     const total = allPoints.length;
     const defaultWindow = interval === "month" ? 24 : 60;
     const defaultSpan = Math.min(total, defaultWindow);
@@ -226,7 +232,7 @@ export function createChartController(els, { getCurrentState, getWhatIf = () => 
         ];
         if (hasApprovedCredit) {
           items.push(
-            '<span class="legend-item"><span class="swatch" style="background: #24664e"></span>With approved credit</span>'
+            `<span class="legend-item"><span class="swatch" style="background: #24664e"></span>${creditLabel}</span>`
           );
         }
         if (hasWhatIf) items.push(whatIfLegend);
@@ -238,7 +244,7 @@ export function createChartController(els, { getCurrentState, getWhatIf = () => 
         ];
         if (hasApprovedCredit) {
           items.push(
-            '<span class="legend-item"><span class="swatch" style="background: #24664e"></span>With approved credit</span>'
+            `<span class="legend-item"><span class="swatch" style="background: #24664e"></span>${creditLabel}</span>`
           );
         }
         if (hasWhatIf) items.push(whatIfLegend);
@@ -273,6 +279,7 @@ export function createChartController(els, { getCurrentState, getWhatIf = () => 
       plotH,
       currency,
       hasApprovedCredit,
+      creditTip,
     };
 
     forecastChart.innerHTML = `
@@ -464,7 +471,7 @@ export function createChartController(els, { getCurrentState, getWhatIf = () => 
         : "";
     const creditHtml =
       m.hasApprovedCredit && pt.kind === "fore" && pt.balCredit != null
-        ? `<div class="tt-credit">With credit: ${escapeHtml(fmtMoney(pt.balCredit, m.currency))}</div>`
+        ? `<div class="tt-credit">${m.creditTip}: ${escapeHtml(fmtMoney(pt.balCredit, m.currency))}</div>`
         : "";
 
     const whatIfHtml =

@@ -66,6 +66,7 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             "controls.js",
             "chat.js",
             "whatif.js",
+            "loan.js",
         ):
             with urllib.request.urlopen(
                 f"http://127.0.0.1:{self.port}/static/js/{js_name}", timeout=5
@@ -77,7 +78,7 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
                 self.assertEqual(resp.headers.get("Cache-Control"), "no-store")
                 resp.read()
 
-    def test_frontend_labels_design_features_and_step_c_noop(self) -> None:
+    def test_frontend_labels_design_features_and_loan_request(self) -> None:
         html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
         css_all = "\n".join(
             p.read_text(encoding="utf-8") for p in sorted((STATIC_DIR / "css").glob("*.css"))
@@ -107,6 +108,11 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             "Month End (",
             "Past balance",
             "/api/approve-credit",
+            "Explore the steps",
+            "Step A",
+            "Step B",
+            "Step C",
+            "forecast-steps",
         ):
             self.assertNotIn(forbidden, combined, msg=f"Unexpected forbidden UI text: {forbidden}")
 
@@ -147,14 +153,16 @@ class FrontendAssetsIntegrationTest(unittest.TestCase):
             'id="map-income"',
             'id="map-expenses"',
             'id="map-default-currency"',
-            'id="steps-toggle"',
-            'id="forecast-steps"',
+            'id="loan-toggle"',
+            'id="loan-panel"',
+            'id="loan-request-btn"',
+            "Request a loan from ${LOAN_BANK}",
+            'LOAN_BANK = "Commerzbank"',
+            "With Commerzbank loan",
             'id="chat-launcher"',
             'id="greg-messenger"',
             "number-stepper",
-            "Step A · Analyzed Automatically",
-            "Step B · Recommended Action",
-            "Step C · Your Approval (Simulated)",
+            "Recommended Action",
             "Monthly seasonal forecast",
             ">Today<",
             "X-Greg-Session",
