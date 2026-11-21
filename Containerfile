@@ -15,7 +15,7 @@ COPY src/ ./src/
 RUN uv sync --frozen --no-dev --extra planner
 
 # Verify planner.keras NumPy runner and statsforecast load cleanly inside the image
-RUN /app/.venv/bin/python -c "from greg.planner import get_planner; from statsforecast.models import AutoETS, AutoARIMA, AutoTheta; assert get_planner().model is not None"
+RUN /app/.venv/bin/python -c "from greg.forecasting.seasonal import get_planner; from statsforecast.models import AutoETS, AutoARIMA, AutoTheta; assert get_planner().model is not None"
 
 # OpenShift runs containers with an arbitrary UID in gid 0 (root group).
 # Ensure /app is readable and group-executable/writable for gid 0.
