@@ -243,6 +243,17 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, STORE.get_view(selected_month=month, horizon_days=horizon))
             return
 
+        if path in ("/assets/InterVariable.woff2", "/InterVariable.woff2"):
+            font_path = STATIC_DIR / "InterVariable.woff2"
+            if font_path.exists():
+                font_bytes = font_path.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "font/woff2")
+                self.send_header("Content-Length", str(len(font_bytes)))
+                self.end_headers()
+                self.wfile.write(font_bytes)
+                return
+
         if path in ("/", "/index.html"):
             html = (STATIC_DIR / "index.html").read_bytes()
             self.send_response(200)

@@ -299,6 +299,8 @@ class FrontendCopyTest(unittest.TestCase):
             "3. Monthly",
             "4. Liquidity",
             "5. Ask Greg",
+            "Month End (",
+            "Past balance",
         ):
             self.assertNotIn(forbidden, html, msg=f"Unexpected forbidden UI text: {forbidden}")
 
@@ -313,6 +315,15 @@ class FrontendCopyTest(unittest.TestCase):
             '<option value="Salaries">Salaries</option>',
             '<option value="Taxes">Taxes</option>',
             '<option value="Other">Other</option>',
+            'id="chart-tooltip"',
+            'id="chart-crosshair"',
+            'id="chart-hover-dot"',
+            'id="chart-plot-area"',
+            'id="btn-zoom-in"',
+            'id="btn-zoom-out"',
+            'id="btn-zoom-reset"',
+            'class="chart-legend hidden"',
+            ">Today<",
         ):
             self.assertIn(required, html, msg=f"Missing required UI text: {required}")
 
@@ -393,6 +404,21 @@ class HTTPServerIntegrationTest(unittest.TestCase):
         status, after_reset = self._request("POST", "/api/reset", {})
         self.assertEqual(status, 200)
         self.assertFalse(after_reset["has_data"])
+
+    def test_serves_inter_font_asset(self) -> None:
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{self.port}/assets/InterVariable.woff2", timeout=5
+        ) as resp:
+            self.assertEqual(resp.status, 200)
+            self.assertEqual(resp.headers.get("Content-Type"), "font/woff2")
+            data = resp.read()
+            self.assertGreater(len(data), 1000)
+
+        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/", timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            html = resp.read().decode("utf-8")
+            self.assertIn("Import Bank Statement (CSV)", html)
+            self.assertIn("InterVariable.woff2", html)
 
 
 if __name__ == "__main__":
