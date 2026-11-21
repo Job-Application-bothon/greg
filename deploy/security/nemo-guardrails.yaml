@@ -1,0 +1,45 @@
+# NeMo Guardrails server for Greg, managed by the OpenShift AI TrustyAI operator
+# (GA in Red Hat OpenShift AI 3.4+; the hf classifier rail needs 3.5+).
+# Not applied by CI: apply manually once the NemoGuardrails CRD exists on the cluster.
+#   oc apply -n my-first-model -f deploy/security/
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: greg-guardrails-config
+  labels:
+    app: greg-guardrails
+data:
+  config.yaml: |
+    rails:
+      input:
+        flows:
+          - hf classifier check input $classifier="prompt_injection"
+      config:
+        hf_classifier:
+          prompt_injection:
+            engine: local
+            model: "protectai/deberta-v3-base-prompt-injection-v2"
+            task: text-classification
+            threshold: 0.5
+            blocked_labels:
+              - INJECTION
+  rails.co: ""
+---
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: NemoGuardrails
+metadata:
+  name: greg-guardrails
+  labels:
+    app: greg-guardrails
+  annotations:
+    security.opendatahub.io/enable-auth: "true"
+spec:
+  nemoConfigs:
+    - name: greg-input
+      configMaps:
+        - greg-guardrails-config
+      default: true
+  env:
+    # Required by the server even though this config makes no LLM calls.
+    - name: OPENAI_API_KEY
+      value: "placeholder"

@@ -8,3 +8,6 @@ data:
   PORT: "8000"
   LLM_BASE_URL: "http://llama-32-3b-instruct-predictor.my-first-model.svc.cluster.local:8080/v1"
   LLM_MODEL: "llama-32-3b-instruct"
+  # NeMo Guardrails input screening for /api/chat (see deploy/security/). Leave unset to disable.
+  GUARDRAILS_CHECK_URL: "https://greg-guardrails.my-first-model.svc.cluster.local:443/v1/guardrail/checks"
+  GUARDRAILS_FAIL_OPEN: "false"

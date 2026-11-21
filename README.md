@@ -35,6 +35,7 @@ src/greg/
 │   ├── __init__.py
 │   ├── client.py               # OpenAI-compatible HTTP client (`call_llm`, `/models` discovery)
 │   ├── classifier.py           # Optional LLM signature classifier (`Salaries`/`Taxes`/`Other`)
+│   ├── guardrails.py           # Optional NeMo Guardrails input screening (`/v1/guardrail/checks`)
 │   └── prompts.py              # Grounded system & explain prompt builders
 └── static/
     ├── index.html              # Semantic UI shell
@@ -106,9 +107,40 @@ uv run greg
 | `GREG_PLANNER_DIR` | package `forecasting/models` | Override directory containing `planner.keras` & `planner_config.json` |
 | `GREG_SESSION_MAX` | `50` | Maximum concurrent tab sessions cached in memory |
 | `GREG_SESSION_TTL` | `7200` | Session idle expiry in seconds |
+| `GREG_TOPIC_GUARD` | `true` | Ask the LLM whether each chat message is a business-money question before answering; `false` disables |
+| `GUARDRAILS_CHECK_URL` | `""` | Full NeMo Guardrails checks URL (`.../v1/guardrail/checks`); unset disables screening |
+| `GUARDRAILS_TOKEN` | `""` | Bearer token for the guardrails endpoint (defaults to the pod's service account token) |
+| `GUARDRAILS_CA_FILE` | pod's `service-ca.crt` | Extra CA bundle trusted for an `https://` guardrails URL |
+| `GUARDRAILS_TIMEOUT` | `30` | Seconds to wait for a guardrails check (the first check after a restart loads the classifier model) |
+| `GUARDRAILS_FAIL_OPEN` | `false` | When `true`, chat still works if the guardrails service is unreachable |
 
 ---
 
 ## Container & OpenShift Deployment
 
 Build and deployment manifests live in [`deploy/`](deploy/), built cleanly with [`Containerfile`](Containerfile) (`uv sync --frozen --no-dev --extra planner`) and automated on `main` via [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml).
+
+---
+
+## LLM Security
+
+**Always on (in code):**
+- `/api/chat` rejects client-supplied `system` messages, always injects Greg's own grounded system prompt, accepts only `user`/`assistant` turns of at most 4,000 characters, and keeps the last 12.
+- The system prompt limits Greg to the business's finances and tells the model to treat CSV names and references as data. CSV-derived names are flattened to one short line before they are embedded.
+- The CSV classifier sends transactions as JSON lines inside a `<transactions>` block marked as untrusted, and only accepts `Salaries`/`Taxes`/`Other` back.
+
+**Topic gate (on whenever an LLM is configured):** before answering, Greg asks the model a one-word YES/NO question: is this message about the business's money? Off-topic requests (poems, jokes, code, general knowledge) get the same polite `422` refusal, and the UI drops them from history. If the gate call fails, the message goes through. Without imported data, the system prompt forbids inventing numbers.
+
+**Grounded answers:** chat questions that mention dates or months (`2025-03-14`, `14.03.25`, `14 March`, `March 14, 2025`, `in May`, `05/2025`, German month names too) get a DATE LOOKUP section with that day's payments and start/end balance, or that month's category totals, biggest payers and lowest balance. Dates outside the data are reported as having no data. Chat also gets a short guide to the app's screens, so "how do I…?" questions are answered.
+
+**NeMo Guardrails (optional, OpenShift AI 3.5+):** every chat message is screened by a DeBERTa prompt-injection classifier before it reaches the model. Blocked messages return `422` with a polite refusal; if the guardrails service is down, chat returns `503` unless `GUARDRAILS_FAIL_OPEN=true`.
+
+```bash
+oc apply -n my-first-model -f deploy/security/   # guardrails server, RBAC, egress NetworkPolicy
+oc get nemoguardrails,svc -n my-first-model      # find the guardrails service name and port
+```
+
+Then set `GUARDRAILS_CHECK_URL` in [`deploy/configmap.yaml`](deploy/configmap.yaml) to `http(s)://<service>.my-first-model.svc.cluster.local:<port>/v1/guardrail/checks` and redeploy. The auth-enabled service listens on HTTPS (port 443), so the URL must start with `https://`; Greg trusts OpenShift's service CA from the pod's service account mount automatically.
+
+`deploy/security/` is not applied by CI, because the `NemoGuardrails` CRD only exists once the TrustyAI component is enabled.
+
