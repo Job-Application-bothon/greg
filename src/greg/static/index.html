@@ -961,6 +961,20 @@
         width: 0%;
         transition: width 0.48s cubic-bezier(0.22, 1, 0.36, 1);
       }
+      .focus-card-divider-bottom {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.14);
+        margin: 8px 0 5px;
+      }
+      .focus-total-row {
+        font-size: 12px;
+        font-weight: 700;
+        padding-top: 1px;
+      }
+      .focus-total-label {
+        color: #ffffff;
+        font-weight: 600;
+      }
       .chart-legend {
         display: flex;
         flex-wrap: wrap;
@@ -2120,6 +2134,15 @@
             const fBalText = fmtMoney(fPt.bal, currency);
             const fIncText = `+${fmtMoney(dayIncome, currency)}`;
             const fExpText = `-${fmtMoney(dayExpenses, currency)}`;
+            const dayNet = Number((dayIncome - dayExpenses).toFixed(2));
+            const fNetText =
+              dayNet > 0
+                ? `+${fmtMoney(dayNet, currency)}`
+                : dayNet < 0
+                ? fmtMoney(dayNet, currency)
+                : fmtMoney(0, currency);
+            const fNetClass =
+              dayNet > 0 ? "focus-val-income" : dayNet < 0 ? "focus-val-expense" : "";
 
             focusMarkerHtml = `
               <line id="chart-focus-line" x1="${fx.toFixed(1)}" y1="${topPad}" x2="${fx.toFixed(
@@ -2175,6 +2198,11 @@
                     <div class="focus-flow-meter" aria-hidden="true">
                       <div class="focus-meter-inc" style="width: ${barIncW}%"></div>
                       <div class="focus-meter-exp" style="width: ${barExpW}%"></div>
+                    </div>
+                    <div class="focus-card-divider-bottom"></div>
+                    <div class="focus-flow-row focus-total-row">
+                      <span class="focus-total-label">Total</span>
+                      <span class="${fNetClass}">${escapeHtml(fNetText)}</span>
                     </div>
                   </div>
                 </div>
