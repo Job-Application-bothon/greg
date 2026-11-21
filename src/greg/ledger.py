@@ -424,7 +424,7 @@ class LedgerStore:
         }
 
     def get_view(self, selected_month: str | None = None, horizon_days: int = 30) -> dict[str, Any]:
-        horizon_days = max(7, min(180, int(horizon_days)))
+        horizon_days = max(0, min(365, int(horizon_days)))
         if not self.transactions:
             return {
                 "has_data": False,
@@ -777,14 +777,16 @@ class LedgerStore:
             wd: (statistics.mean(vals) if vals else 0.0) for wd, vals in weekday_out.items()
         }
 
-        # Step 3: Future manual operations inside (as_of_date, as_of_date + horizon_days]
+        # Step 3: Future manual operations inside (as_of_date, as_of_date + max_sim_days]
+        max_sim_days = max(horizon_days, 365)
         end_forecast_date = as_of_date + timedelta(days=horizon_days)
+        end_sim_date = as_of_date + timedelta(days=max_sim_days)
         future_manual_by_date: dict[date, list[dict[str, Any]]] = defaultdict(list)
         for t in self.transactions:
-            if t.get("source") == "manual" and as_of_date < t["date_obj"] <= end_forecast_date:
+            if t.get("source") == "manual" and as_of_date < t["date_obj"] <= end_sim_date:
                 future_manual_by_date[t["date_obj"]].append(t)
 
-        # Step 4: Roll forward day by day
+        # Step 4: Roll forward day by day up to max_sim_days (365d) so Mini-Map always has full 1Y future series
         credit_cushion = (
             float(self.approved_credit["amount"])
             if self.approved_credit and self.approved_credit.get("amount", 0) > 0
@@ -793,6 +795,7 @@ class LedgerStore:
 
         proj_balance = current_balance
         forecast_series: list[dict[str, Any]] = []
+        full_forecast_series: list[dict[str, Any]] = []
         upcoming_bills: list[dict[str, Any]] = []
         total_expected_in = 0.0
         total_expected_out = 0.0
@@ -807,7 +810,7 @@ class LedgerStore:
         )
         days_below_zero = 0
 
-        for step in range(1, horizon_days + 1):
+        for step in range(1, max_sim_days + 1):
             f_date = as_of_date + timedelta(days=step)
             wd = f_date.weekday()
             day_in = avg_wd_in.get(wd, 0.0)
@@ -840,7 +843,7 @@ class LedgerStore:
                         "source": "detected_regular",
                     }
                     day_events.append(bill_item)
-                    if amt < 0:
+                    if step <= horizon_days and amt < 0:
                         upcoming_bills.append(bill_item)
 
             # Check manual future operations on this date
@@ -859,34 +862,36 @@ class LedgerStore:
                     "source": "manual",
                 }
                 day_events.append(m_item)
-                if amt < 0:
+                if step <= horizon_days and amt < 0:
                     upcoming_bills.append(m_item)
 
-            total_expected_in += day_in
-            total_expected_out += abs(day_out)
             net_day = day_in + day_out
             proj_balance = round(proj_balance + net_day, 2)
 
-            if proj_balance < lowest_balance:
-                lowest_balance = proj_balance
-                lowest_date = f_date.isoformat()
+            pt_obj = {
+                "date": f_date.isoformat(),
+                "balance": proj_balance,
+                "balance_with_credit": round(proj_balance + credit_cushion, 2),
+                "expected_in": round(day_in, 2),
+                "expected_out": round(abs(day_out), 2),
+                "events": day_events,
+            }
+            full_forecast_series.append(pt_obj)
 
-            if proj_balance < 0:
-                days_below_zero += 1
-                if first_negative_date is None:
-                    first_negative_date = f_date.isoformat()
-                last_negative_date = f_date.isoformat()
+            if step <= horizon_days:
+                total_expected_in += day_in
+                total_expected_out += abs(day_out)
+                if proj_balance < lowest_balance:
+                    lowest_balance = proj_balance
+                    lowest_date = f_date.isoformat()
 
-            forecast_series.append(
-                {
-                    "date": f_date.isoformat(),
-                    "balance": proj_balance,
-                    "balance_with_credit": round(proj_balance + credit_cushion, 2),
-                    "expected_in": round(day_in, 2),
-                    "expected_out": round(abs(day_out), 2),
-                    "events": day_events,
-                }
-            )
+                if proj_balance < 0:
+                    days_below_zero += 1
+                    if first_negative_date is None:
+                        first_negative_date = f_date.isoformat()
+                    last_negative_date = f_date.isoformat()
+
+                forecast_series.append(pt_obj)
 
         goes_below_zero = lowest_balance < 0
         shortfall_amount = round(abs(lowest_balance), 2) if goes_below_zero else 0.0
@@ -952,6 +957,7 @@ class LedgerStore:
             "analysis_summary": analysis_summary,
             "recommendation_summary": recommendation_summary,
             "forecast_series": forecast_series,
+            "full_forecast_series": full_forecast_series,
         }
 
 
