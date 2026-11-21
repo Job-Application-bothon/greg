@@ -1,0 +1,132 @@
+{
+  "format_version": 1,
+  "keras_version": "3.13.2",
+  "freq": "MS",
+  "horizon": 12,
+  "lookback": 24,
+  "lags": [
+    12
+  ],
+  "classic_years": 3,
+  "growth_limits": [
+    0.7,
+    1.5
+  ],
+  "missing": "zero",
+  "cashflow": {
+    "inflow": "demand",
+    "unit_price": 12.0,
+    "outflow": "expenses"
+  },
+  "season_calendar": false,
+  "blend_weight_nn": 1.0,
+  "band_lo": [
+    -0.0866368821972719,
+    -0.09862041203675938,
+    -0.11556717809556394,
+    -0.1093490831220328,
+    -0.12727679746096646,
+    -0.12493059011295404,
+    -0.14374245707169428,
+    -0.1387501597806752,
+    -0.1465714880639208,
+    -0.15970951289257954,
+    -0.14771789243146802,
+    -0.1742044435763831
+  ],
+  "band_hi": [
+    0.08847207251189694,
+    0.08962050365393893,
+    0.10993644245914162,
+    0.11462396883460188,
+    0.11347879823174671,
+    0.1103296623513966,
+    0.10954914795253172,
+    0.10464297857587264,
+    0.1055772650966463,
+    0.10165349176935068,
+    0.12237361316774778,
+    0.11515286880374832
+  ],
+  "exclude_periods": [
+    [
+      "2020-03-01",
+      "2021-03-31"
+    ]
+  ],
+  "outlier_z": 4.0,
+  "guardrail": {
+    "max_deviation": 0.25,
+    "max_step_deviation": 0.35,
+    "business_check": true,
+    "action": "clip"
+  },
+  "train_data": [
+    {
+      "source": {
+        "type": "chronos",
+        "subsets": [
+          "m4_monthly",
+          "monash_m3_monthly",
+          "monash_tourism_monthly"
+        ],
+        "min_years": 5,
+        "max_series": 6000
+      },
+      "date_col": "date",
+      "series_cols": [
+        "series"
+      ],
+      "value_cols": [
+        "value"
+      ]
+    },
+    {
+      "source": {
+        "type": "kaggle",
+        "dataset": "dhrubangtalukdar/store-item-demand-forecasting-dataset"
+      },
+      "date_col": "date",
+      "series_cols": [
+        "store_id",
+        "item_id"
+      ],
+      "value_cols": [
+        "sales"
+      ]
+    }
+  ],
+  "business": {
+    "source": {
+      "type": "synthetic_business"
+    },
+    "date_col": "date",
+    "target_cols": {
+      "demand": "units_sold",
+      "expenses": "total_costs"
+    },
+    "filter": {},
+    "date_format": null
+  },
+  "model": {
+    "type": "lstm",
+    "units": 64,
+    "dropout": 0.2
+  },
+  "train": {
+    "epochs": 60,
+    "batch": 128,
+    "lr": 0.001,
+    "patience": 8,
+    "stride": null,
+    "max_windows": null,
+    "retrain_on_all": true
+  },
+  "best_epoch": 25,
+  "notes": [
+    "demand: neural net was less accurate than the classic method on this business's backtest \u2192 classic plan used",
+    "demand: growth used +7.8%/yr (median of recent years) | net weight 0.0 | plan vs classic +0.0% | strongest months: Jul 11%, Jun 11%, May 11%",
+    "expenses: neural net was less accurate than the classic method on this business's backtest \u2192 classic plan used",
+    "expenses: growth used +6.9%/yr (median of recent years) | net weight 0.0 | plan vs classic +0.0% | strongest months: May 10%, Jul 9%, Jun 9%"
+  ]
+}
