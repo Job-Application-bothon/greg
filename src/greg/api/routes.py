@@ -16,7 +16,9 @@ from greg.domain.sessions import SESSIONS
 from greg.llm.classifier import classify_signatures_with_llm
 from greg.llm.client import call_llm
 from greg.llm.guardrails import GuardrailUnavailable, check_text, guardrails_enabled
+from greg.llm.lookup import build_date_lookup
 from greg.llm.prompts import (
+    APP_GUIDE,
     NO_DATA_NOTE,
     SYSTEM_PROMPT,
     build_context_system_prompt,
@@ -392,8 +394,14 @@ class GregRequestHandler(BaseHTTPRequestHandler):
                 store=store,
             )
             if store.transactions
-            else f"{SYSTEM_PROMPT}\n\n{NO_DATA_NOTE}"
+            else f"{SYSTEM_PROMPT}\n\n{NO_DATA_NOTE}\n\n{APP_GUIDE}"
         )
+        if store.transactions:
+            system_prompt = f"{system_prompt}\n\n{APP_GUIDE}"
+        recent_questions = [m["content"] for m in history if m["role"] == "user"][-2:]
+        lookup = build_date_lookup(store, "\n".join(recent_questions))
+        if lookup:
+            system_prompt = f"{system_prompt}\n\n{lookup}"
         call_messages = [{"role": "system", "content": system_prompt}, *history]
 
         try:
