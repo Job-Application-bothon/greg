@@ -53,6 +53,15 @@ main.append(assistantStage);
 const assistantButton = $('chat-launcher');
 assistantButton.innerHTML = '<span>Chat with Greg</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 assistantStage.append(assistantButton);
+const floatingChatButton = document.createElement('button');
+floatingChatButton.id = 'floating-chat-launcher';
+floatingChatButton.type = 'button';
+floatingChatButton.setAttribute('aria-label', 'Open chat with Greg');
+floatingChatButton.setAttribute('aria-controls', 'greg-messenger');
+floatingChatButton.setAttribute('aria-expanded', 'false');
+floatingChatButton.innerHTML = '<svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-8 8H4l-2 2v-10a9 9 0 0 1 18 0Z"/><path d="M7 9h8M7 13h5"/></svg>';
+document.body.append(floatingChatButton);
+floatingChatButton.addEventListener('click', () => assistantButton.click());
 document.body.append($('greg-messenger'));
 const note = document.createElement("p");
 note.className = "card hidden";
@@ -66,6 +75,16 @@ change.textContent = "Change data source";
 $("reset-btn").before(change);
 let savedState = null;
 let preview = null;
+const bankRibbon = document.createElement('div');
+bankRibbon.className = 'bank-ribbon';
+bankRibbon.setAttribute('aria-hidden', 'true');
+$('choose-bank').prepend(bankRibbon);
+const bankRibbonResize = new ResizeObserver(() => {
+  const card = $('choose-bank');
+  const title = card.querySelector('.source-title');
+  bankRibbon.style.height = `${Math.max(0, title.offsetTop - 18)}px`;
+});
+bankRibbonResize.observe($('choose-bank'));
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 reducedMotion.addEventListener("change", () => {
   if (reducedMotion.matches) for (const el of [chooser, bank, overview, dashboard]) {
