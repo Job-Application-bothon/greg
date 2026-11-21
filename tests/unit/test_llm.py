@@ -130,6 +130,21 @@ class LLMUnitTest(unittest.TestCase):
         self.assertIn("next 6 months", explain)
         self.assertIn("PLN ", explain)
 
+    def test_context_prompt_grounds_dates(self) -> None:
+        txs = synthetic_ledger(date(2024, 1, 1), date(2025, 12, 31))
+        store = make_store_from_txs(txs, opening_balance=10000.0)
+        ctx = build_context_system_prompt(horizon_months=6, store=store)
+        self.assertIn(f"Today is {date.today().isoformat()}", ctx)
+        self.assertIn("there is no actual data after 2025-12-31", ctx)
+        self.assertIn("never invent due dates", ctx)
+        forecast_block = ctx.split("Month by month", 1)[1].split("Planner notes", 1)[0]
+        months = [
+            line.split(":")[0].strip(" -")
+            for line in forecast_block.splitlines()
+            if line.startswith("  - ")
+        ]
+        self.assertEqual(months, ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06"])
+
 
 if __name__ == "__main__":
     unittest.main()
