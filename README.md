@@ -109,6 +109,7 @@ uv run greg
 | `GREG_SESSION_TTL` | `7200` | Session idle expiry in seconds |
 | `GUARDRAILS_CHECK_URL` | `""` | Full NeMo Guardrails checks URL (`.../v1/guardrail/checks`); unset disables screening |
 | `GUARDRAILS_TOKEN` | `""` | Bearer token for the guardrails endpoint (defaults to the pod's service account token) |
+| `GUARDRAILS_CA_FILE` | pod's `service-ca.crt` | Extra CA bundle trusted for an `https://` guardrails URL |
 | `GUARDRAILS_FAIL_OPEN` | `false` | When `true`, chat still works if the guardrails service is unreachable |
 
 ---
@@ -133,7 +134,7 @@ oc apply -n my-first-model -f deploy/security/   # guardrails server, RBAC, egre
 oc get nemoguardrails,svc -n my-first-model      # find the guardrails service name and port
 ```
 
-Then set `GUARDRAILS_CHECK_URL` in [`deploy/configmap.yaml`](deploy/configmap.yaml) to `http(s)://<service>.my-first-model.svc.cluster.local:<port>/v1/guardrail/checks` and redeploy. If the service serves HTTPS with an OpenShift service-CA certificate, also mount the service CA bundle and point `SSL_CERT_FILE` at it.
+Then set `GUARDRAILS_CHECK_URL` in [`deploy/configmap.yaml`](deploy/configmap.yaml) to `http(s)://<service>.my-first-model.svc.cluster.local:<port>/v1/guardrail/checks` and redeploy. The auth-enabled service listens on HTTPS (port 443), so the URL must start with `https://`; Greg trusts OpenShift's service CA from the pod's service account mount automatically.
 
 `deploy/security/` is not applied by CI, because the `NemoGuardrails` CRD only exists once the TrustyAI component is enabled.
 

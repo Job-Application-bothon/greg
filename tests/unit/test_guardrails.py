@@ -1,8 +1,11 @@
 """NeMo Guardrails client and chat message sanitization tests."""
 from __future__ import annotations
 
+import io
 import json
 import os
+import ssl
+import tempfile
 import unittest
 import urllib.error
 from unittest.mock import patch
@@ -40,7 +43,7 @@ class GuardrailsClientTest(unittest.TestCase):
         }
         captured: dict = {}
 
-        def fake_urlopen(req: object, timeout: int = 0) -> FakeHTTPResponse:
+        def fake_urlopen(req: object, timeout: int = 0, context: object = None) -> FakeHTTPResponse:
             captured["url"] = req.full_url
             captured["body"] = json.loads(req.data.decode("utf-8"))
             captured["auth"] = req.get_header("Authorization")
@@ -91,6 +94,32 @@ class GuardrailsClientTest(unittest.TestCase):
             "urllib.request.urlopen", side_effect=err
         ):
             self.assertTrue(check_text("hello").allowed)
+
+    def test_https_url_verifies_with_service_ca_and_http_400_gets_hint(self) -> None:
+        captured: dict = {}
+
+        def fake_urlopen(req: object, timeout: int = 0, context: object = None) -> FakeHTTPResponse:
+            captured["context"] = context
+            return _resp({"status": "success"})
+
+        https_url = CHECK_URL.replace("http://", "https://")
+        with tempfile.NamedTemporaryFile("w", suffix=".crt", delete=False) as ca, patch.dict(
+            os.environ, {"GUARDRAILS_CHECK_URL": https_url, "GUARDRAILS_CA_FILE": ca.name}, clear=False
+        ), patch("urllib.request.urlopen", side_effect=fake_urlopen), patch(
+            "ssl.SSLContext.load_verify_locations"
+        ) as load_ca:
+            self.assertTrue(check_text("https text").allowed)
+        os.unlink(ca.name)
+        self.assertIsInstance(captured["context"], ssl.SSLContext)
+        load_ca.assert_called_once_with(cafile=ca.name)
+
+        err = urllib.error.HTTPError(CHECK_URL, 400, "Bad Request", {}, io.BytesIO(b""))
+        with patch.dict(os.environ, {"GUARDRAILS_CHECK_URL": CHECK_URL}, clear=False), patch(
+            "urllib.request.urlopen", side_effect=err
+        ):
+            with self.assertRaises(GuardrailUnavailable) as ctx:
+                check_text("plain http text")
+        self.assertIn("https://", str(ctx.exception))
 
 
 class SanitizeChatMessagesTest(unittest.TestCase):
