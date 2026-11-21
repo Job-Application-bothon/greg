@@ -601,6 +601,70 @@
         padding: 2px 8px;
       }
 
+      /* Specific Date Picker & Auto-Zoom Bar */
+      .forecast-controls-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        width: 100%;
+      }
+      .date-jump-bar {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #ffffff;
+        color: var(--ink);
+        border: 1px solid #d8d8d8;
+        border-radius: 14px;
+        padding: 5px 10px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+      .date-jump-bar.has-focus {
+        border-color: #d97706;
+        box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
+      }
+      .date-focus-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #d97706;
+        display: inline-block;
+        box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.22);
+      }
+      .date-jump-input {
+        min-height: 28px;
+        padding: 3px 8px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        background: #f8f8f9;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 600;
+        font-family: inherit;
+        font-variant-numeric: tabular-nums;
+        cursor: pointer;
+      }
+      .date-jump-input:focus {
+        outline: none;
+        border-color: #d97706;
+        background: #ffffff;
+      }
+      .date-clear-pill {
+        min-height: 26px;
+        padding: 2px 8px;
+        font-size: 11px;
+        color: #92400e;
+        background: #fef3c7;
+        border: 1px solid #fde68a;
+      }
+      .date-clear-pill:hover:not(:disabled) {
+        background: #fde68a;
+        color: #78350f;
+      }
+
       /* Interactive Mini-Map Range Navigator */
       .minimap-container {
         margin-top: 10px;
@@ -1041,31 +1105,45 @@
               </div>
             </div>
 
-            <!-- 1. SYMMETRIC TOP HORIZON CONTROLS (Past | Today | Future) -->
-            <div class="horizon-selector-bar" id="horizon-selector-bar" role="toolbar" aria-label="Past lookback and future forecast horizon selector">
-              <div class="horizon-group" id="history-pill-group" role="group" aria-label="History lookback">
-                <span class="horizon-group-label"><span class="horizon-swatch-solid"></span>Past</span>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="1">1D</button>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="7">7D</button>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="30">1M</button>
-                <button type="button" class="horizon-pill hist-pill active" data-hist-days="90">3M</button>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="180">6M</button>
-                <button type="button" class="horizon-pill hist-pill" data-hist-days="365">1Y</button>
+            <!-- 1. SYMMETRIC TOP HORIZON CONTROLS (Past | Today | Future) + SPECIFIC DATE PICKER -->
+            <div class="forecast-controls-row">
+              <div class="horizon-selector-bar" id="horizon-selector-bar" role="toolbar" aria-label="Past lookback and future forecast horizon selector">
+                <div class="horizon-group" id="history-pill-group" role="group" aria-label="History lookback">
+                  <span class="horizon-group-label"><span class="horizon-swatch-solid"></span>Past</span>
+                  <button type="button" class="horizon-pill hist-pill" data-hist-days="1">1D</button>
+                  <button type="button" class="horizon-pill hist-pill" data-hist-days="7">7D</button>
+                  <button type="button" class="horizon-pill hist-pill" data-hist-days="30">1M</button>
+                  <button type="button" class="horizon-pill hist-pill active" data-hist-days="90">3M</button>
+                  <button type="button" class="horizon-pill hist-pill" data-hist-days="180">6M</button>
+                  <button type="button" class="horizon-pill hist-pill" data-hist-days="365">1Y</button>
+                </div>
+
+                <div class="horizon-today-divider" aria-hidden="true">
+                  <span class="horizon-today-badge">Today</span>
+                </div>
+
+                <div class="horizon-group" id="forecast-pill-group" role="group" aria-label="Future forecast">
+                  <button type="button" class="horizon-pill fore-pill" data-fore-days="0">Off</button>
+                  <button type="button" class="horizon-pill fore-pill" data-fore-days="1">+1D</button>
+                  <button type="button" class="horizon-pill fore-pill" data-fore-days="7">+7D</button>
+                  <button type="button" class="horizon-pill fore-pill active" data-fore-days="30">+1M</button>
+                  <button type="button" class="horizon-pill fore-pill" data-fore-days="90">+3M</button>
+                  <button type="button" class="horizon-pill fore-pill" data-fore-days="180">+6M</button>
+                  <button type="button" class="horizon-pill fore-pill" data-fore-days="365">+1Y</button>
+                  <span class="horizon-group-label">Future<span class="horizon-swatch-dashed"></span></span>
+                </div>
               </div>
 
-              <div class="horizon-today-divider" aria-hidden="true">
-                <span class="horizon-today-badge">Today</span>
-              </div>
-
-              <div class="horizon-group" id="forecast-pill-group" role="group" aria-label="Future forecast">
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="0">Off</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="1">+1D</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="7">+7D</button>
-                <button type="button" class="horizon-pill fore-pill active" data-fore-days="30">+1M</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="90">+3M</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="180">+6M</button>
-                <button type="button" class="horizon-pill fore-pill" data-fore-days="365">+1Y</button>
-                <span class="horizon-group-label">Future<span class="horizon-swatch-dashed"></span></span>
+              <div class="date-jump-bar" id="date-jump-bar" role="group" aria-label="Select specific date to zoom and highlight on chart">
+                <span class="horizon-group-label"><span class="date-focus-dot"></span>Date</span>
+                <input
+                  type="date"
+                  id="chart-focus-date"
+                  class="date-jump-input"
+                  aria-label="Pick a specific date to highlight and zoom in on the chart"
+                  title="Pick a specific date to highlight and zoom in on the chart"
+                />
+                <button type="button" id="chart-focus-clear" class="horizon-pill date-clear-pill hidden" title="Clear pinned date">✕</button>
               </div>
             </div>
           </div>
@@ -1215,6 +1293,9 @@
       const monthSelect = document.getElementById("month-select");
       const historyPillGroup = document.getElementById("history-pill-group");
       const forecastPillGroup = document.getElementById("forecast-pill-group");
+      const dateJumpBar = document.getElementById("date-jump-bar");
+      const chartFocusDateInput = document.getElementById("chart-focus-date");
+      const chartFocusClearBtn = document.getElementById("chart-focus-clear");
       const chartGranularityBadge = document.getElementById("chart-granularity-badge");
       const minimapTrack = document.getElementById("minimap-track");
       const minimapSvg = document.getElementById("minimap-svg");
@@ -1263,6 +1344,7 @@
       let chartHoverMeta = null;
       let selectedHistDays = 90; // Default: 3M
       let selectedForeDays = 30; // Default: +1M
+      let selectedFocusDate = "";
       let chartZoom = { key: null, start: 0, end: 0, custom: false };
       let chartDrag = null;
       let minimapDrag = null;
@@ -1545,7 +1627,9 @@
         });
 
         if (minimapHorizonSummary) {
-          if (matchedHist && matchedFore) {
+          if (selectedFocusDate) {
+            minimapHorizonSummary.textContent = `Pinned Date: ${selectedFocusDate} (${actualHistSpan}d past · +${actualForeSpan}d forecast)`;
+          } else if (matchedHist && matchedFore) {
             minimapHorizonSummary.textContent = `Past: ${matchedHist} · Forecast: ${matchedFore}`;
           } else {
             minimapHorizonSummary.textContent = `Custom Window (${actualHistSpan}d past · +${actualForeSpan}d forecast)`;
@@ -1592,6 +1676,11 @@
         });
 
         const todayX = xForMini(todayDailyIdx);
+        const focusDailyIdx = selectedFocusDate
+          ? dailyPoints.findIndex((p) => p.date === selectedFocusDate)
+          : -1;
+        const focusMiniX = focusDailyIdx >= 0 ? xForMini(focusDailyIdx) : -1;
+        const focusMiniY = focusDailyIdx >= 0 ? yForMini(dailyPoints[focusDailyIdx].bal) : -1;
         const histArea =
           histMiniPts.length > 1
             ? `0,${baseBottom} ${histMiniPts.join(" ")} ${todayX.toFixed(1)},${baseBottom}`
@@ -1616,6 +1705,12 @@
           }
           <line x1="${todayX.toFixed(1)}" y1="0" x2="${todayX.toFixed(1)}" y2="${MH}" stroke="#623761" stroke-dasharray="2 2" stroke-width="1.5" />
           <text x="${Math.min(MW - 22, Math.max(22, todayX + 4)).toFixed(1)}" y="11" font-size="9" font-weight="700" fill="#623761">Today</text>
+          ${
+            focusDailyIdx >= 0
+              ? `<line x1="${focusMiniX.toFixed(1)}" y1="0" x2="${focusMiniX.toFixed(1)}" y2="${MH}" stroke="#d97706" stroke-width="1.8" />
+                 <circle cx="${focusMiniX.toFixed(1)}" cy="${focusMiniY.toFixed(1)}" r="3.2" fill="#d97706" stroke="#ffffff" stroke-width="1.2" />`
+              : ""
+          }
         `;
 
         const denom = Math.max(1, total - 1);
@@ -1643,6 +1738,20 @@
           if (minimapSvg) minimapSvg.innerHTML = "";
           chartRangeLabel.textContent = "—";
           return;
+        }
+
+        if (chartFocusDateInput) {
+          chartFocusDateInput.min = dailyPoints[0].date;
+          chartFocusDateInput.max = dailyPoints[totalDaily - 1].date;
+          if (chartFocusDateInput.value !== selectedFocusDate) {
+            chartFocusDateInput.value = selectedFocusDate;
+          }
+        }
+        if (dateJumpBar) {
+          dateJumpBar.classList.toggle("has-focus", Boolean(selectedFocusDate));
+        }
+        if (chartFocusClearBtn) {
+          chartFocusClearBtn.classList.toggle("hidden", !selectedFocusDate);
         }
 
         const hasApprovedCredit =
@@ -1771,6 +1880,76 @@
 
         const clampLabelY = (y) => Math.max(topPad + 6, Math.min(H - bottomPad + 4, y + 4));
 
+        let focusMarkerHtml = "";
+        if (selectedFocusDate) {
+          let focusLocalIdx = -1;
+          for (let i = visPoints.length - 1; i >= 0; i--) {
+            const pDate = visPoints[i].axisDate || visPoints[i].date.slice(0, 10);
+            if (pDate === selectedFocusDate) {
+              focusLocalIdx = i;
+              break;
+            }
+          }
+          if (focusLocalIdx < 0 && visPoints.length > 0) {
+            const fStart = visPoints[0].axisDate || visPoints[0].date.slice(0, 10);
+            const fEnd =
+              visPoints[visPoints.length - 1].axisDate ||
+              visPoints[visPoints.length - 1].date.slice(0, 10);
+            if (selectedFocusDate >= fStart && selectedFocusDate <= fEnd) {
+              let bestIdx = 0;
+              let bestDiff = Infinity;
+              const targetMs = Date.parse(selectedFocusDate);
+              visPoints.forEach((p, idx) => {
+                const ms = Date.parse(p.axisDate || p.date.slice(0, 10));
+                const diff = Math.abs(ms - targetMs);
+                if (diff < bestDiff) {
+                  bestDiff = diff;
+                  bestIdx = idx;
+                }
+              });
+              focusLocalIdx = bestIdx;
+            }
+          }
+          if (focusLocalIdx >= 0) {
+            const fPt = visPoints[focusLocalIdx];
+            const fx = xFor(focusLocalIdx);
+            const fy = yFor(fPt.bal);
+            const fKind = fPt.kind === "hist" ? "Past" : "Forecast";
+            const fBalText = fmtMoney(fPt.bal, currency);
+            const boxW = 148;
+            const boxH = 42;
+            const boxX = Math.max(
+              leftPad + 6,
+              Math.min(W - rightPad - boxW - 6, fx - boxW / 2)
+            );
+            const boxY = fy - boxH - 14 >= topPad + 2 ? fy - boxH - 14 : Math.min(H - bottomPad - boxH - 4, fy + 14);
+            focusMarkerHtml = `
+              <line id="chart-focus-line" x1="${fx.toFixed(1)}" y1="${topPad}" x2="${fx.toFixed(
+              1
+            )}" y2="${H - bottomPad}" stroke="#d97706" stroke-dasharray="4 3" stroke-width="1.8" />
+              <circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(
+              1
+            )}" r="9" fill="rgba(217, 119, 6, 0.22)" />
+              <circle id="chart-focus-dot" cx="${fx.toFixed(1)}" cy="${fy.toFixed(
+              1
+            )}" r="5.5" fill="#d97706" stroke="#ffffff" stroke-width="2" />
+              <g id="chart-focus-callout">
+                <rect x="${boxX.toFixed(1)}" y="${boxY.toFixed(
+              1
+            )}" width="${boxW}" height="${boxH}" rx="8" fill="#18181b" stroke="#d97706" stroke-width="1.4" />
+                <text x="${(boxX + 10).toFixed(1)}" y="${(boxY + 16).toFixed(
+              1
+            )}" font-size="10.5" font-weight="600" fill="#fcd34d">${escapeHtml(
+              selectedFocusDate
+            )} · ${fKind}</text>
+                <text x="${(boxX + 10).toFixed(1)}" y="${(boxY + 33).toFixed(
+              1
+            )}" font-size="12.5" font-weight="700" fill="#ffffff">${escapeHtml(fBalText)}</text>
+              </g>
+            `;
+          }
+        }
+
         chartHoverMeta = {
           allPoints: dailyPoints,
           todayDailyIdx,
@@ -1860,6 +2039,8 @@
                 )}" />`
               : ""
           }
+
+          ${focusMarkerHtml}
 
           <!-- Interactive crosshair & active point markers -->
           <line id="chart-crosshair" x1="0" y1="${topPad}" x2="0" y2="${
@@ -2015,6 +2196,7 @@
           const btn = e.target.closest("[data-hist-days]");
           if (!btn || !currentState || !currentState.has_data || !chartHoverMeta) return;
           selectedHistDays = Number(btn.getAttribute("data-hist-days"));
+          selectedFocusDate = "";
           const total = chartHoverMeta.allPoints.length;
           const todayIdx = chartHoverMeta.todayDailyIdx;
           const w = computePresetWindow(todayIdx, total, selectedHistDays, selectedForeDays);
@@ -2034,6 +2216,7 @@
           const btn = e.target.closest("[data-fore-days]");
           if (!btn || !currentState || !currentState.has_data || !chartHoverMeta) return;
           selectedForeDays = Number(btn.getAttribute("data-fore-days"));
+          selectedFocusDate = "";
           const total = chartHoverMeta.allPoints.length;
           const todayIdx = chartHoverMeta.todayDailyIdx;
           const w = computePresetWindow(todayIdx, total, selectedHistDays, selectedForeDays);
@@ -2046,6 +2229,80 @@
             currentState.currency || "EUR"
           );
           await fetchView(String(selectedForeDays));
+        });
+      }
+
+      // Specific Date Selection & Auto-Zoom Handler
+      if (chartFocusDateInput) {
+        chartFocusDateInput.addEventListener("change", () => {
+          if (!currentState || !currentState.has_data || !chartHoverMeta) return;
+          const val = (chartFocusDateInput.value || "").trim();
+          if (!val) {
+            selectedFocusDate = "";
+            renderChart(
+              currentState.history_series,
+              currentState.liquidity_agent.forecast_series,
+              currentState.currency || "EUR"
+            );
+            return;
+          }
+
+          const allPts = chartHoverMeta.allPoints;
+          const total = allPts.length;
+          if (!total) return;
+
+          let targetIdx = allPts.findIndex((p) => p.date === val);
+          if (targetIdx < 0) {
+            const targetMs = Date.parse(val);
+            let bestIdx = 0;
+            let bestDiff = Infinity;
+            allPts.forEach((p, idx) => {
+              const diff = Math.abs(Date.parse(p.date) - targetMs);
+              if (diff < bestDiff) {
+                bestDiff = diff;
+                bestIdx = idx;
+              }
+            });
+            targetIdx = bestIdx;
+          }
+
+          selectedFocusDate = allPts[targetIdx].date;
+          chartFocusDateInput.value = selectedFocusDate;
+
+          // Auto-zoom onto a focused ±7 day window centered on the selected date
+          const halfWindow = 7;
+          chartZoom.start = Math.max(0, targetIdx - halfWindow);
+          chartZoom.end = Math.min(total - 1, targetIdx + halfWindow);
+          if (chartZoom.end === chartZoom.start && total > 1) {
+            if (chartZoom.start > 0) chartZoom.start -= 1;
+            else chartZoom.end += 1;
+          }
+          chartZoom.custom = true;
+
+          renderChart(
+            currentState.history_series,
+            currentState.liquidity_agent.forecast_series,
+            currentState.currency || "EUR"
+          );
+        });
+      }
+
+      if (chartFocusClearBtn) {
+        chartFocusClearBtn.addEventListener("click", () => {
+          if (!currentState || !currentState.has_data || !chartHoverMeta) return;
+          selectedFocusDate = "";
+          if (chartFocusDateInput) chartFocusDateInput.value = "";
+          const total = chartHoverMeta.allPoints.length;
+          const todayIdx = chartHoverMeta.todayDailyIdx;
+          const w = computePresetWindow(todayIdx, total, selectedHistDays, selectedForeDays);
+          chartZoom.start = w.start;
+          chartZoom.end = w.end;
+          chartZoom.custom = false;
+          renderChart(
+            currentState.history_series,
+            currentState.liquidity_agent.forecast_series,
+            currentState.currency || "EUR"
+          );
         });
       }
 
