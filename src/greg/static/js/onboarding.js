@@ -1,12 +1,11 @@
 import { fmtMoney } from "./format.js";
 
 const main = document.querySelector("main");
-main.insertAdjacentHTML("afterbegin", `    <section id="source-chooser" class="entry-stage" aria-labelledby="entry-title">
-      <div class="entry-heading"><p class="entry-eyebrow">YOUR NUMBERS. A CLEARER PICTURE.</p><h1 id="entry-title">A little clarity.<br>A lot of possibility.</h1><p>Bring your finances together. Start with what you have.</p></div>
+main.insertAdjacentHTML("afterbegin", `    <section id="source-chooser" class="entry-stage" aria-label="Choose your financial data source">
       <div class="source-options">
-        <button type="button" id="choose-csv" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M8 4h11l6 6v18H8zM19 4v7h6M12 17h9M12 22h9"/></svg></span><span class="source-title">Have a CSV file?</span><span class="source-copy">Drop your statement here, or browse files.<br>Review your columns before importing.</span><span class="source-action">Choose a file <span aria-hidden="true">↗</span></span></button>
+        <button type="button" id="choose-csv" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M8 4h11l6 6v18H8zM19 4v7h6M12 17h9M12 22h9"/></svg></span><span class="source-title">Have a CSV file?</span><span class="source-copy">Drop your statement here, or browse files.</span><span class="source-action">Choose a file <span aria-hidden="true">↗</span></span></button>
         <span class="source-or">OR</span>
-        <button type="button" id="choose-bank" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m4 11 12-7 12 7zM7 15v10M16 15v10M25 15v10M4 28h24"/></svg></span><span class="source-title">Connect your bank</span><span class="source-copy">Try the experience with your monthly totals.<br>No bank login. No connection. Just a preview.</span><span class="source-action">Explore the demo <span aria-hidden="true">↗</span></span></button>
+        <button type="button" id="choose-bank" class="source-card"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m4 11 12-7 12 7zM7 15v10M16 15v10M25 15v10M4 28h24"/></svg></span><span class="source-title">Connect your bank</span><span class="source-copy">Try the experience with your monthly totals.</span><span class="source-action">Explore the demo <span aria-hidden="true">↗</span></span></button>
       </div>
       <p class="entry-footnote">Your CSV stays in your existing Greg session. Bank demo inputs stay in this page.</p>
       <button type="button" id="cancel-source" class="secondary hidden">Back to my overview</button>
@@ -63,7 +62,10 @@ reducedMotion.addEventListener("change", () => {
     for (const animation of el.getAnimations()) animation.cancel();
   }
 });
-function show(el, visible) { el.classList.toggle("hidden", !visible); }
+function show(el, visible) {
+  el.classList.toggle("hidden", !visible);
+  if (visible && [bank, overview, dashboard].includes(el)) document.documentElement.classList.remove('source-screen');
+}
 const headerResize = new ResizeObserver(() => {
   document.documentElement.style.setProperty('--stage-header', `${document.querySelector('.site-head').getBoundingClientRect().height}px`);
 });
@@ -74,11 +76,13 @@ function enter(el) {
 }
 function choose() {
   document.documentElement.classList.remove('staged-scroll');
+  document.documentElement.classList.add('source-screen');
   show(chooser, true); show(bank, false); show(overview, false); show(dashboard, false);
   show($("cancel-source"), !!(preview || savedState?.has_data));
   top(); enter(chooser);
 }
 function summary(data, isPreview = false) {
+  tools.classList.remove('csv-review');
   document.documentElement.classList.add('staged-scroll');
   show(chooser, false); show(bank, false); show(overview, true); show(dashboard, true); show(change, true);
   show(note, isPreview); show($("empty-view"), false);
@@ -124,6 +128,7 @@ function reviewFile() {
   show(chooser, false); show(bank, false); show(overview, false); show(dashboard, true);
   show(note, false); show($("empty-view"), false); show(change, true);
   tools.open = true;
+  tools.classList.add('csv-review');
   tools.scrollIntoView({block: "start", behavior: reducedMotion.matches ? "instant" : "smooth"});
 }
 $("choose-csv").addEventListener("click", () => $("csv-file").click());
