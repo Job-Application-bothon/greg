@@ -579,34 +579,6 @@ details summary {
   }
 }
 
-@keyframes ui-arrive {
-  from { opacity: 0; translate: 0 10px; }
-  to { opacity: 1; translate: 0 0; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  button, a, summary {
-    transition: background-color .2s, border-color .2s, color .2s, box-shadow .2s, transform .2s, scale .18s;
-  }
-  button:active:not(:disabled), summary:active { scale: .97; }
-  input:not([type='range']), select, textarea {
-    transition: border-color .2s, background-color .2s, box-shadow .2s;
-  }
-  input:not([type='range']):focus, select:focus, textarea:focus {
-    box-shadow: 0 0 0 3px #14141412;
-  }
-  .source-card .source-icon, .source-card .source-title,
-  .source-card .source-copy, .source-card .source-action,
-  #balance-overview > :not(.ufo-scene), #bank-entry .demo-form,
-  #data-tools.csv-review, #whatif-tuning:not(.hidden),
-  details[open] .manual-entry-panel, #bank-demo-hint:not(.hidden),
-  #greg-messenger:not([hidden]), .chat-log .msg {
-    animation: ui-arrive .4s cubic-bezier(.2,.7,.2,1) backwards;
-  }
-  .source-card .source-title { animation-delay: .06s; }
-  .source-card .source-copy { animation-delay: .1s; }
-  .source-card .source-action { animation-delay: .14s; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
