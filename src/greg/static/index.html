@@ -1743,7 +1743,10 @@
         if (chartFocusDateInput) {
           chartFocusDateInput.min = dailyPoints[0].date;
           chartFocusDateInput.max = dailyPoints[totalDaily - 1].date;
-          if (chartFocusDateInput.value !== selectedFocusDate) {
+          if (
+            document.activeElement !== chartFocusDateInput &&
+            chartFocusDateInput.value !== selectedFocusDate
+          ) {
             chartFocusDateInput.value = selectedFocusDate;
           }
         }
@@ -2233,57 +2236,93 @@
       }
 
       // Specific Date Selection & Auto-Zoom Handler
-      if (chartFocusDateInput) {
-        chartFocusDateInput.addEventListener("change", () => {
-          if (!currentState || !currentState.has_data || !chartHoverMeta) return;
-          const val = (chartFocusDateInput.value || "").trim();
-          if (!val) {
+      function applyFocusDateValue(rawVal, allowClampAndOverwrite = false) {
+        if (!currentState || !currentState.has_data || !chartHoverMeta) return;
+        const val = (rawVal || "").trim();
+        if (!val) {
+          if (allowClampAndOverwrite) {
             selectedFocusDate = "";
             renderChart(
               currentState.history_series,
               currentState.liquidity_agent.forecast_series,
               currentState.currency || "EUR"
             );
-            return;
           }
+          return;
+        }
 
-          const allPts = chartHoverMeta.allPoints;
-          const total = allPts.length;
-          if (!total) return;
+        // Ignore intermediate keystrokes while the user is still typing a 4-digit year (e.g. 0002, 0020, 0202)
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(val);
+        if (!m) return;
+        const yearNum = Number(m[1]);
+        if (yearNum < 1990 || yearNum > 2100) return;
 
-          let targetIdx = allPts.findIndex((p) => p.date === val);
-          if (targetIdx < 0) {
-            const targetMs = Date.parse(val);
-            let bestIdx = 0;
-            let bestDiff = Infinity;
-            allPts.forEach((p, idx) => {
-              const diff = Math.abs(Date.parse(p.date) - targetMs);
-              if (diff < bestDiff) {
-                bestDiff = diff;
-                bestIdx = idx;
-              }
-            });
-            targetIdx = bestIdx;
-          }
+        const allPts = chartHoverMeta.allPoints;
+        const total = allPts.length;
+        if (!total) return;
 
-          selectedFocusDate = allPts[targetIdx].date;
+        let targetIdx = allPts.findIndex((p) => p.date === val);
+        if (targetIdx < 0) {
+          // While actively typing in the input, don't snap/overwrite out-of-range dates until blur or Enter
+          if (!allowClampAndOverwrite) return;
+          const targetMs = Date.parse(val);
+          let bestIdx = 0;
+          let bestDiff = Infinity;
+          allPts.forEach((p, idx) => {
+            const diff = Math.abs(Date.parse(p.date) - targetMs);
+            if (diff < bestDiff) {
+              bestDiff = diff;
+              bestIdx = idx;
+            }
+          });
+          targetIdx = bestIdx;
+        }
+
+        selectedFocusDate = allPts[targetIdx].date;
+        if (allowClampAndOverwrite && chartFocusDateInput && chartFocusDateInput.value !== selectedFocusDate) {
           chartFocusDateInput.value = selectedFocusDate;
+        }
 
-          // Auto-zoom onto a focused ±7 day window centered on the selected date
-          const halfWindow = 7;
-          chartZoom.start = Math.max(0, targetIdx - halfWindow);
-          chartZoom.end = Math.min(total - 1, targetIdx + halfWindow);
-          if (chartZoom.end === chartZoom.start && total > 1) {
-            if (chartZoom.start > 0) chartZoom.start -= 1;
-            else chartZoom.end += 1;
+        // Auto-zoom onto a focused ±7 day window centered on the selected date
+        const halfWindow = 7;
+        chartZoom.start = Math.max(0, targetIdx - halfWindow);
+        chartZoom.end = Math.min(total - 1, targetIdx + halfWindow);
+        if (chartZoom.end === chartZoom.start && total > 1) {
+          if (chartZoom.start > 0) chartZoom.start -= 1;
+          else chartZoom.end += 1;
+        }
+        chartZoom.custom = true;
+
+        renderChart(
+          currentState.history_series,
+          currentState.liquidity_agent.forecast_series,
+          currentState.currency || "EUR"
+        );
+      }
+
+      if (chartFocusDateInput) {
+        chartFocusDateInput.addEventListener("input", () => {
+          applyFocusDateValue(chartFocusDateInput.value, false);
+        });
+        chartFocusDateInput.addEventListener("change", () => {
+          const isFocused = document.activeElement === chartFocusDateInput;
+          applyFocusDateValue(chartFocusDateInput.value, !isFocused);
+        });
+        chartFocusDateInput.addEventListener("blur", () => {
+          if (chartFocusDateInput.value) {
+            applyFocusDateValue(chartFocusDateInput.value, true);
           }
-          chartZoom.custom = true;
-
-          renderChart(
-            currentState.history_series,
-            currentState.liquidity_agent.forecast_series,
-            currentState.currency || "EUR"
-          );
+        });
+        chartFocusDateInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            applyFocusDateValue(chartFocusDateInput.value, true);
+            chartFocusDateInput.blur();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            if (chartFocusClearBtn) chartFocusClearBtn.click();
+            chartFocusDateInput.blur();
+          }
         });
       }
 
