@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import ssl
 import threading
+import urllib.error
 import urllib.request
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -12,6 +14,8 @@ from pathlib import Path
 from greg.config import load_settings
 
 SA_TOKEN_PATH = Path("/var/run/secrets/kubernetes.io/serviceaccount/token")
+# OpenShift mounts the cluster's service CA here; it signs in-cluster `https://*.svc` certificates.
+SERVICE_CA_PATH = Path("/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt")
 _CACHE_MAX = 512
 
 
@@ -43,6 +47,27 @@ def _auth_token() -> str:
         return ""
 
 
+def _ssl_context() -> ssl.SSLContext:
+    """System CAs plus the OpenShift service CA (or `GUARDRAILS_CA_FILE`) when present."""
+    ctx = ssl.create_default_context()
+    ca_file = load_settings().guardrails_ca_file
+    ca_path = Path(ca_file) if ca_file else SERVICE_CA_PATH
+    if ca_path.is_file():
+        ctx.load_verify_locations(cafile=str(ca_path))
+    return ctx
+
+
+def _http_error_detail(exc: urllib.error.HTTPError) -> str:
+    try:
+        detail = exc.read().decode("utf-8", errors="replace").strip()
+    except OSError:
+        detail = ""
+    hint = ""
+    if exc.code == 400 and exc.url.startswith("http://"):
+        hint = " (if this port serves HTTPS, use an https:// GUARDRAILS_CHECK_URL)"
+    return f"HTTP {exc.code}{': ' + detail[:300] if detail else ''}{hint}"
+
+
 def _parse_verdict(body: dict) -> GuardrailVerdict:
     """Interpret a checks response: blocked if the top-level or any rail status is `blocked`."""
     blocked = str(body.get("status", "")).lower() == "blocked"
@@ -68,10 +93,13 @@ def _check_remote(text: str) -> GuardrailVerdict:
     req = urllib.request.Request(
         settings.guardrails_check_url, data=payload, headers=headers, method="POST"
     )
+    context = _ssl_context() if req.full_url.startswith("https://") else None
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10, context=context) as resp:
             body = json.loads(resp.read().decode("utf-8"))
-    except Exception as exc:  # network, HTTP, or JSON errors
+    except urllib.error.HTTPError as exc:
+        raise GuardrailUnavailable(f"Guardrails check failed: {_http_error_detail(exc)}") from exc
+    except Exception as exc:  # network, TLS, or JSON errors
         raise GuardrailUnavailable(f"Guardrails check failed: {exc}") from exc
     if not isinstance(body, dict):
         raise GuardrailUnavailable("Guardrails check returned an unexpected payload")

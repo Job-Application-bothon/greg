@@ -26,6 +26,7 @@ class Settings:
     guardrails_check_url: str = ""
     guardrails_token: str = ""
     guardrails_fail_open: bool = False
+    guardrails_ca_file: str = ""
 
 
 def load_settings() -> Settings:
@@ -53,4 +54,5 @@ def load_settings() -> Settings:
         guardrails_token=os.environ.get("GUARDRAILS_TOKEN", "").strip(),
         guardrails_fail_open=os.environ.get("GUARDRAILS_FAIL_OPEN", "").strip().lower()
         in {"1", "true", "yes"},
+        guardrails_ca_file=os.environ.get("GUARDRAILS_CA_FILE", "").strip(),
     )
