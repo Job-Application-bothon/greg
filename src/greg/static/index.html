@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/static/css/base.css" />
   <link rel="stylesheet" href="/static/css/forecast.css" />
   <link rel="stylesheet" href="/static/css/messenger.css" />
+  <link rel="stylesheet" href="/static/css/onboarding.css" />
 </head>
 
 <body>
@@ -50,7 +51,6 @@
               <label for="opening-balance">Starting Balance (€)</label>
               <input type="number" id="opening-balance" step="0.01" value="0" />
             </div>
-            <button type="submit" id="import-btn">Import CSV</button>
           </div>
           <div id="csv-mapping-box" class="mapping-box hidden">
             <div class="mapping-head">
@@ -108,6 +108,7 @@
               </div>
             </details>
           </div>
+          <div class="csv-confirm-row"><p class="subtitle">Ready? Confirm to see your financial overview.</p><button type="submit" id="import-btn">Confirm</button></div>
         </form>
         <div id="import-info" class="subtitle" style="margin-top: 10px"></div>
       </section>

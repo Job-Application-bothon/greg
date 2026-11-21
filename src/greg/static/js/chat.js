@@ -18,13 +18,18 @@ export function createChatController(els, { getHorizonPayload }) {
   function setOpen(open) {
     messenger.hidden = !open;
     chatLauncher.hidden = open;
+    const floatingLauncher = document.getElementById('floating-chat-launcher');
+    if (floatingLauncher) {
+      floatingLauncher.hidden = open;
+      floatingLauncher.setAttribute('aria-expanded', String(open));
+    }
     chatLauncher.setAttribute("aria-expanded", String(open));
     chatLauncher.setAttribute("aria-label", open ? "Close chat with Greg" : "Open chat with Greg");
     if (open) {
       if (!promptEl.disabled) promptEl.focus();
       messagesEl.scrollTop = messagesEl.scrollHeight;
     } else {
-      chatLauncher.focus();
+      (floatingLauncher || chatLauncher).focus({ preventScroll: true });
     }
   }
 
