@@ -19,6 +19,7 @@ from greg.llm.client import call_llm
 from greg.llm.guardrails import GuardrailUnavailable, check_text, guardrails_enabled
 from greg.llm.lookup import build_date_lookup
 from greg.llm.prompts import (
+    ANSWER_STYLE,
     APP_GUIDE,
     NO_DATA_NOTE,
     SYSTEM_PROMPT,
@@ -385,6 +386,7 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             horizon_months=horizon_months,
             store=store,
         )
+        sys_prompt = f"{sys_prompt}\n\n{ANSWER_STYLE}"
         try:
             res = call_llm(
                 [
@@ -459,6 +461,8 @@ class GregRequestHandler(BaseHTTPRequestHandler):
         lookup = build_date_lookup(store, "\n".join(recent_questions))
         if lookup:
             system_prompt = f"{system_prompt}\n\n{lookup}"
+        # Style rules go last: small models follow the end of a long prompt most closely.
+        system_prompt = f"{system_prompt}\n\n{ANSWER_STYLE}"
         call_messages = [{"role": "system", "content": system_prompt}, *history]
 
         try:
