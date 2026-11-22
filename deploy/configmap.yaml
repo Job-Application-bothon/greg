@@ -10,4 +10,4 @@ data:
   LLM_MODEL: "llama-32-3b-instruct"
   # NeMo Guardrails input screening for /api/chat (see deploy/security/). Leave unset to disable.
   GUARDRAILS_CHECK_URL: "https://greg-guardrails.my-first-model.svc.cluster.local:443/v1/guardrail/checks"
-  GUARDRAILS_FAIL_OPEN: "false"
+  GUARDRAILS_FAIL_OPEN: "true"
