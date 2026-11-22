@@ -1,5 +1,6 @@
 /** Commerzbank loan request (demo): shows the forecast balance with the loan paid out, no backend call. */
 import { escapeHtml, fmtMoney, fmtZero } from "./format.js";
+import { animateHeight } from "./controls.js";
 
 export const LOAN_BANK = "Commerzbank";
 
@@ -61,8 +62,10 @@ export function createLoanController(els, { onChange }) {
   }
 
   toggle.addEventListener("click", () => {
-    panel.hidden = !panel.hidden;
-    toggle.setAttribute("aria-expanded", String(!panel.hidden));
+    animateHeight(panel.parentElement, () => {
+      panel.hidden = !panel.hidden;
+      toggle.setAttribute("aria-expanded", String(!panel.hidden));
+    });
   });
   requestBtn.addEventListener("click", () => {
     requested = requested ? 0 : amount();
