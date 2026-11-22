@@ -1,5 +1,6 @@
 /** What-if scenarios: re-project the forecast balance with simple user levers (no backend, no LLM). */
 import { escapeHtml, fmtMoney, fmtZero } from "./format.js";
+import { animateHeight } from "./controls.js";
 
 const PRESET_LEVERS = { income: "incomeInput", expense: "expenseInput", monthly: "monthlyInput" };
 
@@ -57,7 +58,20 @@ export function createWhatIfController(els, { onChange }) {
     return applyWhatIf(la.forecast_series, la.granularity, levers());
   }
 
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  let resizeAnimation;
+  function resizePanel(update) {
+    resizeAnimation = animateHeight(els.panel, update);
+  }
+  reducedMotion.addEventListener('change', () => {
+    if (reducedMotion.matches) resizeAnimation?.cancel();
+  });
+
   function renderSummary(state) {
+    resizePanel(() => renderSummaryContent(state));
+  }
+
+  function renderSummaryContent(state) {
     const la = (state && state.liquidity_agent) || {};
     const fore = la.forecast_series || [];
     const balances = compute(state);
@@ -120,8 +134,10 @@ export function createWhatIfController(els, { onChange }) {
   const tuneToggle = els.panel.querySelector('#whatif-tune-toggle');
   tuneToggle.addEventListener('click', () => {
     const expanded = tuneToggle.getAttribute('aria-expanded') !== 'true';
-    tuneToggle.setAttribute('aria-expanded', String(expanded));
-    els.panel.querySelector('#whatif-tuning').classList.toggle('hidden', !expanded);
+    resizePanel(() => {
+      tuneToggle.setAttribute('aria-expanded', String(expanded));
+      els.panel.querySelector('#whatif-tuning').classList.toggle('hidden', !expanded);
+    });
   });
   els.panel.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-whatif-preset]");
