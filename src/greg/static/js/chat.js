@@ -1,0 +1,150 @@
+/** Floating Greg messenger UI, keyboard close, explain trigger, period analysis handoff, and chat streaming. */
+import { postJson } from "./api.js";
+
+export function createChatController(els, { getHorizonPayload }) {
+  const {
+    chatLauncher,
+    messenger,
+    chatCloseBtn,
+    messagesEl,
+    chatForm,
+    promptEl,
+    sendBtn,
+    aiExplainBtn,
+  } = els;
+
+  const chatHistory = [];
+  const initialMessagesHtml = messagesEl ? messagesEl.innerHTML : "";
+  let activeSelectedPeriod = null;
+
+  function setOpen(open) {
+    messenger.hidden = !open;
+    chatLauncher.hidden = open;
+    const floatingLauncher = document.getElementById("floating-chat-launcher");
+    if (floatingLauncher) {
+      floatingLauncher.hidden = open;
+      floatingLauncher.setAttribute("aria-expanded", String(open));
+    }
+    chatLauncher.setAttribute("aria-expanded", String(open));
+    chatLauncher.setAttribute("aria-label", open ? "Close chat with Greg" : "Open chat with Greg");
+    if (open) {
+      if (!promptEl.disabled) promptEl.focus();
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    } else {
+      (floatingLauncher || chatLauncher).focus({ preventScroll: true });
+    }
+  }
+
+  function isOpen() {
+    return !messenger.hidden;
+  }
+
+  function appendMessage(role, text) {
+    setOpen(true);
+    const div = document.createElement("div");
+    div.className = `msg ${role}`;
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return div;
+  }
+
+  function receivePeriodAnalysis(payload) {
+    if (!payload) return;
+    activeSelectedPeriod = payload;
+    setOpen(true);
+    if (promptEl && payload.suggestedPrompt) {
+      promptEl.value = payload.suggestedPrompt;
+      promptEl.focus();
+      if (typeof promptEl.setSelectionRange === "function") {
+        const len = promptEl.value.length;
+        promptEl.setSelectionRange(len, len);
+      }
+    }
+  }
+
+  function resetConversation() {
+    chatHistory.length = 0;
+    activeSelectedPeriod = null;
+    if (promptEl) promptEl.value = "";
+    if (messagesEl) {
+      messagesEl.innerHTML = initialMessagesHtml;
+      messagesEl.scrollTop = 0;
+    }
+  }
+
+  chatLauncher.addEventListener("click", () => setOpen(messenger.hidden));
+  if (chatCloseBtn) {
+    chatCloseBtn.addEventListener("click", () => setOpen(false));
+  }
+  messenger.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+    }
+  });
+
+  if (aiExplainBtn) {
+    aiExplainBtn.addEventListener("click", async () => {
+      aiExplainBtn.disabled = true;
+      const pending = appendMessage(
+        "assistant",
+        "Asking Greg on OpenShift AI to explain this month and forecast in simple words…"
+      );
+      try {
+        const res = await postJson("/api/explain", getHorizonPayload());
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        pending.textContent = data.reply;
+        chatHistory.push({ role: "assistant", content: data.reply });
+      } catch (err) {
+        pending.className = "msg error";
+        pending.textContent = `Error: ${err.message}`;
+      } finally {
+        aiExplainBtn.disabled = false;
+      }
+    });
+  }
+
+  chatForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = promptEl.value.trim();
+    if (!text) return;
+
+    promptEl.value = "";
+    promptEl.disabled = true;
+    sendBtn.disabled = true;
+
+    chatHistory.push({ role: "user", content: text });
+    appendMessage("user", text);
+    const pendingEl = appendMessage("assistant", "Thinking…");
+
+    try {
+      const reqBody = Object.assign({ messages: chatHistory }, getHorizonPayload());
+      if (activeSelectedPeriod) {
+        reqBody.selected_period = activeSelectedPeriod;
+      }
+      const res = await postJson("/api/chat", reqBody);
+      const data = await res.json();
+      if (data.blocked) {
+        // Guardrails refused the message: show Greg's refusal, keep it out of history.
+        pendingEl.textContent = data.error;
+        chatHistory.pop();
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      pendingEl.textContent = data.reply;
+      chatHistory.push({ role: "assistant", content: data.reply });
+    } catch (err) {
+      pendingEl.className = "msg error";
+      pendingEl.textContent = `Error: ${err.message}`;
+      chatHistory.pop();
+    } finally {
+      promptEl.disabled = false;
+      sendBtn.disabled = false;
+      promptEl.focus();
+    }
+  });
+
+  return { setOpen, isOpen, appendMessage, receivePeriodAnalysis, resetConversation };
+}

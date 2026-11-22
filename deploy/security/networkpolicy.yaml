@@ -1,0 +1,32 @@
+# Restricts Greg's outbound traffic to cluster DNS and pods in its own namespace
+# (the vLLM predictor and the guardrails server both run in my-first-model).
+# Greg needs no internet access. If the model is served through KServe Serverless
+# (Knative/Istio) instead of RawDeployment, add an egress rule for that path first.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: greg-egress
+  labels:
+    app: greg
+spec:
+  podSelector:
+    matchLabels:
+      app: greg
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+      ports:
+        - protocol: UDP
+          port: 5353
+        - protocol: TCP
+          port: 5353
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - podSelector: {}

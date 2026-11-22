@@ -4,801 +4,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Greg - Autonomous CFO</title>
-  <link rel="icon"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%230d0d0d' d='M4 18a7 7 0 0 1 7-7h6v6a7 7 0 0 1-7 7H4Zm14-10h4a6 6 0 0 1 0 12h-4Z'/%3E%3C/svg%3E" />
-  <style>
-    @font-face {
-      font-family: Inter;
-      src: url('/assets/InterVariable.woff2') format('woff2');
-      font-weight: 100 900;
-      font-display: swap;
-    }
-
-    :root {
-      color-scheme: light;
-      --ink: #0d0d0d;
-      --body: #3d3d3d;
-      --muted: #6e6e6e;
-      --line: #e7e7e7;
-      --soft: #fafafa;
-      --pink: #ffc9ff;
-      --tint: #fff1ff;
-      --scenario: #805181;
-      --ok: #24664e;
-      --ok-soft: #e6f5ee;
-      --danger: #a52544;
-      --danger-soft: #fce8ef;
-      --warn: #855112;
-      --warn-soft: #fff0dc;
-      --gutter: clamp(20px, 4.5vw, 64px);
-      font: 400 15px/1.5 Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      color: var(--ink);
-      background: #ffffff;
-    }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
-
-    body,
-    h1,
-    h2,
-    h3,
-    p {
-      margin: 0;
-    }
-
-    body {
-      background: #ffffff;
-      color: var(--ink);
-      overflow-wrap: anywhere;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    button {
-      font: inherit;
-      cursor: pointer;
-    }
-
-    :focus-visible {
-      outline: 2px solid #4786ff;
-      outline-offset: 3px;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .num {
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Sticky Top Header */
-    .site-head {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: #ffffff;
-      border-bottom: 1px solid #ededed;
-    }
-
-    .shell {
-      width: min(calc(100% - 2 * var(--gutter)), 1312px);
-      margin-inline: auto;
-      min-height: 68px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-      padding-block: 10px;
-    }
-
-    .wordmark-wrap {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-
-    .wordmark {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 26px;
-      font-weight: 600;
-      letter-spacing: -0.09em;
-      line-height: 1;
-      color: var(--ink);
-    }
-
-    .wordmark svg {
-      width: 31px;
-      height: 31px;
-      fill: currentColor;
-    }
-
-    .brand-sub {
-      font-size: 13px;
-      color: var(--muted);
-      border-left: 1px solid var(--line);
-      padding-left: 14px;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--body);
-      background: var(--soft);
-      border: 1px solid var(--line);
-      border-radius: 100px;
-      padding: 6px 13px;
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--ok);
-      flex: none;
-    }
-
-    .status-dot.standby {
-      background: var(--warn);
-    }
-
-    /* Page Container & Typography */
-    .container {
-      width: min(calc(100% - 2 * var(--gutter)), 1312px);
-      margin-inline: auto;
-      padding-block: clamp(24px, 3.5vw, 44px) 64px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    .card {
-      background: #ffffff;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: clamp(18px, 2.2vw, 28px);
-    }
-
-    .card h2 {
-      font-size: clamp(24px, 2.5vw, 32px);
-      font-weight: 300;
-      letter-spacing: -0.02em;
-      line-height: 1.12;
-      margin-bottom: 14px;
-      color: var(--ink);
-    }
-
-    .card h3 {
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-      margin-bottom: 8px;
-      color: var(--ink);
-    }
-
-    .subtitle {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 20px;
-    }
-
-    /* Forms & Controls */
-    .form-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: flex-end;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-      min-width: 130px;
-    }
-
-    .field label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--body);
-    }
-
-    input,
-    select,
-    textarea {
-      min-height: 40px;
-      padding: 7px 11px;
-      border: 1px solid #cfcfcf;
-      border-radius: 8px;
-      background: #ffffff;
-      color: var(--ink);
-      font: inherit;
-      font-size: 13px;
-      max-width: 100%;
-    }
-
-    input[type='file'] {
-      padding: 6px 8px;
-    }
-
-    button {
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 40px;
-      padding: 8px 18px;
-      background: var(--ink);
-      color: #ffffff;
-      border: 1px solid var(--ink);
-      border-radius: 100px;
-      font-size: 13px;
-      font-weight: 500;
-      white-space: nowrap;
-      transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-    }
-
-    button:hover:not(:disabled) {
-      background: #3d3d3d;
-      border-color: #3d3d3d;
-    }
-
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    button.secondary {
-      background: #ffffff;
-      color: var(--ink);
-      border: 1px solid #cecece;
-    }
-
-    button.secondary:hover:not(:disabled) {
-      background: #f3f3f3;
-      border-color: var(--ink);
-    }
-
-    button.danger {
-      background: #ffffff;
-      color: var(--danger);
-      border: 1px solid #e7b4c0;
-      min-height: 28px;
-      padding: 3px 10px;
-      font-size: 11px;
-    }
-
-    button.danger:hover:not(:disabled) {
-      background: var(--danger-soft);
-      border-color: var(--danger);
-    }
-
-    /* Empty State */
-    .empty-banner {
-      text-align: center;
-      padding: 36px 24px;
-      color: var(--body);
-      background: var(--soft);
-      border-radius: 16px;
-      border: 1px dashed #cfcfcf;
-      font-size: 14px;
-    }
-
-    .empty-banner strong {
-      display: inline-block;
-      font-size: 18px;
-      font-weight: 400;
-      color: var(--ink);
-      margin-bottom: 6px;
-    }
-
-    /* KPI Cards */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 12px;
-    }
-
-    .kpi {
-      background: var(--soft);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 15px 16px;
-    }
-
-    .kpi.kpi-profit {
-      background: #fff6ff;
-      border-color: #efd5ef;
-    }
-
-    .kpi-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--body);
-    }
-
-    .kpi-value {
-      font-size: clamp(22px, 2.3vw, 30px);
-      font-weight: 450;
-      letter-spacing: -0.035em;
-      line-height: 1.15;
-      margin-top: 6px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .kpi-note {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    .pos {
-      color: var(--ok);
-    }
-
-    .neg {
-      color: var(--danger);
-    }
-
-    /* Category & Counterparty Breakdown */
-    .cat-block {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      margin-bottom: 10px;
-      overflow: hidden;
-      background: #ffffff;
-    }
-
-    .cat-header {
-      background: var(--soft);
-      padding: 9px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    .badge {
-      font-size: 11px;
-      font-weight: 500;
-      padding: 2px 8px;
-      border-radius: 100px;
-      background: var(--tint);
-      color: #623761;
-      margin-left: 6px;
-    }
-
-    .person-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .person-item {
-      padding: 8px 14px;
-      border-top: 1px solid var(--line);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      gap: 8px;
-    }
-
-    .person-meta {
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    /* Transactions Table */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    th,
-    td {
-      text-align: left;
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    th {
-      color: var(--body);
-      font-size: 11px;
-      font-weight: 600;
-      background: var(--soft);
-    }
-
-    .right {
-      text-align: right;
-    }
-
-    details summary {
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 14px;
-      padding: 2px 0;
-      color: var(--ink);
-    }
-
-    /* Dark Forecast Stage (from pulled design system) */
-    .forecast-stage {
-      position: relative;
-      isolation: isolate;
-      background: var(--ink);
-      color: #ffffff;
-      border-radius: 20px;
-      padding: clamp(22px, 3.2vw, 42px);
-    }
-
-    .forecast-stage::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      border-radius: inherit;
-      background: radial-gradient(circle, #ffffff31 0.7px, transparent 0.9px) 0 0 / 16px 16px;
-      mask-image: radial-gradient(ellipse at 86% 12%, black, transparent 48%);
-      pointer-events: none;
-    }
-
-    .forecast-stage h2 {
-      font-size: clamp(28px, 3vw, 40px);
-      font-weight: 300;
-      letter-spacing: -0.02em;
-      line-height: 1.08;
-      color: #ffffff;
-      margin-bottom: 6px;
-    }
-
-    .forecast-stage .stage-eyebrow {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      color: var(--pink);
-      margin-bottom: 8px;
-    }
-
-    .forecast-stage .stage-subtitle {
-      font-size: 13px;
-      color: #cfcfcf;
-    }
-
-    .forecast-stage .field label {
-      color: #e7e7e7;
-    }
-
-    .forecast-panel {
-      position: relative;
-      background: #ffffff;
-      color: var(--ink);
-      border-radius: 16px;
-      padding: clamp(14px, 1.8vw, 22px);
-      margin-top: 16px;
-    }
-
-    .chart-wrap {
-      position: relative;
-      width: 100%;
-      overflow: hidden;
-    }
-
-    .chart-wrap svg {
-      width: 100%;
-      height: 260px;
-      display: block;
-      cursor: crosshair;
-      user-select: none;
-    }
-
-    .chart-wrap svg.panning {
-      cursor: grabbing;
-    }
-
-    .chart-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-
-    .chart-zoom-controls {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-left: auto;
-    }
-
-    .chart-zoom-btn {
-      min-height: 28px;
-      padding: 3px 11px;
-      font-size: 12px;
-      border-radius: 100px;
-    }
-
-    .chart-scroll-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-top: 8px;
-    }
-
-    .chart-scroll-row input[type='range'] {
-      flex: 1;
-      min-height: 24px;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      accent-color: var(--ink);
-      cursor: pointer;
-    }
-
-    .chart-range-label {
-      font-size: 11px;
-      color: var(--muted);
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .chart-tooltip {
-      position: absolute;
-      z-index: 6;
-      pointer-events: none;
-      background: var(--ink);
-      color: #ffffff;
-      border: 1px solid #333333;
-      border-radius: 10px;
-      padding: 8px 11px;
-      font-size: 12px;
-      line-height: 1.4;
-      box-shadow: 0 10px 24px rgba(13, 13, 13, 0.22);
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .chart-tooltip .tt-date {
-      color: var(--pink);
-      font-size: 11px;
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-
-    .chart-tooltip .tt-bal {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .chart-tooltip .tt-credit {
-      font-size: 11px;
-      color: #9ee4ba;
-      margin-top: 2px;
-    }
-
-    .chart-legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 18px;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid var(--line);
-      font-size: 12px;
-      color: var(--body);
-    }
-
-    .legend-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .swatch {
-      display: inline-block;
-      width: 14px;
-      height: 3px;
-      border-radius: 2px;
-    }
-
-    .alert-box {
-      padding: 13px 16px;
-      border-radius: 12px;
-      margin-top: 16px;
-      font-size: 13px;
-      border: 1px solid transparent;
-    }
-
-    .alert-box.warn {
-      background: var(--danger-soft);
-      color: var(--danger);
-      border-color: #e7b4c0;
-    }
-
-    .alert-box.safe {
-      background: var(--ok-soft);
-      color: var(--ok);
-      border-color: #a8c9b7;
-    }
-
-    .stage-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 16px;
-    }
-
-    .stage-box {
-      background: #ffffff;
-      color: var(--ink);
-      border-radius: 14px;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .stage-box .field label {
-      color: var(--body);
-    }
-
-    .stage-tag {
-      display: inline-block;
-      width: fit-content;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 100px;
-      background: var(--tint);
-      color: #623761;
-    }
-
-    .stage-box h3 {
-      font-size: 14px;
-      font-weight: 600;
-      margin: 0;
-    }
-
-    .credit-summary-box {
-      background: var(--soft);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 13px;
-      display: grid;
-      gap: 4px;
-    }
-
-    /* Chat Area */
-    .chat-log {
-      max-height: 290px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px;
-      background: var(--soft);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      margin-bottom: 12px;
-    }
-
-    .msg {
-      padding: 9px 13px;
-      border-radius: 10px;
-      font-size: 13px;
-      white-space: pre-wrap;
-      max-width: 86%;
-    }
-
-    .msg.user {
-      align-self: flex-end;
-      background: var(--tint);
-      color: var(--ink);
-      border: 1px solid #efd5ef;
-    }
-
-    .msg.assistant {
-      align-self: flex-start;
-      background: #ffffff;
-      color: var(--body);
-      border: 1px solid var(--line);
-    }
-
-    .msg.error {
-      align-self: flex-start;
-      background: var(--danger-soft);
-      color: var(--danger);
-      border: 1px solid #e7b4c0;
-    }
-
-    @media (max-width: 960px) {
-      .kpi-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .stage-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    @media (max-width: 720px) {
-      .grid-2 {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .brand-sub {
-        border-left: 0;
-        padding-left: 0;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .kpi-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-
-      *,
-      *::before,
-      *::after {
-        transition: none !important;
-      }
-    }
-  </style>
+  <title>UFO - Ultimate Financial Officer</title>
+  <link rel="icon" type="image/png" href="/static/images/ufo-logo.png" />
+  <link rel="preload" href="/static/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/static/css/base.css" />
+  <link rel="stylesheet" href="/static/css/forecast.css" />
+  <link rel="stylesheet" href="/static/css/messenger.css" />
+  <link rel="stylesheet" href="/static/css/onboarding.css" />
+  <link rel="stylesheet" href="/static/css/ufo-artwork.css" />
 </head>
 
 <body>
   <header class="site-head">
     <div class="shell">
       <div class="wordmark-wrap">
-        <a href="/" class="wordmark" aria-label="Greg home">
-          <svg viewBox="0 0 32 32" aria-hidden="true">
-            <path d="M4 18a7 7 0 0 1 7-7h6v6a7 7 0 0 1-7 7H4Zm14-10h4a6 6 0 0 1 0 12h-4Z" />
-          </svg>
-          greg
+        <a href="/" class="wordmark" aria-label="UFO home">
+          <img class="brand-logo" src="/static/images/ufo-logo.png" width="36" height="36" alt="" />
+          UFO
         </a>
-        <span class="brand-sub">Autonomous CFO</span>
+        <span class="brand-sub">Ultimate Financial Officer</span>
       </div>
       <div class="header-right">
-        <div class="status-pill" role="status">
+        <div class="status-pill hidden" role="status">
           <span class="status-dot standby" id="llm-dot"></span>
           <span id="status">Checking pod &amp; AI status…</span>
         </div>
-        <button type="button" class="secondary hidden" id="reset-btn">Clear All Data</button>
+        <button type="button" class="secondary hidden" id="reset-btn">Restart</button>
       </div>
     </div>
   </header>
@@ -808,16 +39,74 @@
     <div class="grid-2">
       <section class="card">
         <h2>Import Bank Statement (CSV)</h2>
-        <form id="import-form" class="form-row">
-          <div class="field" style="flex: 2">
-            <label for="csv-file">CSV File</label>
-            <input type="file" id="csv-file" accept=".csv,text/csv" required />
+        <form id="import-form">
+          <div class="form-row">
+            <div class="field" style="flex: 2">
+              <label for="csv-file">CSV File</label>
+              <input type="file" id="csv-file" accept=".csv,text/csv" required />
+            </div>
+            <div class="field">
+              <label for="opening-balance">Starting Balance (€)</label>
+              <input type="number" id="opening-balance" step="0.01" value="0" />
+            </div>
           </div>
-          <div class="field">
-            <label for="opening-balance">Starting Balance (€)</label>
-            <input type="number" id="opening-balance" step="0.01" value="0" />
+          <div id="csv-mapping-box" class="mapping-box hidden">
+            <div class="mapping-head">
+              <strong>CSV Column Mapping</strong>
+              <span class="subtitle" id="mapping-meta"></span>
+            </div>
+            <div class="mapping-grid">
+              <div class="field">
+                <label for="map-date">Date</label>
+                <select id="map-date"></select>
+              </div>
+              <div class="field">
+                <label for="map-amount-mode">Amount Format</label>
+                <select id="map-amount-mode">
+                  <option value="single">Single Amount column</option>
+                  <option value="split">Separate Income &amp; Expenses</option>
+                </select>
+              </div>
+              <div class="field" id="map-amount-wrap">
+                <label for="map-amount">Amount</label>
+                <select id="map-amount"></select>
+              </div>
+              <div class="field hidden" id="map-income-wrap">
+                <label for="map-income">Income / Revenue</label>
+                <select id="map-income"></select>
+              </div>
+              <div class="field hidden" id="map-expenses-wrap">
+                <label for="map-expenses">Expenses / Costs</label>
+                <select id="map-expenses"></select>
+              </div>
+            </div>
+            <details style="margin-top: 10px">
+              <summary class="subtitle" style="font-size: 12px">Optional columns &amp; currency</summary>
+              <div class="mapping-grid" style="margin-top: 8px">
+                <div class="field">
+                  <label for="map-currency">Currency Column</label>
+                  <select id="map-currency"></select>
+                </div>
+                <div class="field">
+                  <label for="map-default-currency">Currency Code</label>
+                  <input type="text" id="map-default-currency" maxlength="6" placeholder="Auto / EUR" />
+                </div>
+                <div class="field">
+                  <label for="map-counterparty">Person / Company</label>
+                  <select id="map-counterparty"></select>
+                </div>
+                <div class="field">
+                  <label for="map-type">Type / Category</label>
+                  <select id="map-type"></select>
+                </div>
+                <div class="field">
+                  <label for="map-description">Description</label>
+                  <select id="map-description"></select>
+                </div>
+              </div>
+            </details>
           </div>
-          <button type="submit" id="import-btn">Import CSV</button>
+          <div class="csv-confirm-row"><button type="submit" id="import-btn">Confirm</button></div>
         </form>
         <div id="import-info" class="subtitle" style="margin-top: 10px"></div>
       </section>
@@ -832,8 +121,8 @@
           <div class="field">
             <label for="op-kind">Type</label>
             <select id="op-kind">
-              <option value="expense">Expense</option>
               <option value="income">Income</option>
+              <option value="expense">Expense</option>
             </select>
           </div>
           <div class="field">
@@ -945,13 +234,10 @@
           <div>
             <p class="stage-eyebrow">Cash outlook</p>
             <h2>Forecast</h2>
-            <div class="stage-subtitle">
-              Complete account balance history and cash forecast ahead based on your regular bills and recent daily
-              activity
-            </div>
+
           </div>
           <div class="form-row">
-            <div class="field" style="min-width: 130px">
+            <div class="field hidden" style="min-width: 130px">
               <label for="interval-select">View By</label>
               <select id="interval-select">
                 <option value="day" selected>Day</option>
@@ -959,7 +245,7 @@
               </select>
             </div>
             <div class="field" style="min-width: 170px">
-              <label for="horizon-select">Forecast Ahead</label>
+              <label for="horizon-select">Forecast</label>
               <select id="horizon-select">
                 <option value="30" selected>Next 30 days</option>
                 <option value="60">Next 60 days</option>
@@ -969,103 +255,141 @@
           </div>
         </div>
 
+        <!-- CHOSEN FORECAST METHOD -->
+
+
         <!-- RECOMMENDATION BANNER -->
         <div id="agent-banner" class="alert-box"></div>
 
         <!-- SVG FORECAST CHART -->
         <div class="forecast-panel" id="forecast-panel">
           <div class="chart-toolbar">
-            <span class="subtitle" id="chart-zoom-hint">Drag chart or slider to scroll history, wheel or + / − to
-              zoom</span>
-            <div class="chart-zoom-controls" role="group" aria-label="Chart zoom">
-              <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-in" title="Zoom in">+</button>
-              <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-out" title="Zoom out">−</button>
-              <button type="button" class="secondary chart-zoom-btn" id="btn-zoom-reset"
-                title="Reset view">Reset</button>
-            </div>
+            <span class="subtitle" id="chart-zoom-hint">Drag chart to scroll, wheel to zoom, click a point for details, Ctrl and drag to select a period</span>
           </div>
           <div id="chart-tooltip" class="chart-tooltip hidden" role="status" aria-live="polite"></div>
           <div class="chart-wrap">
             <svg id="forecast-chart" viewBox="0 0 900 260" style="width: 100%; height: 260px; display: block"></svg>
+            <div id="chart-focus-card" class="chart-focus-card hidden" role="button" tabindex="0" aria-expanded="false"></div>
           </div>
-          <div class="chart-scroll-row">
-            <span class="chart-range-label" id="chart-range-label">—</span>
-            <input type="range" id="chart-scroll" min="0" max="0" value="0" aria-label="Scroll history window" />
-          </div>
-          <div class="chart-legend hidden">
-            <span class="legend-item"><span class="swatch" style="background: #805181"></span>Forecast balance</span>
-            <span class="legend-item"><span class="swatch" style="background: #24664e"></span>With approved
-              credit</span>
-          </div>
-        </div>
-
-        <!-- GOVERNANCE STAGES -->
-        <div class="stage-grid">
-          <div class="stage-box">
-            <span class="stage-tag">Step A · Analyzed Automatically</span>
-            <p id="agent-analysis-text" style="font-size: 13px; color: var(--body)"></p>
-            <h3>Upcoming Regular Bills Detected</h3>
-            <div style="max-height: 190px; overflow-y: auto">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Expected Date</th>
-                    <th>Who</th>
-                    <th class="right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody id="upcoming-bills-body"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="stage-box">
-            <span class="stage-tag">Step B · Recommended Action</span>
-            <p id="agent-rec-text" style="font-size: 13px; color: var(--body)"></p>
-            <div class="credit-summary-box num">
-              <div><strong>Lowest Expected Balance:</strong> <span id="rec-lowest">€0.00</span></div>
-              <div><strong>Days Below €0:</strong> <span id="rec-days">0 days</span></div>
-              <div style="margin-top: 4px; font-size: 14px">
-                <strong>Credit Amount Needed from Your Bank:</strong>
-                <span id="rec-credit" style="font-weight: 700">€0.00</span>
+          <div id="period-action-bar-wrap" class="period-action-bar-wrap">
+            <div class="period-action-bar-inner">
+              <div class="period-action-bar">
+                <span class="period-range-text">
+                  <span class="period-range-dot"></span>
+                  <span id="period-range-dates"></span>
+                </span>
+                <button type="button" id="btn-analyze-period" class="period-analyze-btn">Analyze</button>
+                <button type="button" id="btn-clear-period" class="period-clear-btn" title="Clear selection" aria-label="Clear selected period">✕</button>
               </div>
             </div>
-            <div style="margin-top: auto; padding-top: 6px">
-              <button type="button" id="ai-explain-btn" class="secondary" style="width: 100%; white-space: normal">
-                Ask Greg (OpenShift AI) to Explain in Simple Words
-              </button>
+          </div>
+          <div class="minimap-container" id="minimap-container">
+            <div class="minimap-track" id="minimap-track" role="region" aria-label="Chart timeline navigator">
+              <svg id="minimap-svg" viewBox="0 0 900 42" preserveAspectRatio="none"></svg>
+              <div class="minimap-mask" id="minimap-mask-left" style="left: 0; width: 0%"></div>
+              <div class="minimap-mask" id="minimap-mask-right" style="right: 0; width: 0%"></div>
+              <div class="minimap-window" id="minimap-window" style="left: 0%; width: 100%">
+                <div class="minimap-handle left" id="minimap-handle-left" title="Drag to adjust start">
+                  <span class="minimap-handle-grip"></span>
+                </div>
+                <div class="minimap-handle right" id="minimap-handle-right" title="Drag to adjust end">
+                  <span class="minimap-handle-grip"></span>
+                </div>
+              </div>
+            </div>
+            <div class="minimap-meta-row">
+              <span class="chart-range-label" id="chart-range-label">—</span>
             </div>
           </div>
+          <div class="chart-legend hidden" id="chart-legend">
+            <span class="legend-item"><span class="swatch" style="background: #0d0d0d"></span>Past</span>
+            <span class="legend-item"><span class="swatch" style="background: #805181"></span>Expected</span>
+            <span class="legend-item"><span class="swatch" style="background: #c96b7c"></span>Pessimistic</span>
+          </div>
 
-          <div class="stage-box">
-            <span class="stage-tag">Step C · Your Approval (Simulated)</span>
-            <p style="font-size: 13px; color: var(--body)">
-              You choose the bank and credit line yourself. Enter the credit amount you want to simulate below to see
-              how it keeps your account balance above €0.
-            </p>
-            <form id="credit-form" class="form-row">
+          <!-- WHAT-IF SCENARIO -->
+          <div class="whatif" id="whatif-panel">
+            <div class="whatif-head">
+              <strong>What if…?</strong>
+              <span class="subtitle">Try a scenario - the blue dotted line shows your balance under it.</span>
+              <button type="button" class="secondary chart-zoom-btn" id="whatif-reset">Clear</button>
+            </div>
+            <div class="whatif-presets">
+              <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="income:-20">Lose 20% of income</button>
+              <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="expense:10">Costs rise 10%</button>
+              <button type="button" class="secondary chart-zoom-btn" data-whatif-preset="monthly:-3000">Hire someone (−3,000 / month)</button>
+              <button type="button" class="secondary chart-zoom-btn" id="whatif-tune-toggle" aria-expanded="false" aria-controls="whatif-tuning">Fine-tune <span aria-hidden="true">⌄</span></button>
+            </div>
+            <div class="whatif-grid hidden" id="whatif-tuning">
               <div class="field">
-                <label for="credit-input">Credit Amount to Simulate (€)</label>
-                <input type="number" id="credit-input" step="100" min="0" value="0" />
+                <label for="whatif-income">Income change <output id="whatif-income-out">0%</output></label>
+                <input type="range" id="whatif-income" min="-50" max="50" step="5" value="0" />
               </div>
-              <button type="submit">Approve Credit Plan</button>
-            </form>
-            <div id="credit-status" style="font-size: 13px"></div>
+              <div class="field">
+                <label for="whatif-expense">Expenses change <output id="whatif-expense-out">0%</output></label>
+                <input type="range" id="whatif-expense" min="-50" max="50" step="5" value="0" />
+              </div>
+              <div class="field">
+                <label for="whatif-monthly">Every month (+ in / − out)</label>
+                <input type="number" id="whatif-monthly" step="100" value="0" />
+              </div>
+              <div class="field">
+                <label for="whatif-oneoff">One-off amount (+ / −)</label>
+                <input type="number" id="whatif-oneoff" step="100" value="0" />
+              </div>
+              <div class="field">
+                <label for="whatif-oneoff-date">One-off on</label>
+                <input type="date" id="whatif-oneoff-date" />
+              </div>
+            </div>
+            <div class="whatif-summary" id="whatif-summary" role="status" aria-live="polite"></div>
           </div>
         </div>
+
+        <!-- LOAN RECOMMENDATION & EXPLAIN ACTIONS -->
+        <div class="forecast-action-row">
+          <button type="button" id="loan-toggle" class="secondary" aria-expanded="false" aria-controls="loan-panel">Explore a loan</button>
+          <button type="button" id="ai-explain-btn" class="secondary">Ask Greg to Explain in Simple Words</button>
+        </div>
+        <section class="stage-box" id="loan-panel" aria-labelledby="loan-title" hidden>
+          <h3 id="loan-title">Recommended Action</h3>
+          <p id="agent-rec-text" style="font-size: 13px; color: var(--body)"></p>
+          <div class="credit-summary-box num">
+            <div><strong>Lowest Expected Balance:</strong> <span id="rec-lowest">€0.00</span></div>
+            <div><strong id="rec-below-label">Days Below €0:</strong> <span id="rec-days">0 days</span></div>
+            <div style="margin-top: 4px; font-size: 14px">
+              <strong>Credit Amount Needed from Your Bank:</strong>
+              <span id="rec-credit" style="font-weight: 700">€0.00</span>
+            </div>
+          </div>
+          <div class="loan-actions">
+            <div class="field">
+              <label for="loan-amount">Loan amount</label>
+              <input type="number" id="loan-amount" step="100" min="0" value="0" />
+            </div>
+            <button type="button" id="loan-request-btn" aria-pressed="false">Request a loan from Commerzbank</button>
+          </div>
+          <div id="loan-status" role="status" aria-live="polite"></div>
+        </section>
       </section>
 
-      <!-- SIMPLE AI CHAT WITH GREG -->
-      <section class="card">
-        <h2>Ask Greg a Question (OpenShift AI)</h2>
-        <div class="subtitle" style="margin-bottom: 12px">
-          Greg knows your selected month's income, expenses, and cash forecast, and answers in plain everyday words.
-        </div>
-        <div class="chat-log" id="messages" role="log" aria-live="polite">
-          <div class="msg assistant" id="empty-state">
-            Ask me anything about your monthly expenses, employee salaries, taxes, or why your balance changes in the
-            next few weeks.
+      <!-- Floating Greg support messenger -->
+      <button type="button" id="chat-launcher" aria-label="Open chat with Greg" aria-controls="greg-messenger" aria-expanded="false">
+        <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M20 11.5a8 8 0 0 1-8 8H4l-2 2v-10a9 9 0 0 1 18 0Z"/>
+          <path d="M7 9h8M7 13h5"/>
+        </svg>
+      </button>
+      <section id="greg-messenger" class="card greg-messenger" role="dialog" aria-labelledby="greg-chat-title" hidden>
+        <header class="greg-chat-header">
+          <div>
+            <h2 id="greg-chat-title">Greg</h2>
+            <div class="subtitle">Your AI finance assistant</div>
           </div>
+          <button type="button" id="chat-close" aria-label="Close chat">✕</button>
+        </header>
+        <div class="chat-log" id="messages" role="log" aria-live="polite">
+          <div class="msg assistant" id="empty-state">Hi, I’m Greg. Ask me about your monthly expenses, salaries, taxes, or cash flow. I’ll help you make sense of your numbers.</div>
         </div>
         <form id="chat-form" class="form-row">
           <input type="text" id="prompt"
@@ -1077,1008 +401,7 @@
     </div>
   </main>
 
-  <script>
-    const statusEl = document.getElementById("status");
-    const llmDot = document.getElementById("llm-dot");
-    const resetBtn = document.getElementById("reset-btn");
-    const emptyView = document.getElementById("empty-view");
-    const workspaceView = document.getElementById("workspace-view");
-
-    const importForm = document.getElementById("import-form");
-    const csvFileInput = document.getElementById("csv-file");
-    const openingBalanceInput = document.getElementById("opening-balance");
-    const importInfo = document.getElementById("import-info");
-
-    const manualForm = document.getElementById("manual-form");
-    const opDateInput = document.getElementById("op-date");
-    const opKindInput = document.getElementById("op-kind");
-    const opAmountInput = document.getElementById("op-amount");
-    const opCpInput = document.getElementById("op-cp");
-    const opCatInput = document.getElementById("op-cat");
-
-    const monthSelect = document.getElementById("month-select");
-    const intervalSelect = document.getElementById("interval-select");
-    const horizonSelect = document.getElementById("horizon-select");
-
-    const kpiIncome = document.getElementById("kpi-income");
-    const kpiExpenses = document.getElementById("kpi-expenses");
-    const kpiNet = document.getElementById("kpi-net");
-    const kpiTxCount = document.getElementById("kpi-tx-count");
-    const kpiEndBal = document.getElementById("kpi-end-bal");
-    const kpiLowBal = document.getElementById("kpi-low-bal");
-
-    const expenseListEl = document.getElementById("expense-breakdown-list");
-    const incomeListEl = document.getElementById("income-breakdown-list");
-    const txTableSummary = document.getElementById("tx-table-summary");
-    const txTableBody = document.getElementById("tx-table-body");
-
-    const agentBanner = document.getElementById("agent-banner");
-    const forecastPanel = document.getElementById("forecast-panel");
-    const forecastChart = document.getElementById("forecast-chart");
-    const chartTooltip = document.getElementById("chart-tooltip");
-    const btnZoomIn = document.getElementById("btn-zoom-in");
-    const btnZoomOut = document.getElementById("btn-zoom-out");
-    const btnZoomReset = document.getElementById("btn-zoom-reset");
-    const chartScroll = document.getElementById("chart-scroll");
-    const chartRangeLabel = document.getElementById("chart-range-label");
-    const agentAnalysisText = document.getElementById("agent-analysis-text");
-    const agentRecText = document.getElementById("agent-rec-text");
-    const upcomingBillsBody = document.getElementById("upcoming-bills-body");
-    const recLowest = document.getElementById("rec-lowest");
-    const recDays = document.getElementById("rec-days");
-    const recCredit = document.getElementById("rec-credit");
-    const aiExplainBtn = document.getElementById("ai-explain-btn");
-
-    const creditForm = document.getElementById("credit-form");
-    const creditInput = document.getElementById("credit-input");
-    const creditStatus = document.getElementById("credit-status");
-
-    const messagesEl = document.getElementById("messages");
-    const chatForm = document.getElementById("chat-form");
-    const promptEl = document.getElementById("prompt");
-    const sendBtn = document.getElementById("send-btn");
-
-    let currentState = null;
-    let chartHoverMeta = null;
-    let chartZoom = { key: null, start: 0, end: 0 };
-    let chartDrag = null;
-    const chatHistory = [];
-
-    opDateInput.value = new Date().toISOString().slice(0, 10);
-
-    function fmtMoney(val, currency = "EUR") {
-      const num = Number(val || 0);
-      const sym = currency === "EUR" ? "€" : currency + " ";
-      const sign = num < 0 ? "-" : "";
-      return (
-        sign +
-        sym +
-        Math.abs(num).toLocaleString("en-US", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      );
-    }
-
-    function escapeHtml(str) {
-      const div = document.createElement("div");
-      div.textContent = str == null ? "" : String(str);
-      return div.innerHTML;
-    }
-
-    async function loadStatus() {
-      try {
-        const res = await fetch("/health");
-        const data = await res.json();
-        llmDot.className = data.llm_configured ? "status-dot" : "status-dot standby";
-        const llmText = data.llm_configured
-          ? `Model: ${data.llm_model || "auto"}`
-          : "LLM not configured";
-        statusEl.textContent = `Pod: ${data.pod} · ${llmText}`;
-      } catch (err) {
-        llmDot.className = "status-dot standby";
-        statusEl.textContent = `Health check failed: ${err.message}`;
-      }
-    }
-
-    async function fetchView(horizon = "") {
-      const h = horizon || horizonSelect.value || "30";
-      const params = new URLSearchParams();
-      if (h) params.set("horizon", h);
-      const res = await fetch(`/api/view?${params.toString()}`);
-      const data = await res.json();
-      renderState(data);
-    }
-
-    function renderBreakdown(container, categories, currency, isExpense) {
-      if (!categories || categories.length === 0) {
-        container.innerHTML = `<div class="subtitle">No ${isExpense ? "expenses" : "income"
-          } recorded in this month.</div>`;
-        return;
-      }
-      container.innerHTML = categories
-        .map((cat) => {
-          const peopleRows = cat.people
-            .map(
-              (p) => `
-              <li class="person-item">
-                <div>
-                  <div><strong>${escapeHtml(p.name)}</strong></div>
-                  <div class="person-meta">${p.count} payment${p.count > 1 ? "s" : ""}</div>
-                </div>
-                <div class="num ${isExpense ? "neg" : "pos"}" style="font-weight: 600">
-                  ${isExpense ? "-" : "+"}${fmtMoney(p.total, currency)}
-                </div>
-              </li>`
-            )
-            .join("");
-
-          return `
-            <div class="cat-block">
-              <div class="cat-header">
-                <span>${escapeHtml(cat.category)} <span class="badge">${cat.count}</span></span>
-                <span class="num ${isExpense ? "neg" : "pos"}">${isExpense ? "-" : "+"
-            }${fmtMoney(cat.total, currency)}</span>
-              </div>
-              <ul class="person-list">${peopleRows}</ul>
-            </div>`;
-        })
-        .join("");
-    }
-
-    function buildChartPoints(historySeries, forecastSeries, interval) {
-      const hist = historySeries || [];
-      const fore = forecastSeries || [];
-      if (interval === "month") {
-        const histMap = new Map();
-        hist.forEach((p) => {
-          const ym = p.date.slice(0, 7);
-          histMap.set(ym, { date: ym, fullDate: p.date, bal: p.balance, kind: "hist" });
-        });
-        const histPts = Array.from(histMap.values());
-        const lastHistYm = histPts.length ? histPts[histPts.length - 1].date : "";
-
-        const foreMap = new Map();
-        fore.forEach((p) => {
-          const ym = p.date.slice(0, 7);
-          if (!lastHistYm || ym > lastHistYm) {
-            foreMap.set(ym, {
-              date: ym,
-              fullDate: p.date,
-              bal: p.balance,
-              balCredit: p.balance_with_credit,
-              kind: "fore",
-            });
-          }
-        });
-        if (foreMap.size === 0 && fore.length > 0) {
-          const lastF = fore[fore.length - 1];
-          foreMap.set(lastF.date.slice(0, 7), {
-            date: lastF.date.slice(0, 7) + " (Forecast)",
-            fullDate: lastF.date,
-            bal: lastF.balance,
-            balCredit: lastF.balance_with_credit,
-            kind: "fore",
-          });
-        }
-        return [...histPts, ...Array.from(foreMap.values())];
-      }
-
-      return [
-        ...hist.map((p) => ({ date: p.date, fullDate: p.date, bal: p.balance, kind: "hist" })),
-        ...fore.map((p) => ({
-          date: p.date,
-          fullDate: p.date,
-          bal: p.balance,
-          balCredit: p.balance_with_credit,
-          kind: "fore",
-        })),
-      ];
-    }
-
-    function renderChart(historySeries, forecastSeries, currency) {
-      const hist = historySeries || [];
-      const fore = forecastSeries || [];
-      chartTooltip.classList.add("hidden");
-      if (hist.length === 0 && fore.length === 0) {
-        chartHoverMeta = null;
-        forecastChart.innerHTML = "";
-        chartScroll.max = "0";
-        chartScroll.value = "0";
-        chartScroll.disabled = true;
-        chartRangeLabel.textContent = "—";
-        return;
-      }
-
-      const hasApprovedCredit =
-        currentState &&
-        currentState.approved_credit &&
-        Number(currentState.approved_credit.amount) > 0;
-
-      const interval = intervalSelect ? intervalSelect.value : "day";
-      const allPoints = buildChartPoints(hist, fore, interval);
-      const total = allPoints.length;
-      const defaultWindow = interval === "month" ? 12 : 60;
-      const defaultSpan = Math.min(total, defaultWindow);
-      const defaultStart = Math.max(0, total - defaultSpan);
-      const defaultEnd = Math.max(0, total - 1);
-
-      const zoomKey = `${interval}:${hist.length}:${fore.length}:${total}`;
-      if (chartZoom.key !== zoomKey) {
-        chartZoom = { key: zoomKey, start: defaultStart, end: defaultEnd };
-      }
-      const visStart = Math.max(0, Math.min(total - 1, chartZoom.start));
-      const visEnd = Math.max(visStart, Math.min(total - 1, chartZoom.end));
-      chartZoom.start = visStart;
-      chartZoom.end = visEnd;
-      const visPoints = allPoints.slice(visStart, visEnd + 1);
-      const curSpan = visPoints.length;
-      const isDefaultWindow = visStart === defaultStart && visEnd === defaultEnd;
-      btnZoomReset.disabled = isDefaultWindow;
-      btnZoomIn.disabled = curSpan <= 5;
-      btnZoomOut.disabled = visStart === 0 && visEnd === total - 1;
-
-      const maxScroll = Math.max(0, total - curSpan);
-      chartScroll.max = String(maxScroll);
-      chartScroll.value = String(visStart);
-      chartScroll.disabled = maxScroll === 0;
-
-      const firstDate = visPoints[0].date;
-      const lastDate = visPoints[visPoints.length - 1].date;
-      chartRangeLabel.textContent = `${firstDate} → ${lastDate} (${curSpan} of ${total})`;
-
-      const dataValues = [];
-      visPoints.forEach((p) => {
-        dataValues.push(p.bal);
-        if (hasApprovedCredit && p.kind === "fore" && p.balCredit != null) {
-          dataValues.push(p.balCredit);
-        }
-      });
-
-      const dataMin = Math.min(...dataValues);
-      const dataMax = Math.max(...dataValues);
-      let scaleMin = Math.min(0, dataMin);
-      let scaleMax = Math.max(0, dataMax);
-      if (scaleMin === scaleMax) {
-        scaleMin -= 1000;
-        scaleMax += 1000;
-      }
-
-      const W = Math.max(520, Math.round(forecastChart.clientWidth || 900));
-      const H = 260;
-      forecastChart.setAttribute("viewBox", `0 0 ${W} ${H}`);
-      const leftPad = 94;
-      const rightPad = 24;
-      const topPad = 24;
-      const bottomPad = 34;
-      const plotW = W - leftPad - rightPad;
-      const plotH = H - topPad - bottomPad;
-
-      const xFor = (localIdx) =>
-        leftPad + (visPoints.length <= 1 ? 0 : (localIdx / (visPoints.length - 1)) * plotW);
-      const yFor = (v) => topPad + ((scaleMax - v) / (scaleMax - scaleMin)) * plotH;
-
-      const zeroY = yFor(0);
-      const maxY = yFor(dataMax);
-      const minY = yFor(dataMin);
-      let splitGlobalIdx = -1;
-      for (let i = allPoints.length - 1; i >= 0; i--) {
-        if (allPoints[i].kind === "hist") {
-          splitGlobalIdx = i;
-          break;
-        }
-      }
-      const splitLocalIdx = splitGlobalIdx - visStart;
-      const showToday = splitGlobalIdx >= 0 && splitLocalIdx >= 0 && splitLocalIdx < visPoints.length;
-      const splitX = xFor(splitLocalIdx);
-
-      const histCoords = [];
-      const foreCoords = [];
-      const creditCoords = [];
-      visPoints.forEach((p, localIdx) => {
-        const xStr = xFor(localIdx).toFixed(1);
-        const yStr = yFor(p.bal).toFixed(1);
-        if (p.kind === "hist") {
-          histCoords.push(`${xStr},${yStr}`);
-        } else {
-          if (foreCoords.length === 0 && localIdx > 0 && visPoints[localIdx - 1].kind === "hist") {
-            const prev = visPoints[localIdx - 1];
-            const pxStr = xFor(localIdx - 1).toFixed(1);
-            const pyStr = yFor(prev.bal).toFixed(1);
-            foreCoords.push(`${pxStr},${pyStr}`);
-            creditCoords.push(`${pxStr},${pyStr}`);
-          }
-          foreCoords.push(`${xStr},${yStr}`);
-          if (hasApprovedCredit && p.balCredit != null) {
-            creditCoords.push(`${xStr},${yFor(p.balCredit).toFixed(1)}`);
-          }
-        }
-      });
-
-      const showMinLabel = Math.abs(minY - maxY) >= 14;
-      const showZeroLabel =
-        Math.abs(zeroY - maxY) >= 14 && (!showMinLabel || Math.abs(zeroY - minY) >= 14);
-
-      const clampLabelY = (y) => Math.max(topPad + 6, Math.min(H - bottomPad + 4, y + 4));
-
-      chartHoverMeta = {
-        allPoints,
-        visPoints,
-        visStart,
-        visEnd,
-        defaultStart,
-        defaultEnd,
-        xFor,
-        yFor,
-        W,
-        H,
-        leftPad,
-        rightPad,
-        topPad,
-        bottomPad,
-        plotW,
-        plotH,
-        currency,
-        hasApprovedCredit,
-      };
-
-      forecastChart.innerHTML = `
-          <!-- Max & Min reference guides -->
-          <line x1="${leftPad}" y1="${maxY.toFixed(1)}" x2="${W - rightPad}" y2="${maxY.toFixed(
-        1
-      )}" stroke="#eeeeee" stroke-dasharray="2 3" stroke-width="1" />
-          <line x1="${leftPad}" y1="${minY.toFixed(1)}" x2="${W - rightPad}" y2="${minY.toFixed(
-        1
-      )}" stroke="#eeeeee" stroke-dasharray="2 3" stroke-width="1" />
-
-          <!-- Zero baseline -->
-          <line x1="${leftPad}" y1="${zeroY.toFixed(1)}" x2="${W - rightPad}" y2="${zeroY.toFixed(
-        1
-      )}" stroke="#bdbdbd" stroke-dasharray="4 4" stroke-width="1.5" />
-
-          <!-- Left Y-axis labels: exact visible max, min, and zero -->
-          <text x="${leftPad - 8}" y="${clampLabelY(maxY).toFixed(
-        1
-      )}" text-anchor="end" font-size="11" fill="#3d3d3d">${fmtMoney(dataMax, currency)}</text>
-          ${showMinLabel
-          ? `<text x="${leftPad - 8}" y="${clampLabelY(minY).toFixed(
-            1
-          )}" text-anchor="end" font-size="11" fill="#3d3d3d">${fmtMoney(dataMin, currency)}</text>`
-          : ""
-        }
-          ${showZeroLabel
-          ? `<text x="${leftPad - 8}" y="${clampLabelY(zeroY).toFixed(
-            1
-          )}" text-anchor="end" font-size="11" fill="#6e6e6e">€0</text>`
-          : ""
-        }
-
-          ${showToday
-          ? `<line x1="${splitX.toFixed(1)}" y1="${topPad}" x2="${splitX.toFixed(1)}" y2="${H - bottomPad
-          }" stroke="#d5d5d5" stroke-dasharray="3 3" stroke-width="1" />
-                <text x="${splitX.toFixed(1)}" y="${topPad - 7
-          }" text-anchor="middle" font-size="11" fill="#3d3d3d">Today</text>`
-          : ""
-        }
-
-          ${histCoords.length > 1
-          ? `<polyline fill="none" stroke="#0d0d0d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${histCoords.join(
-            " "
-          )}" />`
-          : ""
-        }
-
-          ${foreCoords.length > 1
-          ? `<polyline fill="none" stroke="#805181" stroke-width="2.5" stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round" points="${foreCoords.join(
-            " "
-          )}" />`
-          : ""
-        }
-
-          ${hasApprovedCredit && creditCoords.length > 1
-          ? `<polyline fill="none" stroke="#24664e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${creditCoords.join(
-            " "
-          )}" />`
-          : ""
-        }
-
-          <!-- Interactive crosshair & active point markers -->
-          <line id="chart-crosshair" x1="0" y1="${topPad}" x2="0" y2="${H - bottomPad
-        }" stroke="#8a8a8a" stroke-dasharray="3 3" stroke-width="1" visibility="hidden" />
-          <line id="chart-crosshair-y" x1="${leftPad}" y1="0" x2="${W - rightPad
-        }" y2="0" stroke="#8a8a8a" stroke-dasharray="3 3" stroke-width="1" visibility="hidden" />
-          <circle id="chart-hover-dot" cx="0" cy="0" r="5" fill="#0d0d0d" stroke="#ffffff" stroke-width="2" visibility="hidden" />
-          <circle id="chart-hover-credit-dot" cx="0" cy="0" r="4.5" fill="#24664e" stroke="#ffffff" stroke-width="2" visibility="hidden" />
-
-          <!-- Transparent plot hit box for exact cursor-to-point alignment -->
-          <rect id="chart-plot-area" x="${leftPad}" y="${topPad}" width="${plotW}" height="${plotH}" fill="transparent" pointer-events="all" />
-
-          <text x="${leftPad}" y="${H - 10}" font-size="11" fill="#6e6e6e">${firstDate}</text>
-          <text x="${W - rightPad}" y="${H - 10
-        }" text-anchor="end" font-size="11" fill="#6e6e6e">${lastDate}</text>
-        `;
-    }
-
-    function applyZoom(factor, anchorRatio = 0.5) {
-      if (!chartHoverMeta || !chartHoverMeta.allPoints.length) return;
-      const total = chartHoverMeta.allPoints.length;
-      if (total <= 5) return;
-      const curSpan = chartZoom.end - chartZoom.start + 1;
-      const minSpan = Math.min(total, 5);
-      const newSpan = Math.max(minSpan, Math.min(total, Math.round(curSpan * factor)));
-      if (newSpan === curSpan && !(factor > 1 && newSpan === total)) return;
-
-      const anchorIdx = chartZoom.start + Math.round(anchorRatio * (curSpan - 1));
-      let newStart = Math.round(anchorIdx - anchorRatio * (newSpan - 1));
-      newStart = Math.max(0, Math.min(total - newSpan, newStart));
-      chartZoom.start = newStart;
-      chartZoom.end = newStart + newSpan - 1;
-      renderChart(
-        currentState.history_series,
-        currentState.liquidity_agent.forecast_series,
-        currentState.currency || "EUR"
-      );
-    }
-
-    function hideChartHover() {
-      chartTooltip.classList.add("hidden");
-      const chX = document.getElementById("chart-crosshair");
-      const chY = document.getElementById("chart-crosshair-y");
-      const dot = document.getElementById("chart-hover-dot");
-      const cDot = document.getElementById("chart-hover-credit-dot");
-      if (chX) chX.setAttribute("visibility", "hidden");
-      if (chY) chY.setAttribute("visibility", "hidden");
-      if (dot) dot.setAttribute("visibility", "hidden");
-      if (cDot) cDot.setAttribute("visibility", "hidden");
-    }
-
-    function getHoverRatio(clientX) {
-      if (!chartHoverMeta) return 0.5;
-      const ctm = forecastChart.getScreenCTM();
-      if (!ctm) return 0.5;
-      const pt = forecastChart.createSVGPoint();
-      pt.x = clientX;
-      pt.y = 0;
-      const svgPt = pt.matrixTransform(ctm.inverse());
-      return chartHoverMeta.plotW > 0
-        ? Math.max(0, Math.min(1, (svgPt.x - chartHoverMeta.leftPad) / chartHoverMeta.plotW))
-        : 0.5;
-    }
-
-    function handleChartHover(clientX) {
-      if (chartDrag || !chartHoverMeta || !chartHoverMeta.visPoints.length) return;
-      const m = chartHoverMeta;
-      const ctm = forecastChart.getScreenCTM();
-      const panelRect = forecastPanel.getBoundingClientRect();
-      if (!ctm || !panelRect.width) return;
-
-      const ratio = getHoverRatio(clientX);
-      const localIdx =
-        m.visPoints.length <= 1
-          ? 0
-          : Math.max(0, Math.min(m.visPoints.length - 1, Math.round(ratio * (m.visPoints.length - 1))));
-
-      const pt = m.visPoints[localIdx];
-      const pxSvg = m.xFor(localIdx);
-      const pySvg = m.yFor(pt.bal);
-
-      const chX = document.getElementById("chart-crosshair");
-      const chY = document.getElementById("chart-crosshair-y");
-      const dot = document.getElementById("chart-hover-dot");
-      const cDot = document.getElementById("chart-hover-credit-dot");
-
-      if (chX) {
-        chX.setAttribute("x1", pxSvg.toFixed(1));
-        chX.setAttribute("x2", pxSvg.toFixed(1));
-        chX.setAttribute("visibility", "visible");
-      }
-      if (chY) {
-        chY.setAttribute("y1", pySvg.toFixed(1));
-        chY.setAttribute("y2", pySvg.toFixed(1));
-        chY.setAttribute("visibility", "visible");
-      }
-      if (dot) {
-        dot.setAttribute("cx", pxSvg.toFixed(1));
-        dot.setAttribute("cy", pySvg.toFixed(1));
-        dot.setAttribute("fill", pt.kind === "hist" ? "#0d0d0d" : "#805181");
-        dot.setAttribute("visibility", "visible");
-      }
-      if (cDot) {
-        if (m.hasApprovedCredit && pt.kind === "fore" && pt.balCredit != null) {
-          cDot.setAttribute("cx", pxSvg.toFixed(1));
-          cDot.setAttribute("cy", m.yFor(pt.balCredit).toFixed(1));
-          cDot.setAttribute("visibility", "visible");
-        } else {
-          cDot.setAttribute("visibility", "hidden");
-        }
-      }
-
-      const kindLabel = pt.kind === "hist" ? "Past" : "Forecast";
-      const creditHtml =
-        m.hasApprovedCredit && pt.kind === "fore" && pt.balCredit != null
-          ? `<div class="tt-credit">With credit: ${escapeHtml(fmtMoney(pt.balCredit, m.currency))}</div>`
-          : "";
-
-      chartTooltip.innerHTML = `
-          <div class="tt-date">${escapeHtml(pt.date)} · ${kindLabel}</div>
-          <div class="tt-bal">${escapeHtml(fmtMoney(pt.bal, m.currency))}</div>
-          ${creditHtml}
-        `;
-      chartTooltip.classList.remove("hidden");
-
-      const dotSvgPt = forecastChart.createSVGPoint();
-      dotSvgPt.x = pxSvg;
-      dotSvgPt.y = pySvg;
-      const screenDot = dotSvgPt.matrixTransform(ctm);
-      const anchorX = screenDot.x - panelRect.left;
-      const anchorY = screenDot.y - panelRect.top;
-      const tipW = chartTooltip.offsetWidth || 140;
-      const tipH = chartTooltip.offsetHeight || 54;
-
-      let left = anchorX + 14;
-      if (left + tipW > panelRect.width - 8) {
-        left = anchorX - tipW - 14;
-      }
-      left = Math.max(8, left);
-      const top = Math.max(8, Math.min(panelRect.height - tipH - 8, anchorY - tipH / 2));
-
-      chartTooltip.style.left = `${left.toFixed(0)}px`;
-      chartTooltip.style.top = `${top.toFixed(0)}px`;
-    }
-
-    btnZoomIn.addEventListener("click", () => applyZoom(0.65, 0.5));
-    btnZoomOut.addEventListener("click", () => applyZoom(1.5, 0.5));
-    btnZoomReset.addEventListener("click", () => {
-      if (!chartHoverMeta) return;
-      chartZoom = {
-        key: chartZoom.key,
-        start: chartHoverMeta.defaultStart,
-        end: chartHoverMeta.defaultEnd,
-      };
-      renderChart(
-        currentState.history_series,
-        currentState.liquidity_agent.forecast_series,
-        currentState.currency || "EUR"
-      );
-    });
-
-    chartScroll.addEventListener("input", () => {
-      if (!chartHoverMeta) return;
-      const total = chartHoverMeta.allPoints.length;
-      const span = chartZoom.end - chartZoom.start + 1;
-      const newStart = Math.max(0, Math.min(total - span, Number(chartScroll.value || 0)));
-      if (newStart !== chartZoom.start) {
-        chartZoom.start = newStart;
-        chartZoom.end = newStart + span - 1;
-        renderChart(
-          currentState.history_series,
-          currentState.liquidity_agent.forecast_series,
-          currentState.currency || "EUR"
-        );
-      }
-    });
-
-    forecastChart.addEventListener(
-      "wheel",
-      (e) => {
-        if (!chartHoverMeta || chartHoverMeta.allPoints.length <= 5) return;
-        e.preventDefault();
-        const total = chartHoverMeta.allPoints.length;
-        const span = chartZoom.end - chartZoom.start + 1;
-        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && span < total) {
-          const step = Math.round((e.deltaX / 240) * Math.max(4, span * 0.25)) || (e.deltaX > 0 ? 1 : -1);
-          const newStart = Math.max(0, Math.min(total - span, chartZoom.start + step));
-          if (newStart !== chartZoom.start) {
-            chartZoom.start = newStart;
-            chartZoom.end = newStart + span - 1;
-            renderChart(
-              currentState.history_series,
-              currentState.liquidity_agent.forecast_series,
-              currentState.currency || "EUR"
-            );
-          }
-        } else {
-          const ratio = getHoverRatio(e.clientX);
-          applyZoom(e.deltaY < 0 ? 0.78 : 1.28, ratio);
-        }
-        handleChartHover(e.clientX);
-      },
-      { passive: false }
-    );
-
-    forecastChart.addEventListener("mousedown", (e) => {
-      if (!chartHoverMeta) return;
-      const span = chartZoom.end - chartZoom.start + 1;
-      if (span >= chartHoverMeta.allPoints.length) return;
-      chartDrag = {
-        startX: e.clientX,
-        origStart: chartZoom.start,
-        origEnd: chartZoom.end,
-      };
-      forecastChart.classList.add("panning");
-      hideChartHover();
-    });
-
-    window.addEventListener("mousemove", (e) => {
-      if (!chartDrag || !chartHoverMeta) return;
-      const plotArea = document.getElementById("chart-plot-area");
-      const plotWidthPx = plotArea ? plotArea.getBoundingClientRect().width : 700;
-      const span = chartDrag.origEnd - chartDrag.origStart + 1;
-      const total = chartHoverMeta.allPoints.length;
-      const dx = e.clientX - chartDrag.startX;
-      const shiftPts = Math.round((-dx / Math.max(1, plotWidthPx)) * span);
-      let newStart = Math.max(0, Math.min(total - span, chartDrag.origStart + shiftPts));
-      if (newStart !== chartZoom.start) {
-        chartZoom.start = newStart;
-        chartZoom.end = newStart + span - 1;
-        renderChart(
-          currentState.history_series,
-          currentState.liquidity_agent.forecast_series,
-          currentState.currency || "EUR"
-        );
-      }
-    });
-
-    window.addEventListener("mouseup", (e) => {
-      if (!chartDrag) return;
-      chartDrag = null;
-      forecastChart.classList.remove("panning");
-      if (forecastChart.contains(e.target)) {
-        handleChartHover(e.clientX);
-      } else {
-        hideChartHover();
-      }
-    });
-
-    window.addEventListener("resize", () => {
-      if (currentState && currentState.has_data) {
-        renderChart(
-          currentState.history_series,
-          currentState.liquidity_agent.forecast_series,
-          currentState.currency || "EUR"
-        );
-      }
-    });
-
-    forecastChart.addEventListener("mousemove", (e) => handleChartHover(e.clientX));
-    forecastChart.addEventListener("mouseleave", hideChartHover);
-    forecastChart.addEventListener(
-      "touchmove",
-      (e) => {
-        if (e.touches && e.touches[0]) handleChartHover(e.touches[0].clientX);
-      },
-      { passive: true }
-    );
-    forecastChart.addEventListener("touchend", hideChartHover);
-
-    function renderState(state) {
-      currentState = state;
-      if (!state || !state.has_data) {
-        emptyView.classList.remove("hidden");
-        workspaceView.classList.add("hidden");
-        resetBtn.classList.add("hidden");
-        importInfo.textContent = "";
-        return;
-      }
-
-      emptyView.classList.add("hidden");
-      workspaceView.classList.remove("hidden");
-      resetBtn.classList.remove("hidden");
-
-      const cur = state.currency || "EUR";
-      openingBalanceInput.value = state.opening_balance || 0;
-      importInfo.textContent = state.filename
-        ? `Loaded: ${state.filename} (${state.total_transactions} operations)`
-        : `${state.total_transactions} manual operation(s) loaded`;
-
-      monthSelect.innerHTML = state.months
-        .map(
-          (m) =>
-            `<option value="${m.key}" ${m.key === state.selected_month ? "selected" : ""
-            }>${escapeHtml(m.label)}</option>`
-        )
-        .join("");
-
-      const ms = state.month_summary;
-      const profitVal = ms.profit ?? ms.net_change;
-      kpiIncome.textContent = `+${fmtMoney(ms.total_income, cur)}`;
-      kpiExpenses.textContent = `-${fmtMoney(ms.total_expenses, cur)}`;
-      kpiNet.textContent =
-        (profitVal >= 0 ? "+" : "") + fmtMoney(profitVal, cur);
-      kpiNet.className = `kpi-value num ${profitVal >= 0 ? "pos" : "neg"}`;
-      kpiTxCount.textContent = `${ms.transaction_count} operations in ${state.selected_month_label}`;
-
-      kpiEndBal.textContent = fmtMoney(ms.end_balance, cur);
-      kpiEndBal.className = `kpi-value num ${ms.end_balance >= 0 ? "pos" : "neg"}`;
-      kpiLowBal.textContent = `Lowest in month: ${fmtMoney(
-        ms.lowest_balance,
-        cur
-      )} (on ${ms.lowest_balance_date})`;
-
-      renderBreakdown(expenseListEl, state.expense_breakdown, cur, true);
-      renderBreakdown(incomeListEl, state.income_breakdown, cur, false);
-
-      txTableSummary.textContent = `Show all ${state.month_transactions.length} operations in ${state.selected_month_label}`;
-      txTableBody.innerHTML = state.month_transactions
-        .map(
-          (t) => `
-          <tr>
-            <td>${escapeHtml(t.date)}</td>
-            <td><strong>${escapeHtml(t.counterparty)}</strong></td>
-            <td><span class="badge">${escapeHtml(t.category)}</span></td>
-            <td>${escapeHtml(t.description)}</td>
-            <td class="right num ${t.amount >= 0 ? "pos" : "neg"}" style="font-weight: 600">
-              ${t.amount >= 0 ? "+" : ""}${fmtMoney(t.amount, cur)}
-            </td>
-            <td class="right">
-              ${t.source === "manual"
-              ? `<button type="button" class="danger" data-del-id="${escapeHtml(
-                t.id
-              )}">Delete</button>`
-              : ""
-            }
-            </td>
-          </tr>`
-        )
-        .join("");
-
-      const la = state.liquidity_agent;
-      if (la.goes_below_zero) {
-        agentBanner.className = "alert-box warn";
-        agentBanner.innerHTML = `<strong>Cash Shortfall Predicted:</strong> ${escapeHtml(
-          la.recommendation_summary
-        )}`;
-      } else {
-        agentBanner.className = "alert-box safe";
-        agentBanner.innerHTML = `<strong>Account Stays Above €0:</strong> ${escapeHtml(
-          la.recommendation_summary
-        )}`;
-      }
-
-      agentAnalysisText.textContent = la.analysis_summary;
-      agentRecText.textContent = la.recommendation_summary;
-      recLowest.textContent = `${fmtMoney(la.lowest_predicted_balance, cur)} (on ${la.lowest_predicted_date
-        })`;
-      recLowest.className = la.lowest_predicted_balance < 0 ? "neg" : "pos";
-      recDays.textContent = `${la.days_below_zero} day(s)`;
-      recCredit.textContent = fmtMoney(la.recommended_credit_amount, cur);
-
-      if (
-        !state.approved_credit ||
-        Number(state.approved_credit.amount) === 0
-      ) {
-        creditInput.value = la.recommended_credit_amount;
-        creditStatus.innerHTML = `<span class="subtitle">Status: Waiting for your decision (not approved yet).</span>`;
-      } else {
-        creditInput.value = state.approved_credit.amount;
-        creditStatus.innerHTML = `
-            <span class="pos" style="font-weight: 600">
-              Approved (Simulated): ${fmtMoney(
-          state.approved_credit.amount,
-          cur
-        )} credit cushion applied to forecast chart (green line).
-            </span>
-            <button type="button" class="secondary" id="clear-credit-btn" style="margin-top: 8px; min-height: 30px; padding: 4px 12px; font-size: 12px">
-              Remove Credit
-            </button>`;
-        const clearCreditBtn = document.getElementById("clear-credit-btn");
-        if (clearCreditBtn) {
-          clearCreditBtn.addEventListener("click", () => submitCredit(0));
-        }
-      }
-
-      if (la.upcoming_bills.length === 0) {
-        upcomingBillsBody.innerHTML = `<tr><td colspan="3" class="subtitle">No regular bills detected yet.</td></tr>`;
-      } else {
-        upcomingBillsBody.innerHTML = la.upcoming_bills
-          .map(
-            (b) => `
-            <tr>
-              <td>${escapeHtml(b.date)}</td>
-              <td>${escapeHtml(b.counterparty)}</td>
-              <td class="right neg num">${fmtMoney(b.amount, cur)}</td>
-            </tr>`
-          )
-          .join("");
-      }
-
-      renderChart(state.history_series, la.forecast_series, cur);
-    }
-
-    importForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const file = csvFileInput.files[0];
-      if (!file) return;
-      const text = await file.text();
-      const res = await fetch("/api/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          csv_text: text,
-          filename: file.name,
-          opening_balance: Number(openingBalanceInput.value || 0),
-          horizon_days: Number(horizonSelect.value || 30),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "Failed to import CSV");
-        return;
-      }
-      renderState(data);
-    });
-
-    openingBalanceInput.addEventListener("change", async () => {
-      if (!currentState || !currentState.has_data) return;
-      const res = await fetch("/api/opening-balance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          opening_balance: Number(openingBalanceInput.value || 0),
-          horizon_days: Number(horizonSelect.value || 30),
-        }),
-      });
-      if (res.ok) renderState(await res.json());
-    });
-
-    manualForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const res = await fetch("/api/operations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: opDateInput.value,
-          kind: opKindInput.value,
-          amount: Number(opAmountInput.value),
-          counterparty: opCpInput.value,
-          category: opCatInput.value,
-          horizon_days: Number(horizonSelect.value || 30),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "Could not add operation");
-        return;
-      }
-      opAmountInput.value = "";
-      opCpInput.value = "";
-      opCatInput.value = "Other";
-      renderState(data);
-    });
-
-    txTableBody.addEventListener("click", async (e) => {
-      const btn = e.target.closest("[data-del-id]");
-      if (!btn) return;
-      const id = btn.getAttribute("data-del-id");
-      const res = await fetch("/api/operations/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          horizon_days: Number(horizonSelect.value || 30),
-        }),
-      });
-      if (res.ok) renderState(await res.json());
-    });
-
-    intervalSelect.addEventListener("change", () => {
-      if (!currentState || !currentState.has_data) return;
-      renderChart(
-        currentState.history_series,
-        currentState.liquidity_agent.forecast_series,
-        currentState.currency || "EUR"
-      );
-    });
-    horizonSelect.addEventListener("change", () =>
-      fetchView(horizonSelect.value)
-    );
-
-    async function submitCredit(amountVal) {
-      const res = await fetch("/api/approve-credit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: Number(amountVal),
-          horizon_days: Number(horizonSelect.value || 30),
-        }),
-      });
-      if (res.ok) renderState(await res.json());
-    }
-
-    creditForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      submitCredit(creditInput.value || 0);
-    });
-
-    resetBtn.addEventListener("click", async () => {
-      const res = await fetch("/api/reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-      });
-      if (res.ok) {
-        csvFileInput.value = "";
-        chartZoom = { key: null, start: 0, end: 0 };
-        chartDrag = null;
-        renderState(await res.json());
-      }
-    });
-
-    function appendMessage(role, text) {
-      const div = document.createElement("div");
-      div.className = `msg ${role}`;
-      div.textContent = text;
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-      return div;
-    }
-
-    aiExplainBtn.addEventListener("click", async () => {
-      aiExplainBtn.disabled = true;
-      const pending = appendMessage(
-        "assistant",
-        "Asking Greg on OpenShift AI to explain this month and forecast in simple words…"
-      );
-      try {
-        const res = await fetch("/api/explain", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            horizon_days: Number(horizonSelect.value || 30),
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        pending.textContent = data.reply;
-        chatHistory.push({ role: "assistant", content: data.reply });
-      } catch (err) {
-        pending.className = "msg error";
-        pending.textContent = `Error: ${err.message}`;
-      } finally {
-        aiExplainBtn.disabled = false;
-      }
-    });
-
-    chatForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const text = promptEl.value.trim();
-      if (!text) return;
-
-      promptEl.value = "";
-      promptEl.disabled = true;
-      sendBtn.disabled = true;
-
-      chatHistory.push({ role: "user", content: text });
-      appendMessage("user", text);
-      const pendingEl = appendMessage("assistant", "Thinking…");
-
-      try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: chatHistory,
-            horizon_days: Number(horizonSelect.value || 30),
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        pendingEl.textContent = data.reply;
-        chatHistory.push({ role: "assistant", content: data.reply });
-      } catch (err) {
-        pendingEl.className = "msg error";
-        pendingEl.textContent = `Error: ${err.message}`;
-        chatHistory.pop();
-      } finally {
-        promptEl.disabled = false;
-        sendBtn.disabled = false;
-        promptEl.focus();
-      }
-    });
-
-    loadStatus();
-    fetchView();
-  </script>
+  <script type="module" src="/static/js/app.js"></script>
 </body>
 
 </html>
