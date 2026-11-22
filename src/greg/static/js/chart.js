@@ -928,6 +928,7 @@ export function createChartController(
 
     let mode = "past";
     let modeLabel = "Historical Period";
+    // These texts skip the chat topic gate; keep them in sync with _CHART_PERIOD_PROMPTS in llm/topic.py.
     let suggestedPrompt = "";
 
     if (todayIdx >= 0 && eIdx <= todayIdx) {
