@@ -433,15 +433,15 @@ class GregRequestHandler(BaseHTTPRequestHandler):
             self._send_json(503, {"error": str(exc)})
             return
 
-        if not is_on_topic(history):
+        raw_period = data.get("selected_period")
+        selected_period = raw_period if isinstance(raw_period, dict) else None
+        if not is_on_topic(history, selected_period):
             self._send_json(422, {"error": GUARDRAIL_REFUSAL, "blocked": True, "rails": ["topic"]})
             return
 
         month = data.get("selected_month")
         horizon = parse_int_or_default(data.get("horizon_days"), 30)
         horizon_months = parse_optional_int(data.get("horizon_months"))
-        raw_period = data.get("selected_period")
-        selected_period = raw_period if isinstance(raw_period, dict) else None
         system_prompt = (
             build_context_system_prompt(
                 selected_month=month,
