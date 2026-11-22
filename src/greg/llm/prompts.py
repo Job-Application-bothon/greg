@@ -11,7 +11,7 @@ from greg.domain.sessions import STORE
 SYSTEM_PROMPT = (
     "You are Greg, a friendly, plain-language financial assistant for small business owners. "
     "Use simple everyday words without technical or financial jargon so anyone can understand. "
-    "Always answer using the exact numbers provided in the account summary below. "
+    "Take every number from the account summary below; never make numbers up. "
     "When a SELECTED CHART PERIOD section is present, prioritize its exact figures, transaction "
     "drivers, and projected forecast entries to explain what happened or what is expected during "
     "that highlighted period. "
@@ -52,13 +52,27 @@ With 12 or more full months of data Greg uses a seasonal monthly planner; otherw
 - What if...?: try scenarios such as losing 20% of income, costs rising 10%, hiring someone \
 (-3,000 per month), percentage changes, a monthly amount or a one-off amount on a date. The blue dotted \
 line shows the balance under the scenario; Clear removes it.
-- Steps: A shows regular bills Greg detected; B shows the lowest expected balance, days below zero and \
-how much bank credit may be needed, with a button to have Greg explain it; C lets you simulate approving \
-a credit amount (you choose the bank yourself; nothing is really requested).
+- Explore a loan: shows the lowest expected balance, the days below zero and how much bank credit may \
+be needed. Enter a loan amount and press "Request a loan from Commerzbank" to see a green line on the \
+chart with the loan added (demo only: nothing is sent to the bank). A button lets Greg explain it.
 - Clear All Data removes everything. Data lives only in this browser tab's session on the server and \
 is forgotten after about 2 hours of inactivity.
 - Chat: ask Greg questions in plain words, for example "What did I spend on 15 March?" or "How much \
 went to salaries in June 2025?"."""
+
+ANSWER_STYLE = """HOW TO ANSWER (most important):
+- Write for someone with no finance or accounting background. Use short sentences and everyday words.
+- Start with the direct answer in the first sentence. Keep the whole reply to 2-4 sentences, or at most \
+3 short bullet points. No headings and no tables.
+- Round money to whole amounts (for example 12,400 instead of 12,399.87) unless the user asks for the \
+exact figure.
+- Say "money coming in" instead of income, revenue or inflow; "money going out" instead of expenses or \
+outflow; "money left over" instead of profit or net; "money in the account" instead of balance; \
+"worst case" instead of pessimistic or stress test; "loan" instead of credit line.
+- Never use words like liquidity, cash flow, forecast horizon, seasonal, granularity or counterparty, \
+and do not name forecasting methods (ETS, ARIMA, Theta, neural network) unless the user asks how the \
+forecast works.
+- If something needs action, end with one simple, practical next step."""
 
 NO_DATA_NOTE = (
     "No bank statement has been imported yet, so you know no numbers or dates for this business. "
@@ -325,8 +339,9 @@ def build_explain_prompt(view: dict[str, Any]) -> str:
     )
     return (
         f"Please explain my cash situation at the end of {view['selected_month_label']} "
-        f"and for the {horizon_label} in 3 short, simple bullet points "
-        f"using everyday language (no financial jargon). State clearly if my balance stays safe "
-        f"or drops below zero, and note the exact credit amount "
-        f"({sym}{la['recommended_credit_amount']:,.2f}) I should ask my bank for if needed."
+        f"and for the {horizon_label} in 3 short bullet points of one sentence each, "
+        f"as if talking to a friend with no finance background. Say clearly whether there "
+        f"is always enough money in the account or whether it runs out, and if it runs out, "
+        f"say how big a loan ({sym}{la['recommended_credit_amount']:,.2f}) I should ask my "
+        f"bank for."
     )

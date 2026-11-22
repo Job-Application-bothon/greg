@@ -13,7 +13,7 @@ from unittest.mock import patch
 from greg.api.server import create_server
 from greg.domain.sessions import SESSIONS
 from greg.llm.guardrails import GuardrailUnavailable, GuardrailVerdict
-from greg.llm.prompts import build_context_system_prompt
+from greg.llm.prompts import ANSWER_STYLE, build_context_system_prompt
 from tests.helpers import build_synthetic_csv, synthetic_ledger
 
 
@@ -329,6 +329,7 @@ class HTTPServerIntegrationTest(unittest.TestCase):
         ) as call_llm:
             self._post_status("/api/chat", {"message": "How much did I earn?"})
         self.assertIn("Never make up amounts", call_llm.call_args.args[0][0]["content"])
+        self.assertTrue(call_llm.call_args.args[0][0]["content"].endswith(ANSWER_STYLE))
 
     def test_chat_adds_app_guide_and_date_lookup(self) -> None:
         store = SESSIONS.get("tab-chat")
@@ -342,6 +343,7 @@ class HTTPServerIntegrationTest(unittest.TestCase):
         self.assertIn("HOW TO USE GREG", system)
         self.assertIn("DATE LOOKUP (exact", system)
         self.assertIn("2025-03-14 (Friday, 14 March 2025)", system)
+        self.assertTrue(system.endswith(ANSWER_STYLE), "plain-language rules must come last")
 
         with patch(
             "greg.api.routes.call_llm", return_value={"reply": "ok", "model": "m"}
