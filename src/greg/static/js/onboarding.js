@@ -1,4 +1,15 @@
 import { fmtMoney } from "./format.js";
+import { animateHeight } from "./controls.js";
+
+// Delegate native disclosures, including optional CSV fields and dynamic details.
+document.addEventListener('click', event => {
+  const summary = event.target.closest('summary');
+  const details = summary?.parentElement;
+  if (!details?.matches('details') || event.defaultPrevented) return;
+  if (event.target.closest('a, button, input, select, textarea')) return;
+  event.preventDefault();
+  animateHeight(details, () => { details.open = !details.open; });
+});
 
 const DEFAULT_BANK_ACTION_HTML = 'Retrieve bank data <span aria-hidden="true">↗</span>';
 
@@ -53,8 +64,10 @@ dashboard.append(graphActions);
 graphActions.querySelector("#connect-bank-demo").addEventListener("click", (event) => {
   const button = event.currentTarget;
   const expanded = button.getAttribute("aria-expanded") !== "true";
-  button.setAttribute("aria-expanded", String(expanded));
-  show($("bank-demo-hint"), expanded);
+  animateHeight(button.parentElement, () => {
+    button.setAttribute("aria-expanded", String(expanded));
+    show($("bank-demo-hint"), expanded);
+  });
 });
 
 const assistantStage = document.createElement("section");
@@ -367,4 +380,5 @@ const observer = new IntersectionObserver(
   { threshold: 0.08 }
 );
 observer.observe(dashboard);
+observer.observe(assistantStage);
 show(dashboard, false);
